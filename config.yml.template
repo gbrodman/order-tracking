@@ -1,0 +1,21 @@
+email:
+  username: gus.brodman@gmail.com
+  password: <SNIP>
+  amazonFolderName: Amazon
+  imapUrl: imap.gmail.com
+  smtpUrl: smtp.gmail.com
+  smtpPort: 587
+
+# Each group is a name/key combination where the key (made uppercase) will
+# appear at least once in the shipping email (made uppercase).
+groups:
+- name: MYS
+  key: man11414
+- name: PM
+  key: man17033
+- name: BFMR
+  key: 51 s broadway
+- name: USA
+  key: manGUBRO41
+- name: HOME
+  key: 55 poplar

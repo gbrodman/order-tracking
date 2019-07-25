@@ -1,0 +1,2 @@
+# Ignore the actual config file so as to not share the pw
+config.yml
