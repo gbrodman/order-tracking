@@ -110,7 +110,7 @@ def send_email(email_content):
 
 if __name__ == "__main__":
     groups_dict = collections.defaultdict(list)
-    email_ids = get_email_ids(CONFIG['amazonFolderName'])
+    email_ids = get_email_ids(EMAIL_CONFIG['amazonFolderName'])
     for amazon_url, buying_group in parse_emails(email_ids):
         print(amazon_url)
         print(buying_group)
