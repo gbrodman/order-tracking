@@ -6,6 +6,7 @@ import urllib3
 import datetime
 import smtplib
 import imaplib
+import upload_tracking_numbers
 from selenium import webdriver
 from email.mime.text import MIMEText
 
@@ -25,9 +26,10 @@ TODO:
 
 def get_buying_group(raw_email):
     raw_email = raw_email.upper()
-    for group in CONFIG['groups']:
-        if group['key'].upper() in raw_email:
-            return group['name']
+    for group in CONFIG['groups'].keys():
+        group_key = CONFIG['groups'][group]['key']
+        if group_key.upper() in raw_email:
+            return group
     print(raw_email)
     raise Exception("Unknown buying group")
 
@@ -96,15 +98,24 @@ def create_email_content(groups_dict):
         content += '\n\n'
     return content
 
-def send_email(email_content):
+def upload_numbers(groups_dict):
+    for group, numbers in groups_dict.items():
+        group_config = CONFIG['groups'][group]
+        if group_config.get('password'):
+            try:
+                upload_tracking_numbers.upload(numbers, group, EMAIL_CONFIG['username'], group_config['password'])
+            except Exception as e:
+                send_email("Error uploading tracking numbers", str(e))
+
+def send_email(subject, content):
     s = smtplib.SMTP(EMAIL_CONFIG['smtpUrl'], EMAIL_CONFIG['smtpPort']) 
     s.starttls() 
     s.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
 
-    message = MIMEText(email_content)
+    message = MIMEText(content)
     message['From'] = EMAIL_CONFIG['username']
     message['To'] = EMAIL_CONFIG['username']
-    message['Subject'] = "Amazon Tracking Numbers " + TODAY
+    message['Subject'] = subject
     s.sendmail(EMAIL_CONFIG['username'], EMAIL_CONFIG['username'], message.as_string())
     s.quit() 
 
@@ -120,6 +131,8 @@ if __name__ == "__main__":
         groups_dict[buying_group].append(tracking_number)
 
     email_content = create_email_content(groups_dict)
-    send_email(email_content)
+    send_email("Amazon Tracking Numbers " + TODAY, email_content)
+
+    upload_numbers(groups_dict)
 
 
