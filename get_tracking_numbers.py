@@ -124,7 +124,6 @@ if __name__ == "__main__":
     for amazon_url, buying_group in parse_emails(email_ids):
         print(amazon_url)
         print(buying_group)
-        time.sleep(5)
         tracking_number = get_tracking_info(amazon_url)
         print(tracking_number)
         groups_dict[buying_group].append(tracking_number)
