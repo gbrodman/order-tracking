@@ -18,7 +18,7 @@ def load_page(driver, url):
     driver.get(url)
     time.sleep(1)
 
-def upload(numbers, site, email, password):
+def upload_mys_pm(numbers, site, username, password):
     driver = webdriver.Chrome()
     try:
         driver.implicitly_wait(10)
@@ -38,3 +38,14 @@ def upload(numbers, site, email, password):
             raise Exception("Expected to create %d records for group %s but created %d, tried to upload %s" % (len(numbers), site, num_records, str(numbers)))
     finally:
         driver.close()
+
+def upload_usa(numbers, username, password):
+    pass
+
+def upload(numbers, site, username, password):
+    if site == "mysbuyinggroup" or site == "pointsmaker":
+        upload_mys_pm(numbers, site, username, password)
+    elif site == "usa":
+        upload_usa(numbers, username, password)
+    else:
+        raise Exception("Unknown site " + site)

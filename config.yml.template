@@ -8,14 +8,20 @@ email:
 
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site
-# password here. This only works for PM/MYS for now.
+# username + password here. This only works for PM/MYS for now.
 groups:
   mysbuyinggroup:
     key: man11414
+    username: gus.brodman@gmail.com
     password: 
   pointsmaker:
     key: man17033
-    password: 
+    username: gus.brodman@gmail.com
+    password:
+  usa:
+    key: manGUBRO41
+    username: GUBRO41
+    password:
   bfmr:
     key: 51 s broadway
   home:

@@ -102,7 +102,7 @@ def upload_numbers(groups_dict):
         group_config = CONFIG['groups'][group]
         if group_config.get('password'):
             try:
-                upload_tracking_numbers.upload(numbers, group, EMAIL_CONFIG['username'], group_config['password'])
+                upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'])
             except Exception as e:
                 send_email("Error uploading tracking numbers", str(e))
 
