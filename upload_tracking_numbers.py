@@ -14,6 +14,9 @@ RESULT_REGEX = r"(\d+) record\(s\) effected"
 BASE_URL_FORMAT = "https://www.%s.com"
 MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 
+USA_LOGIN_URL = "https://usabuying.group/login"
+USA_TRACKING_URL = "https://usabuying.group/trackings"
+
 def load_page(driver, url):
     driver.get(url)
     time.sleep(1)
@@ -40,7 +43,27 @@ def upload_mys_pm(numbers, site, username, password):
         driver.close()
 
 def upload_usa(numbers, username, password):
-    pass
+    driver = webdriver.Chrome()
+    try:
+        driver.implicitly_wait(10)
+        load_page(driver, USA_LOGIN_URL)
+        driver.find_element_by_name("credentials").send_keys(username)
+        driver.find_element_by_name("password").send_keys(password)
+        # for some reason there's an invalid login button in either the first or second array spot (randomly)
+        for element in driver.find_elements_by_name("log-me-in"):
+            try:
+                element.click()
+            except:
+                pass
+
+        time.sleep(2)
+        load_page(driver, USA_TRACKING_URL)
+        driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
+        driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
+        driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
+        # TODO: raise errors if the tracking numbers already existed
+    finally:
+        driver.close()
 
 def upload(numbers, site, username, password):
     if site == "mysbuyinggroup" or site == "pointsmaker":
