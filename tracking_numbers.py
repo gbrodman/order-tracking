@@ -80,8 +80,7 @@ def load_url(url):
 def get_tracking_info(amazon_url):
     driver = load_url(amazon_url)
     try:
-        found_elements = driver.find_elements_by_xpath("//*[contains(text(), 'Tracking ID')]")
-        element = found_elements[0]
+        element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
         regex = r'Tracking ID: ([A-Z0-9]+)'
         match = re.match(regex, element.text)
         tracking_number = match.group(1)
