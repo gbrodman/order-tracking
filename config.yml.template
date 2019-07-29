@@ -12,7 +12,11 @@ email:
 # This only works for PM/MYS/USA for now.
 groups:
   mysbuyinggroup:
+    # "key" is a unique string key that will appear in emails for a particular
+    # group. For me, I use "man" plus the user ID since that shouldn't give
+    # any false positives
     key: man11414
+    # username here is the website username (ditto password)
     username: gus.brodman@gmail.com
     password: 
   pointsmaker:
