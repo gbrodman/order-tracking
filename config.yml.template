@@ -1,5 +1,6 @@
 email:
   username: gus.brodman@gmail.com
+  # for Gmail, password should be an application-specific password
   password: 
   amazonFolderName: Amazon
   imapUrl: imap.gmail.com
