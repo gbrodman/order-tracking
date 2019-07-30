@@ -26,7 +26,7 @@ def upload_mys_pm(numbers, site, username, password):
     try:
         driver.implicitly_wait(10)
         load_page(driver, BASE_URL_FORMAT % site)
-        driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(email)
+        driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
         driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
         driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
         time.sleep(1)
