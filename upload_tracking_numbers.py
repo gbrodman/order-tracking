@@ -60,7 +60,9 @@ def upload_usa(numbers, username, password):
         load_page(driver, USA_TRACKING_URL)
         driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
         driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
+        time.sleep(1)
         driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
+        time.sleep(3)
         # TODO: raise errors if the tracking numbers already existed
     finally:
         driver.close()
