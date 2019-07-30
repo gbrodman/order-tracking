@@ -27,9 +27,10 @@ TODO:
 def get_buying_group(raw_email):
     raw_email = raw_email.upper()
     for group in CONFIG['groups'].keys():
-        group_key = CONFIG['groups'][group]['key']
-        if group_key.upper() in raw_email:
-            return group
+        group_keys = CONFIG['groups'][group]['keys']
+        for group_key in group_keys:
+            if group_key.upper() in raw_email:
+                return group
     print(raw_email)
     raise Exception("Unknown buying group")
 
