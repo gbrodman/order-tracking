@@ -35,4 +35,3 @@ if __name__ == "__main__":
     email_sender = EmailSender(EMAIL_CONFIG)
     email_sender.send_email(groups_dict)
     upload_numbers(email_sender, groups_dict)
-
