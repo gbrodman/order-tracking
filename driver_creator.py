@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 CHROME = "CHROME"
-FIREFIX = "FIREFOX"
+FIREFOX = "FIREFOX"
 
 class DriverCreator:
 
