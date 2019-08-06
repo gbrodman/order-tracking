@@ -1,13 +1,14 @@
 import yaml
 import re
 import collections
+import sys
 import time
 import urllib3
 import datetime
 import smtplib
 import imaplib
 import upload_tracking_numbers
-from selenium import webdriver
+from driver_creator import DriverCreator
 from email.mime.text import MIMEText
 
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -17,6 +18,8 @@ with open(CONFIG_FILE, 'r') as config_file_stream:
     CONFIG = yaml.safe_load(config_file_stream)
 
 EMAIL_CONFIG = CONFIG['email']
+
+DRIVER_CREATOR = None
 
 """
 TODO:
@@ -65,9 +68,7 @@ def load_url(url):
     sleep_interval = 5
     for i in range(10):
         try:
-            driver = webdriver.Chrome()
-            driver.implicitly_wait(10)
-            driver.set_page_load_timeout(10)
+            driver = DRIVER_CREATOR.new()
             driver.get(url)
             time.sleep(5) # wait for page load because the timeouts can be buggy
             return driver
@@ -103,7 +104,7 @@ def upload_numbers(groups_dict):
         group_config = CONFIG['groups'][group]
         if group_config.get('password'):
             try:
-                upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'])
+                upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'], DRIVER_CREATOR)
             except Exception as e:
                 send_email("Error uploading tracking numbers", str(e))
 
@@ -120,6 +121,11 @@ def send_email(subject, content):
     s.quit() 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        DRIVER_CREATOR = DriverCreator(sys.argv[1].upper())
+    else:
+        DRIVER_CREATOR = DriverCreator("CHROME")
+
     groups_dict = collections.defaultdict(list)
     email_ids = get_email_ids(EMAIL_CONFIG['amazonFolderName'])
     for amazon_url, buying_group in parse_emails(email_ids):
