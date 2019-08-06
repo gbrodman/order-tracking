@@ -21,10 +21,9 @@ def load_page(driver, url):
     driver.get(url)
     time.sleep(1)
 
-def upload_mys_pm(numbers, site, username, password):
-    driver = webdriver.Chrome()
+def upload_mys_pm(numbers, site, username, password, driver_creator):
+    driver = driver_creator.new()
     try:
-        driver.implicitly_wait(10)
         load_page(driver, BASE_URL_FORMAT % site)
         driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
         driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
@@ -42,10 +41,9 @@ def upload_mys_pm(numbers, site, username, password):
     finally:
         driver.close()
 
-def upload_usa(numbers, username, password):
-    driver = webdriver.Chrome()
+def upload_usa(numbers, username, password, driver_creator):
+    driver = driver_creator.new()
     try:
-        driver.implicitly_wait(10)
         load_page(driver, USA_LOGIN_URL)
         driver.find_element_by_name("credentials").send_keys(username)
         driver.find_element_by_name("password").send_keys(password)
@@ -67,10 +65,10 @@ def upload_usa(numbers, username, password):
     finally:
         driver.close()
 
-def upload(numbers, site, username, password):
+def upload(numbers, site, username, password, driver_creator):
     if site == "mysbuyinggroup" or site == "pointsmaker":
-        upload_mys_pm(numbers, site, username, password)
+        upload_mys_pm(numbers, site, username, password, driver_creator)
     elif site == "usa":
-        upload_usa(numbers, username, password)
+        upload_usa(numbers, username, password, driver_creator)
     else:
         raise Exception("Unknown site " + site)
