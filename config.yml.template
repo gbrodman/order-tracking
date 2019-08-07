@@ -14,8 +14,7 @@ email:
 groups:
   mysbuyinggroup:
     # "keys" are unique strings that will appear in emails for a particular
-    # group. For me, I use "man" plus the user ID since that shouldn't give
-    # any false positives
+    # group. It'll probably be your buyer ID
     keys:
       - MY_MYS_BUYER_ID
       - SOMEOTHERKEY # E.g. shipping to a fake name
