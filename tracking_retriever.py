@@ -11,10 +11,15 @@ class Tracking:
         self.group = group
         self.order_number = order_number
 
+    def __str__(self):
+        return "number: %s, group: %s, order: %s" % (self.tracking_number, self.group, self.order_number)
+
 class TrackingRetriever:
 
     first_regex = r'.*<a href="(http[^"]*ship-track[^"]*)"'
     second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
+
+    order_from_url_regex = r'.*orderId%3D([0-9\-]+)'
 
     def __init__(self, config, driver_creator):
         self.config = config
@@ -46,8 +51,9 @@ class TrackingRetriever:
             matches = re.match(self.second_regex, str(raw_email))
         return matches.group(1)
 
-    def get_order_id_from_email(self, raw_email):
-        return "hi"
+    def get_order_id_from_url(self, url):
+        match = re.match(self.order_from_url_regex, url)
+        return match.group(1)
 
     def get_tracking(self, email_id):
         mail = self.get_amazon_folder()
@@ -57,7 +63,7 @@ class TrackingRetriever:
         url = self.get_url_from_email(raw_email)
         tracking_number = self.get_tracking_info(url)
         group = self.get_buying_group(raw_email)
-        order_id = self.get_order_id_from_email(raw_email)
+        order_id = self.get_order_id_from_url(url)
         return Tracking(tracking_number, group, order_id)
 
     def get_tracking_info(self, amazon_url):
