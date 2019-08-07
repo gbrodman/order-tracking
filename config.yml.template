@@ -1,5 +1,5 @@
 email:
-  username: gus.brodman@gmail.com
+  username: my_email@gmail.com
   # for Gmail, password should be an application-specific password
   password: 
   amazonFolderName: Amazon
@@ -17,20 +17,20 @@ groups:
     # group. For me, I use "man" plus the user ID since that shouldn't give
     # any false positives
     keys:
-      - man11414
-      - Smith11414 # E.g. shipping to a fake name
+      - MY_MYS_BUYER_ID
+      - SOMEOTHERKEY # E.g. shipping to a fake name
     # username here is the website username (ditto password)
-    username: gus.brodman@gmail.com
+    username: my_email@example.com
     password: 
   pointsmaker:
     keys:
-      - man17033
-    username: gus.brodman@gmail.com
+      - MY_PM_BUYER_ID
+    username: my_email@example.com
     password:
   usa:
     keys:
-      - manGUBRO41
-    username: GUBRO41
+      - MY_USA_BUYER_ID
+    username: MY_USA_BUYER_ID
     password:
   bfmr:
     keys:
