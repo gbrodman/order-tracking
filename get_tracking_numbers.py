@@ -1,13 +1,9 @@
 import yaml
-import re
-import collections
 import sys
-import time
-import urllib3
 import datetime
 import smtplib
-import imaplib
 import upload_tracking_numbers
+from tracking_retriever import TrackingRetriever
 from driver_creator import DriverCreator
 from email.mime.text import MIMEText
 
@@ -21,78 +17,10 @@ EMAIL_CONFIG = CONFIG['email']
 
 DRIVER_CREATOR = None
 
-"""
-TODO:
-- use a VPN to hit the amazon URLs from different IPs to avoid associating the accounts together
-- repeat for best buy orders?
-"""
-
-def get_buying_group(raw_email):
-    raw_email = raw_email.upper()
-    for group in CONFIG['groups'].keys():
-        group_keys = CONFIG['groups'][group]['keys']
-        for group_key in group_keys:
-            if group_key.upper() in raw_email:
-                return group
-    print(raw_email)
-    raise Exception("Unknown buying group")
-
-def get_mail_folder(folder_name):
-    mail = imaplib.IMAP4_SSL(EMAIL_CONFIG['imapUrl'])
-    mail.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
-    mail.select(folder_name)
-    return mail
-
-def get_email_ids(folder_name):
-    mail = get_mail_folder(folder_name)
-    status, response = mail.search(None, '(UNSEEN)', '(SUBJECT "shipped")')
-    email_ids = response[0].decode('utf-8')
-
-    return email_ids.split()
-
-def parse_emails(email_ids):
-    first_regex = r'.*<a href="(http[^"]*ship-track[^"]*)"'
-    second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
-    for email_id in email_ids:
-        print(email_id)
-        mail = get_mail_folder(EMAIL_CONFIG['amazonFolderName'])
-
-        result, data = mail.fetch(bytes(email_id, 'utf-8'), "(RFC822)")
-        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '')
-        matches = re.match(first_regex, str(raw_email))
-        if not matches:
-            matches = re.match(second_regex, str(raw_email))
-        yield matches.group(1), get_buying_group(raw_email)
-
-def load_url(url):
-    sleep_interval = 5
-    for i in range(10):
-        try:
-            driver = DRIVER_CREATOR.new()
-            driver.get(url)
-            time.sleep(5) # wait for page load because the timeouts can be buggy
-            return driver
-        except urllib3.exceptions.MaxRetryError:
-            print("Error, waiting " + str(sleep_interval))
-            time.sleep(sleep_interval)
-            sleep_interval *= 2
-    driver.close()
-    raise Error("Too many retries")
-
-def get_tracking_info(amazon_url):
-    driver = load_url(amazon_url)
-    try:
-        element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
-        regex = r'Tracking ID: ([A-Z0-9]+)'
-        match = re.match(regex, element.text)
-        tracking_number = match.group(1)
-        return tracking_number
-    finally:
-        driver.close()
-
 def create_email_content(groups_dict):
     content = "Tracking numbers per group:\n\n"
-    for group, numbers in groups_dict.items():
+    for group, trackings in groups_dict.items():
+        numbers = [tracking.tracking_number for tracking in trackings]
         content += group
         content += '\n'
         content += '\n'.join(numbers)
@@ -100,7 +28,8 @@ def create_email_content(groups_dict):
     return content
 
 def upload_numbers(groups_dict):
-    for group, numbers in groups_dict.items():
+    for group, trackings in groups_dict.items():
+        numbers = [tracking.tracking_number for tracking in trackings]
         group_config = CONFIG['groups'][group]
         if group_config.get('password'):
             try:
@@ -126,14 +55,8 @@ if __name__ == "__main__":
     else:
         DRIVER_CREATOR = DriverCreator("CHROME")
 
-    groups_dict = collections.defaultdict(list)
-    email_ids = get_email_ids(EMAIL_CONFIG['amazonFolderName'])
-    for amazon_url, buying_group in parse_emails(email_ids):
-        print(amazon_url)
-        print(buying_group)
-        tracking_number = get_tracking_info(amazon_url)
-        print(tracking_number)
-        groups_dict[buying_group].append(tracking_number)
+    tracking_retriever = TrackingRetriever(CONFIG, DRIVER_CREATOR)
+    groups_dict = tracking_retriever.get_trackings()
 
     email_content = create_email_content(groups_dict)
     send_email("Amazon Tracking Numbers " + TODAY, email_content)
