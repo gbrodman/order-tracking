@@ -1,13 +1,10 @@
 import yaml
 import sys
-import datetime
-import smtplib
 import upload_tracking_numbers
+from email_sender import EmailSender
 from tracking_retriever import TrackingRetriever
 from driver_creator import DriverCreator
-from email.mime.text import MIMEText
 
-TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
 CONFIG_FILE = "config.yml"
 
 with open(CONFIG_FILE, 'r') as config_file_stream:
@@ -17,17 +14,7 @@ EMAIL_CONFIG = CONFIG['email']
 
 DRIVER_CREATOR = None
 
-def create_email_content(groups_dict):
-    content = "Tracking numbers per group:\n\n"
-    for group, trackings in groups_dict.items():
-        numbers = [tracking.tracking_number for tracking in trackings]
-        content += group
-        content += '\n'
-        content += '\n'.join(numbers)
-        content += '\n\n'
-    return content
-
-def upload_numbers(groups_dict):
+def upload_numbers(email_sender, groups_dict):
     for group, trackings in groups_dict.items():
         numbers = [tracking.tracking_number for tracking in trackings]
         group_config = CONFIG['groups'][group]
@@ -35,19 +22,7 @@ def upload_numbers(groups_dict):
             try:
                 upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'], DRIVER_CREATOR)
             except Exception as e:
-                send_email("Error uploading tracking numbers", str(e))
-
-def send_email(subject, content):
-    s = smtplib.SMTP(EMAIL_CONFIG['smtpUrl'], EMAIL_CONFIG['smtpPort']) 
-    s.starttls() 
-    s.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
-
-    message = MIMEText(content)
-    message['From'] = EMAIL_CONFIG['username']
-    message['To'] = EMAIL_CONFIG['username']
-    message['Subject'] = subject
-    s.sendmail(EMAIL_CONFIG['username'], EMAIL_CONFIG['username'], message.as_string())
-    s.quit() 
+                email_sender.send_email_content("Error uploading tracking numbers", str(e))
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -57,10 +32,7 @@ if __name__ == "__main__":
 
     tracking_retriever = TrackingRetriever(CONFIG, DRIVER_CREATOR)
     groups_dict = tracking_retriever.get_trackings()
-
-    email_content = create_email_content(groups_dict)
-    send_email("Amazon Tracking Numbers " + TODAY, email_content)
-
-    upload_numbers(groups_dict)
-
+    email_sender = EmailSender(EMAIL_CONFIG)
+    email_sender.send_email(groups_dict)
+    upload_numbers(email_sender, groups_dict)
 
