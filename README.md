@@ -2,6 +2,8 @@
 
 This is a set of Python scripts that uses Selenium to retrieve unread Amazon shipping notification emails, parse out the tracking number and other information from those emails, and (if configured) automatically upload those tracking numbers to Pointsmaker, MYS, or USA buying groups, as appropriate. Regardless of uploading, it will group the tracking numbers by buying group and email them to you, for your own verification, tracking, or to upload to other buying groups. 
 
+NOTE: for now I believe it only works with personal Amazon accounts
+
 ## Prerequisites
 
 - This will only work with one email account, and I've only tested with GMail
