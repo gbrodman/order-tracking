@@ -36,3 +36,14 @@ groups:
   home:
     keys:
       - 1234 Fake St
+
+# Uncomment this out and include a creds.json file if you wish to append 
+# tracking information to a sheet in Google Sheets. The sheet IDs should 
+# be tabs within the sheet.
+#googleSheets:
+#  baseSpreadsheetId:
+#  sheetIds:
+#    pointsmaker: PM
+#    mysbuyinggroup: MYS
+#    usa: USA
+#    bfmr: BFMR
