@@ -40,7 +40,7 @@ class TrackingRetriever:
         for group in self.config['groups'].keys():
             group_keys = self.config['groups'][group]['keys']
             for group_key in group_keys:
-                if group_key.upper() in raw_email:
+                if str(group_key).upper() in raw_email:
                     return group
         print(raw_email)
         raise Exception("Unknown buying group")
