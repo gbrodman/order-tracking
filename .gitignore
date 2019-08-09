@@ -1,5 +1,6 @@
 # Ignore the actual config file so as to not share the pw
 config.yml
+config.yml~
 
 __pycache__
 geckodriver.log
