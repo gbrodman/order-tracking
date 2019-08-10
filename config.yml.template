@@ -2,7 +2,6 @@ email:
   username: my_email@gmail.com
   # for Gmail, password should be an application-specific password
   password: 
-  amazonFolderName: Amazon
   imapUrl: imap.gmail.com
   smtpUrl: smtp.gmail.com
   smtpPort: 587

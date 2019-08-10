@@ -58,7 +58,7 @@ class TrackingRetriever:
         return match.group(1)
 
     def get_tracking(self, email_id):
-        mail = self.get_amazon_folder()
+        mail = self.get_all_mail_folder()
 
         result, data = mail.fetch(bytes(email_id, 'utf-8'), "(RFC822)")
         raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '')
@@ -85,15 +85,15 @@ class TrackingRetriever:
         time.sleep(3) # wait for page load because the timeouts can be buggy
         return driver
 
-    def get_amazon_folder(self,):
+    def get_all_mail_folder(self):
         mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
         mail.login(self.email_config['username'], self.email_config['password'])
-        mail.select(self.email_config['amazonFolderName'])
+        mail.select('"[Gmail]/All Mail"')
         return mail
 
     def get_email_ids(self):
-        mail = self.get_amazon_folder()
-        status, response = mail.search(None, '(UNSEEN)', '(SUBJECT "shipped")')
+        mail = self.get_all_mail_folder()
+        status, response = mail.search(None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")')
         email_ids = response[0].decode('utf-8')
 
         return email_ids.split()

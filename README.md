@@ -7,7 +7,6 @@ NOTE: for now I believe it only works with personal Amazon accounts
 ## Prerequisites
 
 - This will only work with one email account, and I've only tested with GMail
-- All Amazon emails must be in the same folder
 - All addresses must contain a key that uniquely identifies which buying group the address belongs to. For me, this is a variation on my group ID.
 - Auto-uploading only works with PM, MYS, and USA
 - One must be able to run a headless browser with Selenium, either Chrome or Firefox
