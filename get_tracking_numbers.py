@@ -14,10 +14,10 @@ def send_error_email(email_sender, subject):
     lines = [str(type), str(value)] + formatted_trace
     email_sender.send_email_content(subject, "\n".join(lines))
 
-def upload_numbers(email_sender, groups_dict):
+def upload_numbers(config, email_sender, groups_dict):
     for group, trackings in groups_dict.items():
         numbers = [tracking.tracking_number for tracking in trackings]
-        group_config = CONFIG['groups'][group]
+        group_config = config['groups'][group]
         if group_config.get('password'):
             try:
                 upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'], DRIVER_CREATOR)
@@ -45,4 +45,4 @@ if __name__ == "__main__":
         raise
 
     email_sender.send_email(groups_dict)
-    upload_numbers(email_sender, groups_dict)
+    upload_numbers(config, email_sender, groups_dict)
