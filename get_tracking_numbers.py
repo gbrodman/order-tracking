@@ -8,7 +8,7 @@ from driver_creator import DriverCreator
 
 CONFIG_FILE = "config.yml"
 
-def send_error_email(email_sender, subject, exception):
+def send_error_email(email_sender, subject):
     type, value, trace = sys.exc_info()
     formatted_trace = traceback.format_tb(trace)
     lines = [str(type), str(value)] + formatted_trace
@@ -21,9 +21,9 @@ def upload_numbers(email_sender, groups_dict):
         if group_config.get('password'):
             try:
                 upload_tracking_numbers.upload(numbers, group, group_config['username'], group_config['password'], DRIVER_CREATOR)
-            except Exception as e:
-                send_error_email(email_sender, "Error uploading tracking numbers", e)
-                raise e
+            except:
+                send_error_email(email_sender, "Error uploading tracking numbers")
+                raise
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -40,9 +40,9 @@ if __name__ == "__main__":
 
     try:
         groups_dict = tracking_retriever.get_trackings()
-    except Exception as e:
-        send_error_email(email_sender, "Error retrieving emails", e)
-        raise e
+    except:
+        send_error_email(email_sender, "Error retrieving emails")
+        raise
 
     email_sender.send_email(groups_dict)
     upload_numbers(email_sender, groups_dict)
