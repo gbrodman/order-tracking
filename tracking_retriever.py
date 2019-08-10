@@ -6,13 +6,14 @@ import time
 
 class Tracking:
 
-    def __init__(self, tracking_number, group, order_number):
+    def __init__(self, tracking_number, group, order_number, price):
         self.tracking_number = tracking_number
         self.group = group
         self.order_number = order_number
+        self.price = price
 
     def __str__(self):
-        return "number: %s, group: %s, order: %s" % (self.tracking_number, self.group, self.order_number)
+        return "number: %s, group: %s, order: %s, price: %s" % (self.tracking_number, self.group, self.order_number, self.price)
 
 class TrackingRetriever:
 
@@ -20,6 +21,7 @@ class TrackingRetriever:
     second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
 
     order_from_url_regex = r'.*orderId%3D([0-9\-]+)'
+    price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
 
     def __init__(self, config, driver_creator):
         self.config = config
@@ -48,25 +50,32 @@ class TrackingRetriever:
         raise Exception("Unknown buying group")
 
     def get_url_from_email(self, raw_email):
-        matches = re.match(self.first_regex, str(raw_email))
-        if not matches:
-            matches = re.match(self.second_regex, str(raw_email))
-        return matches.group(1)
+        match = re.match(self.first_regex, str(raw_email))
+        if not match:
+            match = re.match(self.second_regex, str(raw_email))
+        return match.group(1)
 
     def get_order_id_from_url(self, url):
         match = re.match(self.order_from_url_regex, url)
         return match.group(1)
 
+    def get_price_from_email(self, raw_email):
+        match = re.match(self.price_regex, raw_email)
+        if match:
+            return match.group(1)
+        return ''
+
     def get_tracking(self, email_id):
         mail = self.get_all_mail_folder()
 
         result, data = mail.fetch(bytes(email_id, 'utf-8'), "(RFC822)")
-        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '')
+        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '')
         url = self.get_url_from_email(raw_email)
+        price = self.get_price_from_email(raw_email)
         tracking_number = self.get_tracking_info(url)
         group = self.get_buying_group(raw_email)
         order_id = self.get_order_id_from_url(url)
-        return Tracking(tracking_number, group, order_id)
+        return Tracking(tracking_number, group, order_id, price)
 
     def get_tracking_info(self, amazon_url):
         driver = self.load_url(amazon_url)
