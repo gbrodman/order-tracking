@@ -8,13 +8,6 @@ from driver_creator import DriverCreator
 
 CONFIG_FILE = "config.yml"
 
-with open(CONFIG_FILE, 'r') as config_file_stream:
-    CONFIG = yaml.safe_load(config_file_stream)
-
-EMAIL_CONFIG = CONFIG['email']
-
-DRIVER_CREATOR = None
-
 def send_error_email(email_sender, subject, exception):
     type, value, trace = sys.exc_info()
     formatted_trace = traceback.format_tb(trace)
@@ -34,12 +27,17 @@ def upload_numbers(email_sender, groups_dict):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        DRIVER_CREATOR = DriverCreator(sys.argv[1].upper())
+        driver_creator = DriverCreator(sys.argv[1].upper())
     else:
-        DRIVER_CREATOR = DriverCreator("CHROME")
+        driver_creator = DriverCreator("CHROME")
 
-    email_sender = EmailSender(EMAIL_CONFIG)
-    tracking_retriever = TrackingRetriever(CONFIG, DRIVER_CREATOR)
+    with open(CONFIG_FILE, 'r') as config_file_stream:
+        config = yaml.safe_load(config_file_stream)
+    email_config = config['email']
+
+    email_sender = EmailSender(email_config)
+    tracking_retriever = TrackingRetriever(config, driver_creator)
+
     try:
         groups_dict = tracking_retriever.get_trackings()
     except Exception as e:
