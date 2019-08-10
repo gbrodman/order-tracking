@@ -28,10 +28,21 @@ class TrackingRetriever:
         self.email_config = config['email']
         self.driver_creator = driver_creator
 
+    # If we receive an exception, we should reset all the emails to be unread
+    def mark_as_unread(self, email_ids):
+        mail = self.get_all_mail_folder()
+        for email_id in email_ids:
+            mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
+
     def get_trackings(self):
         groups_dict = collections.defaultdict(list)
         email_ids = self.get_email_ids()
-        trackings = [self.get_tracking(email_id) for email_id in email_ids]
+        try:
+            trackings = [self.get_tracking(email_id) for email_id in email_ids]
+        except:
+            print("Error when parsing emails. Marking emails as unread.")
+            self.mark_as_unread(email_ids)
+            raise
 
         for tracking in trackings:
             groups_dict[tracking.group].append(tracking)
@@ -68,7 +79,7 @@ class TrackingRetriever:
     def get_tracking(self, email_id):
         mail = self.get_all_mail_folder()
 
-        result, data = mail.fetch(bytes(email_id, 'utf-8'), "(RFC822)")
+        result, data = mail.uid("FETCH", email_id, "(RFC822)")
         raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '')
         url = self.get_url_from_email(raw_email)
         price = self.get_price_from_email(raw_email)
@@ -102,7 +113,7 @@ class TrackingRetriever:
 
     def get_email_ids(self):
         mail = self.get_all_mail_folder()
-        status, response = mail.search(None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")')
+        status, response = mail.uid('SEARCH', None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")')
         email_ids = response[0].decode('utf-8')
 
         return email_ids.split()
