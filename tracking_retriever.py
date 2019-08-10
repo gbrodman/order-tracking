@@ -64,13 +64,18 @@ class TrackingRetriever:
         match = re.match(self.first_regex, str(raw_email))
         if not match:
             match = re.match(self.second_regex, str(raw_email))
-        return match.group(1)
+        if match: return match.group(1)
+        print(raw_email)
+        raise Exception("Could not get URL from email")
 
     def get_order_id_from_url(self, url):
         match = re.match(self.order_from_url_regex, url)
-        return match.group(1)
+        if match: return match.group(1)
+        print(raw_email)
+        raise Exception("Could not get order ID from email")
 
     def get_price_from_email(self, raw_email):
+        # Price isn't necessary, so if we can't find it don't raise an exception
         match = re.match(self.price_regex, raw_email)
         if match:
             return match.group(1)
@@ -96,6 +101,9 @@ class TrackingRetriever:
             match = re.match(regex, element.text)
             tracking_number = match.group(1)
             return tracking_number
+        except:
+            print("Couldn't get tracking ID from url %s" % amazon_url)
+            raise
         finally:
             driver.close()
 
