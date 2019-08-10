@@ -14,21 +14,21 @@ email:
 groups:
   mysbuyinggroup:
     # "keys" are unique strings that will appear in emails for a particular
-    # group. It'll probably be your buyer ID
+    # group. It'll probably be the address
     keys:
-      - MY_MYS_BUYER_ID
-      - SOMEOTHERKEY # E.g. shipping to a fake name
+      - 144 Quigley
     # username here is the website username (ditto password)
     username: my_email@example.com
     password: 
   pointsmaker:
     keys:
-      - MY_PM_BUYER_ID
+      - 118 Park
+      - 200 Bedford
     username: my_email@example.com
     password:
   usa:
     keys:
-      - MY_USA_BUYER_ID
+      - 325 Markus
     username: MY_USA_BUYER_ID
     password:
   bfmr:
