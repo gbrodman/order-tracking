@@ -32,12 +32,7 @@ def upload_mys_pm(numbers, site, username, password, driver_creator):
         load_page(driver, MANAGEMENT_URL_FORMAT % site)
         driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
         driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
-        result_text = driver.find_element_by_xpath(RESULT_SELECTOR).text
-        match = re.match(RESULT_REGEX, result_text)
-        num_records = int(match.group(1))
-
-        if num_records != len(numbers):
-            raise Exception("Expected to create %d records for group %s but created %d, tried to upload %s" % (len(numbers), site, num_records, str(numbers)))
+        time.sleep(1)
     finally:
         driver.close()
 
@@ -61,7 +56,6 @@ def upload_usa(numbers, username, password, driver_creator):
         time.sleep(1)
         driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
         time.sleep(3)
-        # TODO: raise errors if the tracking numbers already existed
     finally:
         driver.close()
 
