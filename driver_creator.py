@@ -2,7 +2,7 @@ from selenium import webdriver
 
 class DriverCreator:
 
-    def __init__(self, type = CHROME):
+    def __init__(self, type = "CHROME"):
         self.type = type
 
     def new(self):
