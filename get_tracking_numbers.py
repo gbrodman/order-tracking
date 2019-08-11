@@ -6,6 +6,7 @@ from email_sender import EmailSender
 from tracking_retriever import TrackingRetriever
 from driver_creator import DriverCreator
 from upload_tracking_numbers import Uploader
+from sheets_uploader import SheetsUploader
 
 CONFIG_FILE = "config.yml"
 
@@ -42,3 +43,11 @@ if __name__ == "__main__":
     except:
         send_error_email(email_sender, "Error uploading tracking numbers")
         raise
+
+    sheets_uploader = SheetsUploader(config)
+    try:
+        sheets_uploader.upload(groups_dict)
+    except:
+        send_error_email(email_sender, "Error uploading to Google Sheets")
+        raise
+

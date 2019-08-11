@@ -4,3 +4,6 @@ config.yml~
 
 __pycache__
 geckodriver.log
+
+# Google drive creds
+creds.json
