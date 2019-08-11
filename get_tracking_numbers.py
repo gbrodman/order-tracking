@@ -3,7 +3,7 @@ import sys
 import traceback
 import upload_tracking_numbers
 from email_sender import EmailSender
-from tracking_retriever import TrackingRetriever
+from amazon_tracking_retriever import AmazonTrackingRetriever
 from driver_creator import DriverCreator
 from upload_tracking_numbers import Uploader
 from sheets_uploader import SheetsUploader
@@ -25,12 +25,11 @@ if __name__ == "__main__":
     with open(CONFIG_FILE, 'r') as config_file_stream:
         config = yaml.safe_load(config_file_stream)
     email_config = config['email']
-
     email_sender = EmailSender(email_config)
-    tracking_retriever = TrackingRetriever(config, driver_creator)
 
+    amazon_tracking_retriever = AmazonTrackingRetriever(config, driver_creator)
     try:
-        groups_dict = tracking_retriever.get_trackings()
+        groups_dict = amazon_tracking_retriever.get_trackings()
     except:
         send_error_email(email_sender, "Error retrieving emails")
         raise
