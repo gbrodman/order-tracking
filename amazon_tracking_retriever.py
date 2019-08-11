@@ -10,7 +10,7 @@ class AmazonTrackingRetriever:
     first_regex = r'.*<a href="(http[^"]*ship-?track[^"]*)"'
     second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
 
-    order_from_url_regex = r'.*orderId%3D([0-9\-]+)'
+    order_from_url_regex = r'.*orderI[dD]%3D([0-9\-]+)'
     price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
 
     def __init__(self, config, driver_creator):
