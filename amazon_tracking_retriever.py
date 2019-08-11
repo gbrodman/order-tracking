@@ -7,7 +7,7 @@ from tracking import Tracking
 
 class AmazonTrackingRetriever:
 
-    first_regex = r'.*<a href="(http[^"]*ship[-]?track[^"]*)"'
+    first_regex = r'.*<a href="(http[^"]*ship-?track[^"]*)"'
     second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
 
     order_from_url_regex = r'.*orderId%3D([0-9\-]+)'
