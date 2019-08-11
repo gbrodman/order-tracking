@@ -6,7 +6,6 @@ This is a set of Python scripts that uses Selenium to retrieve unread Amazon shi
 
 - This will only work for one email account at a time
 - This will only work for GMail
-- This will only work for personal Amazon accounts (for now, see issue #8)
 - Auto-uploading only works for PM, MYS, and USA
 
 ## Prerequisites
