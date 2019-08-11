@@ -17,52 +17,66 @@ MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 
-def load_page(driver, url):
-    driver.get(url)
-    time.sleep(1)
+class Uploader:
 
-def upload_mys_pm(numbers, site, username, password, driver_creator):
-    driver = driver_creator.new()
-    try:
-        load_page(driver, BASE_URL_FORMAT % site)
-        driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
-        driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
-        driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
+    def __init__(self, config, driver_creator):
+        self.config = config
+        self.driver_creator = driver_creator
+
+    def upload(self, groups_dict):
+        for group, trackings in groups_dict.items():
+            numbers = [tracking.tracking_number for tracking in trackings]
+            group_config = self.config['groups'][group]
+            if group_config.get('password') and group_config.get('username'):
+                self._upload_to_group(numbers, group, group_config['username'], group_config['password'])
+
+    def _upload_to_group(self, numbers, group, username, password):
+        if group == "mysbuyinggroup" or group == "pointsmaker":
+            self._upload_mys_pm(numbers, group, username, password)
+        elif group == "usa":
+            self._upload_usa(numbers, username, password)
+        else:
+            raise Exception("Unknown group: " + group)
+
+    def _load_page(self, driver, url):
+        driver.get(url)
         time.sleep(1)
-        load_page(driver, MANAGEMENT_URL_FORMAT % site)
-        driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
-        driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
-        time.sleep(1)
-    finally:
-        driver.close()
 
-def upload_usa(numbers, username, password, driver_creator):
-    driver = driver_creator.new()
-    try:
-        load_page(driver, USA_LOGIN_URL)
-        driver.find_element_by_name("credentials").send_keys(username)
-        driver.find_element_by_name("password").send_keys(password)
-        # for some reason there's an invalid login button in either the first or second array spot (randomly)
-        for element in driver.find_elements_by_name("log-me-in"):
-            try:
-                element.click()
-            except:
-                pass
+    def _upload_mys_pm(self, numbers, group, username, password):
+        driver = self.driver_creator.new()
+        try:
+            self._load_page(driver, BASE_URL_FORMAT % group)
+            driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
+            driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
+            driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
+            time.sleep(1)
+            self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
+            driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
+            driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
+            time.sleep(1)
+        finally:
+            driver.close()
 
-        time.sleep(2)
-        load_page(driver, USA_TRACKING_URL)
-        driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
-        driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
-        time.sleep(1)
-        driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
-        time.sleep(3)
-    finally:
-        driver.close()
+    def _upload_usa(numbers, username, password):
+        driver = self.driver_creator.new()
+        try:
+            self._load_page(driver, USA_LOGIN_URL)
+            driver.find_element_by_name("credentials").send_keys(username)
+            driver.find_element_by_name("password").send_keys(password)
+            # for some reason there's an invalid login button in either the first or second array spot (randomly)
+            for element in driver.find_elements_by_name("log-me-in"):
+                try:
+                    element.click()
+                except:
+                    pass
 
-def upload(numbers, site, username, password, driver_creator):
-    if site == "mysbuyinggroup" or site == "pointsmaker":
-        upload_mys_pm(numbers, site, username, password, driver_creator)
-    elif site == "usa":
-        upload_usa(numbers, username, password, driver_creator)
-    else:
-        raise Exception("Unknown site " + site)
+            time.sleep(2)
+            self._load_page(driver, USA_TRACKING_URL)
+            driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
+            driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
+            time.sleep(1)
+            driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
+            time.sleep(3)
+        finally:
+            driver.close()
+
