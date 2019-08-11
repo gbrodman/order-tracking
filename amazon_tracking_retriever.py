@@ -7,7 +7,7 @@ from tracking import Tracking
 
 class AmazonTrackingRetriever:
 
-    first_regex = r'.*<a href="(http[^"]*ship-track[^"]*)"'
+    first_regex = r'.*<a href="(http[^"]*ship[-]?track[^"]*)"'
     second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
 
     order_from_url_regex = r'.*orderId%3D([0-9\-]+)'
@@ -75,7 +75,7 @@ class AmazonTrackingRetriever:
         mail = self.get_all_mail_folder()
 
         result, data = mail.uid("FETCH", email_id, "(RFC822)")
-        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '')
+        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '').replace('&amp;', '&')
         url = self.get_url_from_email(raw_email)
         price = self.get_price_from_email(raw_email)
         tracking_number = self.get_tracking_info(url)
