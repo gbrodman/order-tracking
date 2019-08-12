@@ -13,7 +13,7 @@ This is a set of Python scripts that uses Selenium to retrieve unread Amazon shi
 
 - All addresses must contain a key that uniquely identifies which buying group the address belongs to. The default is a part of the group's address.
 - One must be able to run a headless browser with Selenium, either Chrome or Firefox. Chromedriver or geckodriver (respectively) must be on the user's PATH.
-- Python3
+- Python3 and pip3 (these should come together)
 
 ## Instructions (basic)
 
