@@ -3,6 +3,7 @@ import collections
 import imaplib
 import urllib3
 import time
+import datetime
 from tracking import Tracking
 
 class AmazonTrackingRetriever:
@@ -110,8 +111,17 @@ class AmazonTrackingRetriever:
         return mail
 
     def get_email_ids(self):
+        date_to_search = self.get_date_to_search()
         mail = self.get_all_mail_folder()
-        status, response = mail.uid('SEARCH', None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")')
+        status, response = mail.uid('SEARCH', None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")', '(SINCE "%s")' % date_to_search)
         email_ids = response[0].decode('utf-8')
 
         return email_ids.split()
+
+    def get_date_to_search(self):
+        if "lookbackDays" in self.config:
+            lookback_days = int(self.config['lookbackDays'])
+        else:
+            lookback_days = 30
+        date = datetime.date.today() - datetime.timedelta(days = lookback_days)
+        return date.strftime("%d-%b-%Y")

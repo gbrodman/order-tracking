@@ -47,3 +47,7 @@ groups:
 #    mysbuyinggroup: MYS
 #    usa: USA
 #    bfmr: BFMR
+
+# Uncomment this if you wish to set the lookback that we use for email searching.
+# The default is 30 days in the past
+#lookbackDays: 30
