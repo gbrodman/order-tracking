@@ -28,6 +28,7 @@ class AmazonTrackingRetriever:
     def get_trackings(self):
         groups_dict = collections.defaultdict(list)
         email_ids = self.get_email_ids()
+        print("Found %d email IDs to inspect for tracking numbers" % len(email_ids))
         try:
             trackings = [self.get_tracking(email_id) for email_id in email_ids]
         except:

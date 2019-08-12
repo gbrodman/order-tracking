@@ -27,6 +27,7 @@ if __name__ == "__main__":
     email_config = config['email']
     email_sender = EmailSender(email_config)
 
+    print("Retrieving tracking numbers from email...")
     amazon_tracking_retriever = AmazonTrackingRetriever(config, driver_creator)
     try:
         groups_dict = amazon_tracking_retriever.get_trackings()
@@ -34,8 +35,11 @@ if __name__ == "__main__":
         send_error_email(email_sender, "Error retrieving emails")
         raise
 
+    total_trackings = sum([len(trackings) for trackings in groups_dict.values()])
+    print("Found %d total tracking numbers" % total_trackings)
     email_sender.send_email(groups_dict)
 
+    print("Uploading tracking numbers...")
     uploader = Uploader(config, driver_creator)
     try:
         uploader.upload(groups_dict)
@@ -43,10 +47,12 @@ if __name__ == "__main__":
         send_error_email(email_sender, "Error uploading tracking numbers")
         raise
 
+    print("Adding results to Google Sheets")
     sheets_uploader = SheetsUploader(config)
     try:
         sheets_uploader.upload(groups_dict)
     except:
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise
+    print("Done")
 
