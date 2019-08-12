@@ -49,5 +49,6 @@ groups:
 #    bfmr: BFMR
 
 # Uncomment this if you wish to set the lookback that we use for email searching.
-# The default is 30 days in the past
+# The default is 30 days in the past--if you change it to 2, it will only search
+# the past two days.
 #lookbackDays: 30
