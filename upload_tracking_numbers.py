@@ -57,7 +57,7 @@ class Uploader:
         finally:
             driver.close()
 
-    def _upload_usa(numbers, username, password):
+    def _upload_usa(self, numbers, username, password):
         driver = self.driver_creator.new()
         try:
             self._load_page(driver, USA_LOGIN_URL)
