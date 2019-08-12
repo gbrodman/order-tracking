@@ -30,7 +30,7 @@ This is a set of Python scripts that uses Selenium to retrieve unread Amazon shi
 
 If you wish to upload order number + tracking number to a Google Sheet, uncomment out the relevant section in the configuration, then create a credentials file ([see example here](https://www.makeuseof.com/tag/read-write-google-sheets-python/)). Note that the account key you create should be based on a non-UI cron-job type account (a service account key). Take the resulting credentials file and save it as `creds.json` in the same directory as the scripts. 
 
-Create the spreadsheet with one tab per buying group, add a header if you want (see below), then, include the base spreadsheet ID in the config, and the tab title per buying group. Make sure to give your service account (in the linked instructions) permissions to access the sheet.
+Create the spreadsheet with one tab per buying group, add a header if you want (see below), then, include the base spreadsheet ID in the config, and the tab title per buying group. Note: the base spreadsheet ID is the long-ish string of characters that appears after the "d/" in the Google Sheets URL. Make sure to give your service account (in the linked instructions) permissions to access the sheet.
 
 The script will append tracking number info to the end of the sheet. I'd recommend adding column headers yourself before running the script. Currently, the columns in order are:
 - Tracking number
