@@ -16,6 +16,7 @@ This is a set of Python scripts that uses Selenium to retrieve unread Amazon shi
 
 ## Instructions (basic)
 
+- Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
 - If you don't have it already, add either Chromedriver or Geckodriver to your PATH. The default is Chrome; download it from [here](https://sites.google.com/a/chromium.org/chromedriver/home) and add it to your PATH (this will vary based on operating system, search on Google for results particular to your system).
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
 - `pip3 install pyyaml selenium google-api-python-client google-auth-oauthlib`
