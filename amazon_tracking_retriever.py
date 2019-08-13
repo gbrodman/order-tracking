@@ -122,11 +122,10 @@ class AmazonTrackingRetriever:
           "//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([A-Z0-9]+)'
       match = re.match(regex, element.text)
+      if not match:
+        return None
       tracking_number = match.group(1)
       return tracking_number
-    except:
-      # swallow this and continue on
-      return None
     finally:
       driver.close()
 
