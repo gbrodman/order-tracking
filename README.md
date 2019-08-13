@@ -35,7 +35,8 @@ Create the spreadsheet with one tab per buying group, add a header if you want (
 The script will append tracking number info to the end of the sheet. I'd recommend adding column headers yourself before running the script. Currently, the columns in order are:
 - Tracking number
 - Order number
-- Cost in that shipment
+- Cost in that shipment (only available for personal Amazon accounts)
+- Email address to which the shipping notifcation was sent (NB: not necessarily the account you're reading the email with)
 
 An example (note that I added the header first):
 
