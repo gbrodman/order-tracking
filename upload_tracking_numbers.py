@@ -42,7 +42,7 @@ class Uploader:
 
   def _load_page(self, driver, url):
     driver.get(url)
-    time.sleep(1)
+    time.sleep(3)
 
   def _upload_mys_pm(self, numbers, group, username, password):
     driver = self.driver_creator.new()
