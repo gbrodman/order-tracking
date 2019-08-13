@@ -36,7 +36,7 @@ class SheetsUploader:
 
     def upload_trackings(self, group_sheet_id, trackings):
         trackings = self._find_new_trackings(group_sheet_id, trackings)
-        values = [[tracking.tracking_number, tracking.order_number, tracking.price] for tracking in trackings]
+        values = [[tracking.tracking_number, tracking.order_number, tracking.price, tracking.to_email] for tracking in trackings]
         body = {"values": values}
         self.service.spreadsheets().values().append(
             spreadsheetId=self.base_spreadsheet_id, 

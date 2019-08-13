@@ -4,6 +4,7 @@ import imaplib
 import urllib3
 import time
 import datetime
+import email
 from tracking import Tracking
 
 class AmazonTrackingRetriever:
@@ -28,7 +29,7 @@ class AmazonTrackingRetriever:
     def get_trackings(self):
         groups_dict = collections.defaultdict(list)
         email_ids = self.get_email_ids()
-        print("Found %d email IDs to inspect for tracking numbers" % len(email_ids))
+        print("Found %d unread Amazon shipping emails in the dates we searched" % len(email_ids))
         try:
             trackings = [self.get_tracking(email_id) for email_id in email_ids]
         except:
@@ -73,17 +74,22 @@ class AmazonTrackingRetriever:
             return match.group(1)
         return ''
 
+    def get_to_address(self, data):
+        msg = email.message_from_string(str(data[0][1], 'utf-8'))
+        return msg['To']
+
     def get_tracking(self, email_id):
         mail = self.get_all_mail_folder()
 
         result, data = mail.uid("FETCH", email_id, "(RFC822)")
         raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '').replace('&amp;', '&')
+        to_email = self.get_to_address(data)
         url = self.get_url_from_email(raw_email)
         price = self.get_price_from_email(raw_email)
         tracking_number = self.get_tracking_info(url)
         group = self.get_buying_group(raw_email)
         order_id = self.get_order_id_from_url(url)
-        return Tracking(tracking_number, group, order_id, price)
+        return Tracking(tracking_number, group, order_id, price, to_email)
 
     def get_tracking_info(self, amazon_url):
         driver = self.load_url(amazon_url)
