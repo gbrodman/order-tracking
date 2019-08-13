@@ -3,15 +3,16 @@ from google.oauth2 import service_account
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-class SheetsUploader:
 
+class SheetsUploader:
     def __init__(self, config):
         self.config = config
         if self.is_enabled():
             self.service = self.create_service()
 
     def create_service(self):
-        credentials = service_account.Credentials.from_service_account_file('creds.json', scopes=SCOPES)
+        credentials = service_account.Credentials.from_service_account_file(
+            'creds.json', scopes=SCOPES)
         return build('sheets', 'v4', credentials=credentials)
 
     def upload(self, groups_dict):
@@ -36,10 +37,13 @@ class SheetsUploader:
 
     def upload_trackings(self, group_sheet_id, trackings):
         trackings = self._find_new_trackings(group_sheet_id, trackings)
-        values = [[tracking.tracking_number, tracking.order_number, tracking.price, tracking.to_email] for tracking in trackings]
+        values = [[
+            tracking.tracking_number, tracking.order_number, tracking.price,
+            tracking.to_email
+        ] for tracking in trackings]
         body = {"values": values}
         self.service.spreadsheets().values().append(
-            spreadsheetId=self.base_spreadsheet_id, 
+            spreadsheetId=self.base_spreadsheet_id,
             range=group_sheet_id + "!A1:A1",
             valueInputOption="RAW",
             body=body).execute()
@@ -47,7 +51,11 @@ class SheetsUploader:
     def _find_new_trackings(self, group_sheet_id, trackings):
         range_name = group_sheet_id + "!A1:A"
         existing_values_result = self.service.spreadsheets().values().get(
-            spreadsheetId=self.base_spreadsheet_id, 
+            spreadsheetId=self.base_spreadsheet_id,
             range=range_name).execute()
-        existing_tracking_numbers = set([value[0] for value in existing_values_result['values']])
-        return [tracking for tracking in trackings if tracking.tracking_number not in existing_tracking_numbers]
+        existing_tracking_numbers = set(
+            [value[0] for value in existing_values_result['values']])
+        return [
+            tracking for tracking in trackings
+            if tracking.tracking_number not in existing_tracking_numbers
+        ]

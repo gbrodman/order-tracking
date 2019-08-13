@@ -10,11 +10,13 @@ from sheets_uploader import SheetsUploader
 
 CONFIG_FILE = "config.yml"
 
+
 def send_error_email(email_sender, subject):
     type, value, trace = sys.exc_info()
     formatted_trace = traceback.format_tb(trace)
     lines = [str(type), str(value)] + formatted_trace
     email_sender.send_email_content(subject, "\n".join(lines))
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -36,10 +38,13 @@ if __name__ == "__main__":
         raise
 
     if amazon_tracking_retriever.failed_email_ids:
-        print("Found %d emails without buying group labels and marked them as unread. Continuing..." % len(amazon_tracking_retriever.failed_email_ids))
+        print(
+            "Found %d emails without buying group labels and marked them as unread. Continuing..."
+            % len(amazon_tracking_retriever.failed_email_ids))
 
     try:
-        total_trackings = sum([len(trackings) for trackings in groups_dict.values()])
+        total_trackings = sum(
+            [len(trackings) for trackings in groups_dict.values()])
         print("Found %d total tracking numbers" % total_trackings)
         email_sender.send_email(groups_dict)
 
@@ -60,8 +65,9 @@ if __name__ == "__main__":
             raise
         print("Done")
     except:
-        print("Exception thrown after looking at the emails. Marking all relevant emails as unread to reset.")
+        print(
+            "Exception thrown after looking at the emails. Marking all relevant emails as unread to reset."
+        )
         amazon_tracking_retriever.back_out_of_all()
         print("Marked all as unread")
         raise
-

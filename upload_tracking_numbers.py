@@ -17,8 +17,8 @@ MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 
-class Uploader:
 
+class Uploader:
     def __init__(self, config, driver_creator):
         self.config = config
         self.driver_creator = driver_creator
@@ -28,7 +28,8 @@ class Uploader:
             numbers = [tracking.tracking_number for tracking in trackings]
             group_config = self.config['groups'][group]
             if group_config.get('password') and group_config.get('username'):
-                self._upload_to_group(numbers, group, group_config['username'], group_config['password'])
+                self._upload_to_group(numbers, group, group_config['username'],
+                                      group_config['password'])
 
     def _upload_to_group(self, numbers, group, username, password):
         if group == "mysbuyinggroup" or group == "pointsmaker":
@@ -47,11 +48,13 @@ class Uploader:
         try:
             self._load_page(driver, BASE_URL_FORMAT % group)
             driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
-            driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
+            driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(
+                password)
             driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
             time.sleep(1)
             self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
-            driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
+            driver.find_element_by_xpath("//textarea").send_keys(
+                '\n'.join(numbers))
             driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
             time.sleep(1)
         finally:
@@ -72,11 +75,13 @@ class Uploader:
 
             time.sleep(2)
             self._load_page(driver, USA_TRACKING_URL)
-            driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
-            driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
+            driver.find_element_by_xpath(
+                "//*[contains(text(), ' Add')]").click()
+            driver.find_element_by_xpath("//textarea").send_keys(
+                "\n".join(numbers))
             time.sleep(1)
-            driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
+            driver.find_element_by_xpath(
+                "//*[contains(text(), 'Submit')]").click()
             time.sleep(3)
         finally:
             driver.close()
-

@@ -7,6 +7,7 @@ import datetime
 import email
 from tracking import Tracking
 
+
 class AmazonTrackingRetriever:
 
     first_regex = r'.*<a href="(http[^"]*ship-?track[^"]*)"'
@@ -33,9 +34,13 @@ class AmazonTrackingRetriever:
     def get_trackings(self):
         groups_dict = collections.defaultdict(list)
         self.all_email_ids = self.get_email_ids()
-        print("Found %d unread Amazon shipping emails in the dates we searched" % len(self.all_email_ids))
+        print(
+            "Found %d unread Amazon shipping emails in the dates we searched" %
+            len(self.all_email_ids))
         try:
-            trackings = [self.get_tracking(email_id) for email_id in self.all_email_ids]
+            trackings = [
+                self.get_tracking(email_id) for email_id in self.all_email_ids
+            ]
             trackings = [tracking for tracking in trackings if tracking]
         except:
             print("Error when parsing emails. Marking emails as unread.")
@@ -86,7 +91,8 @@ class AmazonTrackingRetriever:
         mail = self.get_all_mail_folder()
 
         result, data = mail.uid("FETCH", email_id, "(RFC822)")
-        raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n', '').replace('\\r\\n', '').replace('&amp;', '&')
+        raw_email = str(data[0][1]).replace("=3D", "=").replace(
+            '=\\r\\n', '').replace('\\r\\n', '').replace('&amp;', '&')
         to_email = self.get_to_address(data)
         url = self.get_url_from_email(raw_email)
         price = self.get_price_from_email(raw_email)
@@ -104,7 +110,8 @@ class AmazonTrackingRetriever:
     def get_tracking_info(self, amazon_url):
         driver = self.load_url(amazon_url)
         try:
-            element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+            element = driver.find_element_by_xpath(
+                "//*[contains(text(), 'Tracking ID')]")
             regex = r'Tracking ID: ([A-Z0-9]+)'
             match = re.match(regex, element.text)
             tracking_number = match.group(1)
@@ -118,19 +125,23 @@ class AmazonTrackingRetriever:
     def load_url(self, url):
         driver = self.driver_creator.new()
         driver.get(url)
-        time.sleep(3) # wait for page load because the timeouts can be buggy
+        time.sleep(3)  # wait for page load because the timeouts can be buggy
         return driver
 
     def get_all_mail_folder(self):
         mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
-        mail.login(self.email_config['username'], self.email_config['password'])
+        mail.login(self.email_config['username'],
+                   self.email_config['password'])
         mail.select('"[Gmail]/All Mail"')
         return mail
 
     def get_email_ids(self):
         date_to_search = self.get_date_to_search()
         mail = self.get_all_mail_folder()
-        status, response = mail.uid('SEARCH', None, 'FROM "shipment-tracking@amazon.com"', '(UNSEEN)', '(SUBJECT "shipped")', '(SINCE "%s")' % date_to_search)
+        status, response = mail.uid('SEARCH', None,
+                                    'FROM "shipment-tracking@amazon.com"',
+                                    '(UNSEEN)', '(SUBJECT "shipped")',
+                                    '(SINCE "%s")' % date_to_search)
         email_ids = response[0].decode('utf-8')
 
         return email_ids.split()
@@ -140,7 +151,7 @@ class AmazonTrackingRetriever:
             lookback_days = int(self.config['lookbackDays'])
         else:
             lookback_days = 30
-        date = datetime.date.today() - datetime.timedelta(days = lookback_days)
+        date = datetime.date.today() - datetime.timedelta(days=lookback_days)
         string_date = date.strftime("%d-%b-%Y")
         print("Searching for emails since %s" % string_date)
         return string_date
