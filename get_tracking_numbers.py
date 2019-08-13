@@ -35,24 +35,33 @@ if __name__ == "__main__":
         send_error_email(email_sender, "Error retrieving emails")
         raise
 
-    total_trackings = sum([len(trackings) for trackings in groups_dict.values()])
-    print("Found %d total tracking numbers" % total_trackings)
-    email_sender.send_email(groups_dict)
+    if amazon_tracking_retriever.failed_email_ids:
+        print("Found %d emails without buying group labels and marked them as unread. Continuing..." % len(amazon_tracking_retriever.failed_email_ids))
 
-    print("Uploading tracking numbers...")
-    uploader = Uploader(config, driver_creator)
     try:
-        uploader.upload(groups_dict)
-    except:
-        send_error_email(email_sender, "Error uploading tracking numbers")
-        raise
+        total_trackings = sum([len(trackings) for trackings in groups_dict.values()])
+        print("Found %d total tracking numbers" % total_trackings)
+        email_sender.send_email(groups_dict)
 
-    print("Adding results to Google Sheets")
-    sheets_uploader = SheetsUploader(config)
-    try:
-        sheets_uploader.upload(groups_dict)
+        print("Uploading tracking numbers...")
+        uploader = Uploader(config, driver_creator)
+        try:
+            uploader.upload(groups_dict)
+        except:
+            send_error_email(email_sender, "Error uploading tracking numbers")
+            raise
+
+        print("Adding results to Google Sheets")
+        sheets_uploader = SheetsUploader(config)
+        try:
+            sheets_uploader.upload(groups_dict)
+        except:
+            send_error_email(email_sender, "Error uploading to Google Sheets")
+            raise
+        print("Done")
     except:
-        send_error_email(email_sender, "Error uploading to Google Sheets")
+        print("Exception thrown after looking at the emails. Marking all relevant emails as unread to reset.")
+        amazon_tracking_retriever.back_out_of_all()
+        print("Marked all as unread")
         raise
-    print("Done")
 

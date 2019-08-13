@@ -19,22 +19,27 @@ class AmazonTrackingRetriever:
         self.config = config
         self.email_config = config['email']
         self.driver_creator = driver_creator
+        self.failed_email_ids = []
 
     # If we receive an exception, we should reset all the emails to be unread
-    def mark_as_unread(self, email_ids):
+    def back_out_of_all(self):
+        for email_id in self.all_email_ids:
+            self.mark_as_unread(email_id)
+
+    def mark_as_unread(self, email_id):
         mail = self.get_all_mail_folder()
-        for email_id in email_ids:
-            mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
+        mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
     def get_trackings(self):
         groups_dict = collections.defaultdict(list)
-        email_ids = self.get_email_ids()
-        print("Found %d unread Amazon shipping emails in the dates we searched" % len(email_ids))
+        self.all_email_ids = self.get_email_ids()
+        print("Found %d unread Amazon shipping emails in the dates we searched" % len(self.all_email_ids))
         try:
-            trackings = [self.get_tracking(email_id) for email_id in email_ids]
+            trackings = [self.get_tracking(email_id) for email_id in self.all_email_ids]
+            trackings = [tracking for tracking in trackings if tracking is not None]
         except:
             print("Error when parsing emails. Marking emails as unread.")
-            self.mark_as_unread(email_ids)
+            self.back_out_of_all()
             raise
 
         for tracking in trackings:
@@ -50,8 +55,7 @@ class AmazonTrackingRetriever:
             for group_key in group_keys:
                 if str(group_key).upper() in raw_email:
                     return group
-        print(raw_email)
-        raise Exception("Unknown buying group")
+        return None
 
     def get_url_from_email(self, raw_email):
         match = re.match(self.first_regex, str(raw_email))
@@ -87,8 +91,14 @@ class AmazonTrackingRetriever:
         url = self.get_url_from_email(raw_email)
         price = self.get_price_from_email(raw_email)
         tracking_number = self.get_tracking_info(url)
-        group = self.get_buying_group(raw_email)
         order_id = self.get_order_id_from_url(url)
+        group = self.get_buying_group(raw_email)
+        if group == None:
+            self.failed_email_ids.append(email_id)
+            print("Could not find buying group for order ID %s" % order_id)
+            self.mark_as_unread(email_id)
+            return None
+
         return Tracking(tracking_number, group, order_id, price, to_email)
 
     def get_tracking_info(self, amazon_url):
