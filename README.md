@@ -30,7 +30,7 @@ The script will search for unread Amazon shipment notifications in your email in
 
 ## Google Sheets Integration
 
-If you wish to upload order number + tracking number to a Google Sheet, uncomment out the relevant section in the configuration, then create a credentials file ([see example here](https://www.makeuseof.com/tag/read-write-google-sheets-python/)). Note that the account key you create should be based on a non-UI cron-job type account (a service account key). Take the resulting credentials file and save it as `creds.json` in the same directory as the scripts. 
+If you wish to upload order number + tracking number to a Google Sheet, uncomment out the relevant section in the configuration, then create a credentials file ([see example here](https://www.makeuseof.com/tag/read-write-google-sheets-python/)). Note that the account key you create should be based on a non-UI cron-job type account (a service account key). Take the resulting credentials file and save it as `creds.json` in the same directory as the scripts. Also, [enable the Sheets API for your project](https://console.developers.google.com/apis/api/sheets.googleapis.com/overview).
 
 Create the spreadsheet with one tab per buying group, add a header if you want (see below), then, include the base spreadsheet ID in the config, and the tab title per buying group. Note: the base spreadsheet ID is the long-ish string of characters that appears after the "d/" in the Google Sheets URL. Make sure to give your service account (in the linked instructions) permissions to access the sheet.
 
