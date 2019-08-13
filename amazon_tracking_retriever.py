@@ -36,7 +36,7 @@ class AmazonTrackingRetriever:
         print("Found %d unread Amazon shipping emails in the dates we searched" % len(self.all_email_ids))
         try:
             trackings = [self.get_tracking(email_id) for email_id in self.all_email_ids]
-            trackings = [tracking for tracking in trackings if tracking is not None]
+            trackings = [tracking for tracking in trackings if tracking]
         except:
             print("Error when parsing emails. Marking emails as unread.")
             self.back_out_of_all()
@@ -141,4 +141,6 @@ class AmazonTrackingRetriever:
         else:
             lookback_days = 30
         date = datetime.date.today() - datetime.timedelta(days = lookback_days)
-        return date.strftime("%d-%b-%Y")
+        string_date = date.strftime("%d-%b-%Y")
+        print("Searching for emails since %s" % string_date)
+        return string_date
