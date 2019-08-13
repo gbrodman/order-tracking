@@ -99,6 +99,12 @@ class AmazonTrackingRetriever:
     url = self.get_url_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
     tracking_number = self.get_tracking_info(url)
+    if tracking_number == None:
+      self.failed_email_ids.append(email_id)
+      print("Could not find tracking number from URL %s" % url)
+      self.mark_as_unread(email_id)
+      return None
+
     order_id = self.get_order_id_from_url(url)
     group = self.get_buying_group(raw_email)
     if group == None:
@@ -119,8 +125,8 @@ class AmazonTrackingRetriever:
       tracking_number = match.group(1)
       return tracking_number
     except:
-      print("Couldn't get tracking ID from url %s" % amazon_url)
-      raise
+      # swallow this and continue on
+      return None
     finally:
       driver.close()
 
