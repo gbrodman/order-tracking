@@ -17,6 +17,7 @@ MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 
+MAX_UPLOAD_ATTEMPTS = 10
 
 class Uploader:
 
@@ -33,12 +34,17 @@ class Uploader:
                               group_config['password'])
 
   def _upload_to_group(self, numbers, group, username, password):
-    if group == "mysbuyinggroup" or group == "pointsmaker":
-      self._upload_mys_pm(numbers, group, username, password)
-    elif group == "usa":
-      self._upload_usa(numbers, username, password)
-    else:
-      raise Exception("Unknown group: " + group)
+    for attempt in range(MAX_UPLOAD_ATTEMPTS):
+      try:     
+        if group == "mysbuyinggroup" or group == "pointsmaker":
+          return self._upload_mys_pm(numbers, group, username, password)
+        elif group == "usa":
+          return self._upload_usa(numbers, username, password)
+        else:
+          raise Exception("Unknown group: " + group)
+      except Exception as e:
+        print("Received exception when uploading: " + str(e))
+    raise
 
   def _load_page(self, driver, url):
     driver.get(url)
