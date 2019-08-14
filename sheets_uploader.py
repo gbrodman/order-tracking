@@ -1,4 +1,5 @@
 import googleapiclient.errors
+import re
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
@@ -50,7 +51,7 @@ class SheetsUploader:
     self.service.spreadsheets().values().append(
         spreadsheetId=self.base_spreadsheet_id,
         range=group_sheet_id + "!A1:A1",
-        valueInputOption="RAW",
+        valueInputOption="USER_ENTERED",
         body=body).execute()
 
   def _find_new_trackings(self, group_sheet_id, trackings):
@@ -73,9 +74,29 @@ class SheetsUploader:
         if tracking.tracking_number not in existing_tracking_numbers
     ]
 
+  def _create_hyperlink(self, tracking):
+    link = self._get_tracking_url(tracking)
+    if link == None:
+      return tracking.tracking_number
+    return '=HYPERLINK("%s", "%s")' % (link, tracking.tracking_number)
+
+  def _get_tracking_url(self, tracking):
+    number = tracking.tracking_number
+    if number.startswith("TBA"):  # Amazon
+      return tracking.url
+    elif number.startswith("1Z"):  # UPS
+      return "https://www.ups.com/track?loc=en_US&tracknum=%s" % number
+    elif len(number) == 12 or len(number) == 15:  # FedEx
+      return "https://www.fedex.com/apps/fedextrack/?tracknumbers=%s" % number
+    elif len(number) == 22:  # USPS
+      return "https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=%s" % number
+    else:
+      print("Unknown tracking number type: %s" % number)
+      return None
+
   def _create_row_data(self, tracking):
     return [
-        tracking.tracking_number, tracking.order_ids, tracking.price,
+        self._create_hyperlink(tracking), tracking.order_ids, tracking.price,
         tracking.to_email
     ]
 
