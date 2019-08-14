@@ -18,7 +18,7 @@ class EmailSender:
     content = "Tracking number / order number(s) per group:\n\n"
     for group, trackings in groups_dict.items():
       numbers = [
-          tracking.tracking_number + " / " + tracking.order_ids
+          tracking.tracking_number + " / " + ", ".join(tracking.order_ids)
           for tracking in trackings
       ]
       content += group

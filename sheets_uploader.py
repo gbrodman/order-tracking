@@ -96,8 +96,8 @@ class SheetsUploader:
 
   def _create_row_data(self, tracking):
     return [
-        self._create_hyperlink(tracking), tracking.order_ids, tracking.price,
-        tracking.to_email
+        self._create_hyperlink(tracking), ", ".join(tracking.order_ids),
+        tracking.price, tracking.to_email
     ]
 
   def _write_header(self, group_sheet_id):

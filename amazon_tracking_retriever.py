@@ -109,8 +109,7 @@ class AmazonTrackingRetriever:
       self.mark_as_unread(email_id)
       return None
 
-    return Tracking(tracking_number, group, str(order_ids), price, to_email,
-                    url)
+    return Tracking(tracking_number, group, order_ids, price, to_email, url)
 
   def get_tracking_info(self, amazon_url):
     driver = self.load_url(amazon_url)
