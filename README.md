@@ -32,18 +32,18 @@ The script will search for unread Amazon shipment notifications in your email in
 - `--no-headless` to run in a standard browser, rather than a headless browser. This is useful if you want to see what the Selenium browser automation is actually doing.
 - `--firefox` to run using Firefox/Geckodriver rather than Chrome
 
-## Google Sheets Integration
+## Google Sheets Integration (optional)
 
 If you wish to upload order number + tracking number to a Google Sheet, uncomment out the relevant section in the configuration, then create a credentials file ([see example here](https://www.makeuseof.com/tag/read-write-google-sheets-python/)). Note that the account key you create should be based on a non-UI cron-job type account (a service account key). Take the resulting credentials file and save it as `creds.json` in the same directory as the scripts. Also, [enable the Sheets API for your project](https://console.developers.google.com/apis/api/sheets.googleapis.com/overview).
 
-Create the spreadsheet with one tab per buying group, add a header if you want (see below), then, include the base spreadsheet ID in the config, and the tab title per buying group. Note: the base spreadsheet ID is the long-ish string of characters that appears after the "d/" in the Google Sheets URL. Make sure to give your service account (in the linked instructions) permissions to access the sheet.
+Create the spreadsheet, then include the base spreadsheet ID in the config, and the desired tab title per buying group. Note: the base spreadsheet ID is the long-ish string of characters that appears after the "d/" in the Google Sheets URL. Make sure to give your service account (in the linked instructions) permissions to access the sheet.
 
-The script will append tracking number info to the end of the sheet. I'd recommend adding column headers yourself before running the script. Currently, the columns in order are:
+The script will create the tab and header if they don't exist, then append tracking number info to the end of the sheet. Currently, the columns in order are:
 - Tracking number
 - Order number
 - Cost in that shipment (only available for personal Amazon accounts)
 - Email address to which the shipping notifcation was sent (NB: not necessarily the account you're reading the email with)
 
-An example (note that I added the header first):
+An example:
 
 ![spreadsheet-example](https://lh3.googleusercontent.com/kbDeqdo3nWcuQkUAAViQ3nGhw_0GeuyJ9M6bcTS8vE69lx0CSqEcm4OJLe3raPnUhiEtp8REZdNXSQuBVp7PLOXOf5K9GgUJ-NiQR5vdEpisT8z7c4zJCGRLZsf6fId4ZBJTOiDY-Xo58bmUA_oQdUdWp9EKCCj_619rKHjcm9rihupEDDx2KClV7PxYlO2Ge4D0jmTJ79zK0ZGJgX7ZbjmCVPMbWoOe1lJ4dpjN5erMDh1obhW8SqUjCiq8Rp72leACDC74WjawWSEyQH0gaewcD2ipglPRWokT678WDc3X62G_sebRg3_TFVRCFZ9RXWFWbvfoegjd_Noam-65RciQmoWy1NX5LG_wMi-FoZCZE9P2YyPvtWM-XbYdmDUDLkBZmx0BteqGG-grMIRfBvnUaBKuuXhwIpK_B_OCMNb9jJ4m2uzLdfoFlZDERJqiQnlPbFbzhWd6tMrxmeWPW1JluWKHXpiNkihkTsnKjqpWzCv8Lesl45P0p3_1um59p8YvxP1C0LUrSMjO0ZUYwgVLIplmPTzoRneCT7Tei6BoDPkaR110VUmnhJnORr81XcB9qL0HDxLTOf1Np5s5KmMkCnilqoa6lG7EQR8NK6kMlue__9veJQJYyouFzg4w6dQuariFDEUBDnwHtYAoITGLxcVk7MemAp0hKCyQQRT4C1wvSO-GuJftYUdxqJAJkSFuBi0pKAfyqqt_BOpP0JYL6g=w454-h766-no)
