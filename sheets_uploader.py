@@ -1,3 +1,4 @@
+import googleapiclient.errors
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
@@ -44,10 +45,7 @@ class SheetsUploader:
 
   def upload_trackings(self, group_sheet_id, trackings):
     trackings = self._find_new_trackings(group_sheet_id, trackings)
-    values = [[
-        tracking.tracking_number, tracking.order_number, tracking.price,
-        tracking.to_email
-    ] for tracking in trackings]
+    values = [self._create_row_data(tracking) for tracking in trackings]
     body = {"values": values}
     self.service.spreadsheets().values().append(
         spreadsheetId=self.base_spreadsheet_id,
@@ -57,12 +55,51 @@ class SheetsUploader:
 
   def _find_new_trackings(self, group_sheet_id, trackings):
     range_name = group_sheet_id + "!A1:A"
-    existing_values_result = self.service.spreadsheets().values().get(
-        spreadsheetId=self.base_spreadsheet_id, range=range_name).execute()
-    if 'values' not in existing_values_result: return trackings
+    try:
+      existing_values_result = self.service.spreadsheets().values().get(
+          spreadsheetId=self.base_spreadsheet_id, range=range_name).execute()
+    except googleapiclient.errors.HttpError:
+      # sheet probably doesn't exist
+      self._create_sheet(group_sheet_id)
+      existing_values_result = self.service.spreadsheets().values().get(
+          spreadsheetId=self.base_spreadsheet_id, range=range_name).execute()
+
+    if 'values' not in existing_values_result:
+      return trackings
     existing_tracking_numbers = set(
         [value[0] for value in existing_values_result['values']])
     return [
         tracking for tracking in trackings
         if tracking.tracking_number not in existing_tracking_numbers
     ]
+
+  def _create_row_data(self, tracking):
+    return [
+        tracking.tracking_number, tracking.order_number, tracking.price,
+        tracking.to_email
+    ]
+
+  def _write_header(self, group_sheet_id):
+    header = ["Tracking Number", "Order Number(s)", "Price", "To Email"]
+    values = [header]
+    body = {"values": values}
+    self.service.spreadsheets().values().append(
+        spreadsheetId=self.base_spreadsheet_id,
+        range=group_sheet_id + "!A1:A1",
+        valueInputOption="RAW",
+        body=body).execute()
+
+  def _create_sheet(self, group_sheet_id):
+    batch_update_body = {
+        'requests': [{
+            'addSheet': {
+                'properties': {
+                    'title': group_sheet_id
+                }
+            }
+        }]
+    }
+    self.service.spreadsheets().batchUpdate(
+        spreadsheetId=self.base_spreadsheet_id,
+        body=batch_update_body).execute()
+    self._write_header(group_sheet_id)

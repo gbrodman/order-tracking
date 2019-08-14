@@ -19,6 +19,7 @@ USA_TRACKING_URL = "https://usabuying.group/trackings"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
+
 class Uploader:
 
   def __init__(self, config, driver_creator):
@@ -35,7 +36,7 @@ class Uploader:
 
   def _upload_to_group(self, numbers, group, username, password):
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
-      try:     
+      try:
         if group == "mysbuyinggroup" or group == "pointsmaker":
           return self._upload_mys_pm(numbers, group, username, password)
         elif group == "usa":
