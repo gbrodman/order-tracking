@@ -12,9 +12,8 @@ class AmazonTrackingRetriever:
 
   first_regex = r'.*<a href="(http[^"]*ship-?track[^"]*)"'
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
-
-  order_from_url_regex = r'.*orderI[dD]%3D([0-9\-]+)'
   price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
+  order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
 
   def __init__(self, config, driver_creator):
     self.config = config
@@ -70,12 +69,9 @@ class AmazonTrackingRetriever:
     print(raw_email)
     raise Exception("Could not get URL from email")
 
-  def get_order_id_from_url(self, url):
-    match = re.match(self.order_from_url_regex, url)
-    if match:
-      return match.group(1)
-    print(raw_email)
-    raise Exception("Could not get order ID from email")
+  def get_order_ids_from_email(self, raw_email):
+    matches = re.findall(self.order_ids_regex, raw_email)
+    return list(set(matches))
 
   def get_price_from_email(self, raw_email):
     # Price isn't necessary, so if we can't find it don't raise an exception
@@ -105,15 +101,15 @@ class AmazonTrackingRetriever:
       self.mark_as_unread(email_id)
       return None
 
-    order_id = self.get_order_id_from_url(url)
+    order_ids = self.get_order_ids_from_email(raw_email)
     group = self.get_buying_group(raw_email)
     if group == None:
       self.failed_email_ids.append(email_id)
-      print("Could not find buying group for order ID %s" % order_id)
+      print("Could not find buying group for order ID %s" % order_ids)
       self.mark_as_unread(email_id)
       return None
 
-    return Tracking(tracking_number, group, order_id, price, to_email)
+    return Tracking(tracking_number, group, str(order_ids), price, to_email)
 
   def get_tracking_info(self, amazon_url):
     driver = self.load_url(amazon_url)

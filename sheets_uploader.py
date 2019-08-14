@@ -75,7 +75,7 @@ class SheetsUploader:
 
   def _create_row_data(self, tracking):
     return [
-        tracking.tracking_number, tracking.order_number, tracking.price,
+        tracking.tracking_number, tracking.order_ids, tracking.price,
         tracking.to_email
     ]
 

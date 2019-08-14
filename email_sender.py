@@ -15,13 +15,15 @@ class EmailSender:
     self.send_email_content("Amazon Tracking Numbers " + TODAY, email_content)
 
   def create_email_content(self, groups_dict):
-    content = "Tracking numbers per group:\n\n"
+    content = "Tracking number / order number(s) per group:\n\n"
     for group, trackings in groups_dict.items():
-      numbers = [tracking.tracking_number for tracking in trackings]
+      numbers = [tracking.tracking_number + " / " + tracking.order_ids for tracking in trackings]
       content += group
       content += '\n'
       content += '\n'.join(numbers)
       content += '\n\n'
+
+    content += "These are tracking numbers we found based on unread emails. Some may have been found in the past."
     return content
 
   def send_email_content(self, subject, content):
