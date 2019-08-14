@@ -3,8 +3,17 @@ from selenium import webdriver
 
 class DriverCreator:
 
-  def __init__(self, type="CHROME"):
-    self.type = type
+  def __init__(self, args):
+    args = [str(arg).upper() for arg in args]
+    if "--FIREFOX" in args:
+      self.type = "FIREFOX"
+    else:
+      self.type = "CHROME"
+
+    if "--NO-HEADLESS" in args:
+      self.headless = False
+    else:
+      self.headless = True
 
   def new(self):
     if self.type == "CHROME":
@@ -15,7 +24,7 @@ class DriverCreator:
 
   def _new_chrome_driver(self):
     options = webdriver.chrome.options.Options()
-    options.headless = True
+    options.headless = self.headless
     driver = webdriver.Chrome(options=options)
     driver.implicitly_wait(10)
     driver.set_page_load_timeout(10)
@@ -25,7 +34,7 @@ class DriverCreator:
     profile = webdriver.FirefoxProfile()
     profile.native_events_enabled = False
     options = webdriver.firefox.options.Options()
-    options.headless = True
+    options.headless = self.headless
     driver = webdriver.Firefox(profile, options=options)
     driver.set_page_load_timeout(60)
     return driver

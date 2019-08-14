@@ -26,7 +26,11 @@ The script will search for unread Amazon shipment notifications in your email in
 - In config.yml, fill in the values for your email, password, and buying group info. For GMail, you should use an application-specific password. 
 - If you wish to use auto-upload, fill in your username/password for PM, MYS, USA buying groups 
 - Run `python3 get_tracking_numbers.py` 
-  - Optional argument of "chrome" or "firefox" to tell the script which browser to use. Default is Chrome.
+
+### Arguments
+
+- `--no-headless` to run in a standard browser, rather than a headless browser. This is useful if you want to see what the Selenium browser automation is actually doing.
+- `--firefox` to run using Firefox/Geckodriver rather than Chrome
 
 ## Google Sheets Integration
 

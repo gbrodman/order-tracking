@@ -19,10 +19,7 @@ def send_error_email(email_sender, subject):
 
 
 if __name__ == "__main__":
-  if len(sys.argv) > 1:
-    driver_creator = DriverCreator(sys.argv[1].upper())
-  else:
-    driver_creator = DriverCreator("CHROME")
+  driver_creator = DriverCreator(sys.argv)
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
