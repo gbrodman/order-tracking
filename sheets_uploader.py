@@ -65,8 +65,11 @@ class SheetsUploader:
       existing_values_result = self.service.spreadsheets().values().get(
           spreadsheetId=self.base_spreadsheet_id, range=range_name).execute()
 
-    if 'values' not in existing_values_result:
+    if 'values' not in existing_values_result or len(
+        existing_values_result['values']) == 0:
+      self._write_header(group_sheet_id)
       return trackings
+
     existing_tracking_numbers = set(
         [value[0] for value in existing_values_result['values']])
     return [
