@@ -16,6 +16,9 @@ class TrackingOutput:
     self.write_merged(merged_trackings)
 
   def write_merged(self, merged_trackings):
+    if not os.path.exists(OUTPUT_FOLDER):
+      os.mkdir(OUTPUT_FOLDER)
+
     with open(TRACKINGS_FILE, 'wb') as output:
       pickle.dump(merged_trackings, output)
 
@@ -34,7 +37,7 @@ class TrackingOutput:
     return old_trackings
 
   def get_old_trackings(self):
-    if not os.path.isfile(TRACKINGS_FILE):
+    if not os.path.exists(TRACKINGS_FILE):
       return {}
 
     with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
