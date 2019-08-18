@@ -5,6 +5,7 @@ import upload_tracking_numbers
 from email_sender import EmailSender
 from amazon_tracking_retriever import AmazonTrackingRetriever
 from driver_creator import DriverCreator
+from output import TrackingOutput
 from upload_tracking_numbers import Uploader
 from sheets_uploader import SheetsUploader
 
@@ -60,6 +61,15 @@ if __name__ == "__main__":
     except:
       send_error_email(email_sender, "Error uploading to Google Sheets")
       raise
+
+    print("Writing results to file")
+    tracking_output = TrackingOutput(groups_dict)
+    try:
+      tracking_output.save_trackings()
+    except:
+      send_error_email(email_sender, "Error writing output file")
+      raise
+
     print("Done")
   except:
     print(
