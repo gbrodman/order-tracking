@@ -7,12 +7,9 @@ TRACKINGS_FILE = OUTPUT_FOLDER + "/trackings.pickle"
 
 class TrackingOutput:
 
-  def __init__(self, trackings):
-    self.trackings = trackings
-
-  def save_trackings(self):
-    old_trackings = self.get_old_trackings()
-    merged_trackings = self.merge_trackings(old_trackings)
+  def save_trackings(self, trackings):
+    old_trackings = self.get_existing_trackings()
+    merged_trackings = self.merge_trackings(old_trackings, trackings)
     self.write_merged(merged_trackings)
 
   def write_merged(self, merged_trackings):
@@ -22,8 +19,8 @@ class TrackingOutput:
     with open(TRACKINGS_FILE, 'wb') as output:
       pickle.dump(merged_trackings, output)
 
-  def merge_trackings(self, old_trackings):
-    for group, group_trackings in self.trackings.items():
+  def merge_trackings(self, old_trackings, trackings):
+    for group, group_trackings in trackings.items():
       if group in old_trackings:
         old_group_trackings = old_trackings[group]
         old_tracking_numbers = set(
@@ -36,9 +33,13 @@ class TrackingOutput:
         old_trackings[group] = group_trackings
     return old_trackings
 
-  def get_old_trackings(self):
+  def get_existing_trackings(self):
     if not os.path.exists(TRACKINGS_FILE):
       return {}
 
     with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
       return pickle.load(tracking_file_stream)
+
+  def clear(self):
+    # self.write_merged([])
+    pass

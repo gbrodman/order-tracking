@@ -5,7 +5,7 @@ import upload_tracking_numbers
 from email_sender import EmailSender
 from amazon_tracking_retriever import AmazonTrackingRetriever
 from driver_creator import DriverCreator
-from output import TrackingOutput
+from tracking_output import TrackingOutput
 from upload_tracking_numbers import Uploader
 from sheets_uploader import SheetsUploader
 
@@ -63,9 +63,9 @@ if __name__ == "__main__":
       raise
 
     print("Writing results to file")
-    tracking_output = TrackingOutput(groups_dict)
+    tracking_output = TrackingOutput()
     try:
-      tracking_output.save_trackings()
+      tracking_output.save_trackings(groups_dict)
     except:
       send_error_email(email_sender, "Error writing output file")
       raise
