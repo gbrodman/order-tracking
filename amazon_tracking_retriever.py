@@ -116,7 +116,7 @@ class AmazonTrackingRetriever:
     try:
       element = driver.find_element_by_xpath(
           "//*[contains(text(), 'Tracking ID')]")
-      regex = r'Tracking ID: ([A-Z0-9]+)'
+      regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       tracking_number = match.group(1)
       return tracking_number
