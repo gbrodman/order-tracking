@@ -1,6 +1,8 @@
 import clusters
 from tracking_output import TrackingOutput
 
+CONFIG_FILE = "config.yml"
+
 
 def find_cluster(all_clusters, tracking):
   for cluster in all_clusters:
@@ -23,6 +25,9 @@ def update_clusters(all_clusters, trackings_dict):
 
 
 if __name__ == "__main__":
+  with open(CONFIG_FILE, 'r') as config_file_stream:
+    config = yaml.safe_load(config_file_stream)
+
   tracking_output = TrackingOutput()
   trackings_dict = tracking_output.get_existing_trackings()
 
