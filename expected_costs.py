@@ -45,7 +45,7 @@ class ExpectedCosts:
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
 
-    regex = r'\$(\d+\.\d{2})'
+    regex = r'Order Total: \$(\d+\.\d{2})'
     raw_email = str(data[0][1])
     order_total = max([float(cost) for cost in re.findall(regex, raw_email)])
     return order_total
