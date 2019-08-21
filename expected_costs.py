@@ -28,8 +28,9 @@ class ExpectedCosts:
       return pickle.load(stream)
 
   def get_expected_cost(self, order_id):
+    print("Getting cost for order_id %s" % order_id)
     if order_id not in self.costs_dict:
-      costs_dict[order_id] = self.load_order_total(order_id)
+      self.costs_dict[order_id] = self.load_order_total(order_id)
       self.flush()
     return self.costs_dict[order_id]
 
@@ -45,7 +46,8 @@ class ExpectedCosts:
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
 
-    regex = r'Order Total: \$(\d+\.\d{2})'
+    regex = r'Order Total: \$([\d,]+\.\d{2})'
     raw_email = str(data[0][1])
-    order_total = max([float(cost) for cost in re.findall(regex, raw_email)])
+    order_total = max(
+        [float(cost.replace(',', '')) for cost in re.findall(regex, raw_email)])
     return order_total

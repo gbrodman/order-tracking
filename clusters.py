@@ -11,6 +11,8 @@ class Cluster:
     self.orders = set()
     self.trackings = set()
     self.group = group
+    self.expected_cost = None
+    self.tracked_cost = None
 
   def __str__(self):
     return "orders: %s, trackings: %s, group: %s" % (str(

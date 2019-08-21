@@ -1,5 +1,7 @@
 import clusters
+import yaml
 from tracking_output import TrackingOutput
+from expected_costs import ExpectedCosts
 
 CONFIG_FILE = "config.yml"
 
@@ -24,6 +26,16 @@ def update_clusters(all_clusters, trackings_dict):
       cluster.trackings.add(tracking.tracking_number)
 
 
+def fill_expected_costs(all_clusters, config):
+  expected_costs = ExpectedCosts(config)
+  for cluster in all_clusters:
+    total_expected_cost = sum([
+        expected_costs.get_expected_cost(order_id)
+        for order_id in cluster.orders
+    ])
+    cluster.expected_cost = total_expected_cost
+
+
 if __name__ == "__main__":
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
@@ -33,5 +45,6 @@ if __name__ == "__main__":
 
   all_clusters = clusters.get_existing_clusters()
   update_clusters(all_clusters, trackings_dict)
+  fill_expected_costs(all_clusters, config)
   clusters.write_clusters(all_clusters)
   tracking_output.clear()
