@@ -39,6 +39,32 @@ def fill_expected_costs(all_clusters, config):
     cluster.expected_cost = total_expected_cost
 
 
+def get_tracked_costs_by_group(all_clusters, config, driver_creator):
+  groups = set()
+  for cluster in all_clusters:
+    groups.add(cluster.group)
+
+  tracked_costs_by_group = {}
+  for group in groups:
+    group_site_manager = GroupSiteManager(config, driver_creator)
+    tracked_costs_by_group[group] = group_site_manager.get_tracked_costs(group)
+
+  return tracked_costs_by_group
+
+
+def fill_tracked_costs(all_clusters, config, driver_creator):
+  tracked_costs_by_group = get_tracked_costs_by_group(all_clusters, config,
+                                                      driver_creator)
+  for cluster in all_clusters:
+    group = cluster.group
+    if group in tracked_costs_by_group:
+      tracked_cost = sum([
+          tracked_costs_by_group[group].get(tracking_number, 0.0)
+          for tracking_number in cluster.trackings
+      ])
+      cluster.tracked_cost = tracked_cost
+
+
 if __name__ == "__main__":
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
@@ -48,11 +74,13 @@ if __name__ == "__main__":
 
   all_clusters = clusters.get_existing_clusters()
   update_clusters(all_clusters, trackings_dict)
+
   fill_expected_costs(all_clusters, config)
   clusters.write_clusters(all_clusters)
   tracking_output.clear()
 
   driver_creator = DriverCreator(sys.argv)
-  group_site_manager = GroupSiteManager(config, driver_creator)
-  trackings_map = group_site_manager.get_tracked_costs('mysbuyinggroup')
-  print(trackings_map)
+  fill_tracked_costs(all_clusters, config, driver_creator)
+  for cluster in all_clusters:
+    if cluster.expected_cost > cluster.tracked_cost:
+      print(str(cluster))

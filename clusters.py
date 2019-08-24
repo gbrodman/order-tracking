@@ -11,8 +11,8 @@ class Cluster:
     self.orders = set()
     self.trackings = set()
     self.group = group
-    self.expected_cost = None
-    self.tracked_cost = None
+    self.expected_cost = 0
+    self.tracked_cost = 0
 
   def __str__(self):
     return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s" % (
@@ -34,3 +34,4 @@ def get_existing_clusters():
 
   with open(CLUSTERS_FILE, 'rb') as clusters_file_stream:
     return pickle.load(clusters_file_stream)
+

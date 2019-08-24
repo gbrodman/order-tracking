@@ -38,14 +38,21 @@ class GroupSiteManager:
 
   def get_tracked_costs(self, group):
     if group != "mysbuyinggroup" and group != "pointsmaker":
-      raise Exception("Can't find tracked costs for group %s" % group)
+      return {}
 
+    print("Loading group %s" % group)
     group_config = self.config['groups'][group]
     driver = self._login_mys_pm(group, group_config['username'],
                                 group_config['password'])
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
       tracking_to_cost_map = {}
+
+      # go to the first page (page selection can get a bit messed up with the multiple sites)
+      first_page_button = driver.find_element_by_xpath(
+          "//button[@ng-click='$pagination.first()']")
+      first_page_button.click()
+      time.sleep(3)
 
       while True:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
@@ -60,7 +67,7 @@ class GroupSiteManager:
             "//button[@ng-click='$pagination.next()']")
         if next_page_button.get_property("disabled") == False:
           next_page_button.click()
-          time.sleep(1)
+          time.sleep(3)
         else:
           break
 
