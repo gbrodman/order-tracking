@@ -15,8 +15,9 @@ class Cluster:
     self.tracked_cost = None
 
   def __str__(self):
-    return "orders: %s, trackings: %s, group: %s" % (str(
-        self.orders), str(self.trackings), self.group)
+    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s" % (
+        str(self.orders), str(self.trackings), self.group,
+        str(self.expected_cost), str(self.tracked_cost))
 
 
 def write_clusters(clusters):

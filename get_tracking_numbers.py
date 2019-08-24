@@ -1,12 +1,11 @@
 import yaml
 import sys
 import traceback
-import upload_tracking_numbers
 from email_sender import EmailSender
 from amazon_tracking_retriever import AmazonTrackingRetriever
 from driver_creator import DriverCreator
 from tracking_output import TrackingOutput
-from upload_tracking_numbers import Uploader
+from group_site_manager import GroupSiteManager
 from sheets_uploader import SheetsUploader
 
 CONFIG_FILE = "config.yml"
@@ -47,9 +46,9 @@ if __name__ == "__main__":
     email_sender.send_email(groups_dict)
 
     print("Uploading tracking numbers...")
-    uploader = Uploader(config, driver_creator)
+    group_site_manager = GroupSiteManager(config, driver_creator)
     try:
-      uploader.upload(groups_dict)
+      group_site_manager.upload(groups_dict)
     except:
       send_error_email(email_sender, "Error uploading tracking numbers")
       raise

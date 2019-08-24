@@ -1,7 +1,10 @@
 import clusters
 import yaml
+import sys
 from tracking_output import TrackingOutput
 from expected_costs import ExpectedCosts
+from group_site_manager import GroupSiteManager
+from driver_creator import DriverCreator
 
 CONFIG_FILE = "config.yml"
 
@@ -48,3 +51,8 @@ if __name__ == "__main__":
   fill_expected_costs(all_clusters, config)
   clusters.write_clusters(all_clusters)
   tracking_output.clear()
+
+  driver_creator = DriverCreator(sys.argv)
+  group_site_manager = GroupSiteManager(config, driver_creator)
+  trackings_map = group_site_manager.get_tracked_costs('mysbuyinggroup')
+  print(trackings_map)
