@@ -19,6 +19,8 @@ class TrackingOutput:
     with open(TRACKINGS_FILE, 'wb') as output:
       pickle.dump(merged_trackings, output)
 
+  # Adds each Tracking object to the appropriate group
+  # if there isn't already an entry for that tracking number
   def merge_trackings(self, old_trackings, trackings):
     for group, group_trackings in trackings.items():
       if group in old_trackings:

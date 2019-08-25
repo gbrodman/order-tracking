@@ -1,12 +1,14 @@
-import yaml
+import clusters
 import sys
 import traceback
-from email_sender import EmailSender
+import yaml
 from amazon_tracking_retriever import AmazonTrackingRetriever
 from driver_creator import DriverCreator
-from tracking_output import TrackingOutput
+from email_sender import EmailSender
+from expected_costs import ExpectedCosts
 from group_site_manager import GroupSiteManager
 from sheets_uploader import SheetsUploader
+from tracking_output import TrackingOutput
 
 CONFIG_FILE = "config.yml"
 
@@ -16,6 +18,16 @@ def send_error_email(email_sender, subject):
   formatted_trace = traceback.format_tb(trace)
   lines = [str(type), str(value)] + formatted_trace
   email_sender.send_email_content(subject, "\n".join(lines))
+
+
+def fill_expected_costs(all_clusters, config):
+  expected_costs = ExpectedCosts(config)
+  for cluster in all_clusters:
+    total_expected_cost = sum([
+        expected_costs.get_expected_cost(order_id)
+        for order_id in cluster.orders
+    ])
+    cluster.expected_cost = total_expected_cost
 
 
 if __name__ == "__main__":
@@ -67,6 +79,31 @@ if __name__ == "__main__":
       tracking_output.save_trackings(groups_dict)
     except:
       send_error_email(email_sender, "Error writing output file")
+      raise
+
+    print("Getting all tracking objects")
+    try:
+      trackings_dict = tracking_output.get_existing_trackings()
+    except:
+      send_error_email(email_sender,
+                       "Error retrieving tracking objects from file")
+      raise
+
+    print("Converting to Cluster objects")
+    try:
+      all_clusters = clusters.get_existing_clusters()
+      clusters.update_clusters(all_clusters, trackings_dict)
+    except:
+      send_error_email(email_sender, "Error converting to Cluster objects")
+      raise
+
+    print("Filling out expected costs and writing result to disk")
+    try:
+      fill_expected_costs(all_clusters, config)
+      clusters.write_clusters(all_clusters)
+    except:
+      send_error_email(email_sender,
+                       "Error filling expected costs + writing to disk")
       raise
 
     print("Done")
