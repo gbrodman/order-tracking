@@ -50,7 +50,7 @@ def get_existing_clusters():
 
 def find_cluster(all_clusters, tracking):
   for cluster in all_clusters:
-    if cluster.group == tracking.group and cluster.trackings.intersection(
+    if cluster.group == tracking.group and cluster.orders.intersection(
         set(tracking.order_ids)):
       return cluster
   return None
