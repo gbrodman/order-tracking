@@ -119,7 +119,7 @@ class AmazonTrackingRetriever:
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       tracking_number = match.group(1)
-      return tracking_number
+      return tracking_number.upper()
     except:
       # swallow this and continue on
       return None
