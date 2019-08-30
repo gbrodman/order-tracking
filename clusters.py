@@ -13,6 +13,7 @@ class Cluster:
     self.group = group
     self.expected_cost = 0
     self.tracked_cost = 0
+    self.last_ship_date = '0'
 
   def __str__(self):
     return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s" % (
@@ -66,3 +67,6 @@ def update_clusters(all_clusters, trackings_dict):
 
       cluster.orders.update(tracking.order_ids)
       cluster.trackings.add(tracking.tracking_number)
+
+      if hasattr(cluster, 'last_ship_date') and hasattr(tracking, 'ship_date'):
+        cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
