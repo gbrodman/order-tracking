@@ -8,15 +8,24 @@ CLUSTERS_FILE = OUTPUT_FOLDER + "/clusters.pickle"
 class Cluster:
 
   def __init__(self, group):
-    self.orders = set()
-    self.trackings = set()
+    self._initiate(set(), set(), group, 0, 0, '0')
+
+  def _initiate(self,
+                orders,
+                trackings,
+                group,
+                expected_cost,
+                tracked_cost,
+                last_ship_date='0'):
+    self.orders = orders
+    self.trackings = trackings
     self.group = group
-    self.expected_cost = 0
-    self.tracked_cost = 0
-    self.last_ship_date = '0'
+    self.expected_cost = expected_cost
+    self.tracked_cost = tracked_cost
+    self.last_ship_date = last_ship_date
 
   def __setstate__(self, state):
-    self.__init__(**state)
+    self._initiate(**state)
 
   def __str__(self):
     return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s" % (

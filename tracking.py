@@ -16,8 +16,8 @@ class Tracking:
     self.url = url
     self.ship_date = ship_date
 
-    def __setstate__(self, state):
-      self.__init__(**state)
+  def __setstate__(self, state):
+    self.__init__(**state)
 
   def __str__(self):
     return "number: %s, group: %s, order(s): %s, price: %s, to_email: %s, url: %s, ship_date: %s" % (
