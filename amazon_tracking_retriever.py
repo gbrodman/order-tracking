@@ -10,6 +10,7 @@ from tracking import Tracking
 
 TODAY = datetime.date.today().strftime("%Y-%m-%d")
 
+
 class AmazonTrackingRetriever:
 
   first_regex = r'.*<a href="(http[^"]*ship-?track[^"]*)"'
@@ -111,7 +112,8 @@ class AmazonTrackingRetriever:
       self.mark_as_unread(email_id)
       return None
 
-    return Tracking(tracking_number, group, order_ids, price, to_email, url, TODAY)
+    return Tracking(tracking_number, group, order_ids, price, to_email, url,
+                    TODAY)
 
   def get_tracking_info(self, amazon_url):
     driver = self.load_url(amazon_url)
