@@ -43,6 +43,14 @@ class Cluster:
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
     self.purchase_orders.update(other.purchase_orders)
 
+  def merge_with(self, other):
+    self.orders.update(other.orders)
+    self.trackings.update(other.trackings)
+    self.expected_cost += other.expected_cost
+    self.tracked_cost += other.tracked_cost
+    self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
+    self.purchase_orders.update(other.purchase_orders)
+
 
 def dedupe_clusters(clusters):
   result = []
