@@ -42,6 +42,7 @@ if __name__ == "__main__":
 
   driver_creator = DriverCreator(sys.argv)
   fill_tracked_costs(all_clusters, config, driver_creator)
+  all_clusters = clusters.merge_by_purchase_orders(all_clusters)
   for cluster in all_clusters:
     if cluster.expected_cost > cluster.tracked_cost:
       print(str(cluster))
