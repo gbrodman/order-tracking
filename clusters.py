@@ -30,9 +30,10 @@ class Cluster:
     self._initiate(**state)
 
   def __str__(self):
-    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s" % (
+    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s" % (
         str(self.orders), str(self.trackings), self.group,
-        str(self.expected_cost), str(self.tracked_cost))
+        str(self.expected_cost), str(
+            self.tracked_cost), self.last_ship_date, str(self.purchase_orders))
 
   def merge_with(self, other):
     self.orders.update(other.orders)
