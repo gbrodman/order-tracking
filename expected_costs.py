@@ -47,9 +47,18 @@ class ExpectedCosts:
       return 0.0
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
-
-    regex = r'Order Total: \$([\d,]+\.\d{2})'
     raw_email = str(data[0][1])
-    order_total = max(
-        [float(cost.replace(',', '')) for cost in re.findall(regex, raw_email)])
+
+    regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
+    regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
+
+    pretax_total = sum([
+        float(cost.replace(',', ''))
+        for cost in re.findall(regex_pretax, raw_email)
+    ])
+    tax = sum([
+        float(cost.replace(',', ''))
+        for cost in re.findall(regex_est_tax, raw_email)
+    ])
+    order_total = pretax_total + tax
     return order_total
