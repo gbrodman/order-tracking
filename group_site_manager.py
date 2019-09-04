@@ -200,7 +200,7 @@ class GroupSiteManager:
         if next_page_button:
           link = next_page_button[0].find_element_by_tag_name('a')
           link.click()
-          time.sleep(2)
+          time.sleep(4)
         else:
           break
 
