@@ -43,6 +43,8 @@ class ExpectedCosts:
                                      'FROM "auto-confirm@amazon.com"',
                                      'BODY "%s"' % order_id)
     email_id = search_result[0]
+    if not email_id:
+      return 0.0
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
 

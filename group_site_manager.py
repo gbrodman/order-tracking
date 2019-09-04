@@ -151,7 +151,6 @@ class GroupSiteManager:
     if group != 'usa':
       return {}
 
-    print("Getting purchase order numbers from USA")
     result = {}
     driver = self._login_usa()
     try:

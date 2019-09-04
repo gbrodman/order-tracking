@@ -36,14 +36,7 @@ class Cluster:
             self.tracked_cost), self.last_ship_date, str(self.purchase_orders))
 
   def merge_with(self, other):
-    self.orders.update(other.orders)
-    self.trackings.update(other.trackings)
-    self.expected_cost += other.expected_cost
-    self.tracked_cost += other.tracked_cost
-    self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
-    self.purchase_orders.update(other.purchase_orders)
-
-  def merge_with(self, other):
+    print("Merging cluster %s into cluster %s" % (str(other), str(self)))
     self.orders.update(other.orders)
     self.trackings.update(other.trackings)
     self.expected_cost += other.expected_cost
@@ -127,6 +120,8 @@ def find_by_purchase_orders(cluster, all_clusters):
 
   for candidate in all_clusters:
     if candidate.purchase_orders.intersection(cluster.purchase_orders):
+      print("Found candidate. Candidate's POs: %s, cluster's POs: %s" %
+            (str(candidate.purchase_orders), str(cluster.purchase_orders)))
       return candidate
 
   return None
