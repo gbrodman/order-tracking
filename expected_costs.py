@@ -30,7 +30,8 @@ class ExpectedCosts:
   def get_expected_cost(self, order_id):
     print("Getting cost for order_id %s" % order_id)
     if order_id not in self.costs_dict:
-      self.costs_dict[order_id] = self.load_order_total(order_id)
+      from_email = self.load_order_total(order_id)
+      self.costs_dict.update(from_email)
       self.flush()
     return self.costs_dict[order_id]
 
@@ -44,21 +45,29 @@ class ExpectedCosts:
                                      'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
-      return 0.0
+      return {order_id: 0.0}
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     raw_email = str(data[0][1])
 
     regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
     regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
+    regex_order = r'(\d{3}-\d{7}-\d{7})'
 
-    pretax_total = sum([
+    # Sometimes it's been split into multiple orders. Find totals for each
+    pretax_totals = [
         float(cost.replace(',', ''))
         for cost in re.findall(regex_pretax, raw_email)
-    ])
-    tax = sum([
+    ]
+    taxes = [
         float(cost.replace(',', ''))
         for cost in re.findall(regex_est_tax, raw_email)
-    ])
-    order_total = pretax_total + tax
-    return order_total
+    ]
+    orders_with_duplicates = re.findall(regex_order, raw_email)
+    orders = []
+    for order in orders_with_duplicates:
+      if order not in orders:
+        orders.append(order)
+
+    order_totals = [t[0] + t[1] for t in zip(pretax_totals, taxes)]
+    return dict(zip(orders, order_totals))
