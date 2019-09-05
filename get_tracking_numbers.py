@@ -55,31 +55,35 @@ if __name__ == "__main__":
     total_trackings = sum(
         [len(trackings) for trackings in groups_dict.values()])
     print("Found %d total tracking numbers" % total_trackings)
-    email_sender.send_email(groups_dict)
 
-    print("Uploading tracking numbers...")
-    group_site_manager = GroupSiteManager(config, driver_creator)
-    try:
-      group_site_manager.upload(groups_dict)
-    except:
-      send_error_email(email_sender, "Error uploading tracking numbers")
-      raise
+    # We only need to process and upload new tracking numbers if there are any;
+    # otherwise skip straight to processing existing locally stored data.
+    if total_trackings > 0:
+      email_sender.send_email(groups_dict)
 
-    print("Adding results to Google Sheets")
-    sheets_uploader = SheetsUploader(config)
-    try:
-      sheets_uploader.upload(groups_dict)
-    except:
-      send_error_email(email_sender, "Error uploading to Google Sheets")
-      raise
+      print("Uploading tracking numbers...")
+      group_site_manager = GroupSiteManager(config, driver_creator)
+      try:
+        group_site_manager.upload(groups_dict)
+      except:
+        send_error_email(email_sender, "Error uploading tracking numbers")
+        raise
 
-    print("Writing results to file")
-    tracking_output = TrackingOutput()
-    try:
-      tracking_output.save_trackings(groups_dict)
-    except:
-      send_error_email(email_sender, "Error writing output file")
-      raise
+      print("Adding results to Google Sheets")
+      sheets_uploader = SheetsUploader(config)
+      try:
+        sheets_uploader.upload(groups_dict)
+      except:
+        send_error_email(email_sender, "Error uploading to Google Sheets")
+        raise
+
+      print("Writing results to file")
+      tracking_output = TrackingOutput()
+      try:
+        tracking_output.save_trackings(groups_dict)
+      except:
+        send_error_email(email_sender, "Error writing output file")
+        raise
 
     print("Getting all tracking objects")
     try:
