@@ -77,13 +77,13 @@ if __name__ == "__main__":
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise
 
-      print("Writing results to file")
-      tracking_output = TrackingOutput()
-      try:
-        tracking_output.save_trackings(groups_dict)
-      except:
-        send_error_email(email_sender, "Error writing output file")
-        raise
+    print("Writing results to file")
+    tracking_output = TrackingOutput()
+    try:
+      tracking_output.save_trackings(groups_dict)
+    except:
+      send_error_email(email_sender, "Error writing output file")
+      raise
 
     print("Getting all tracking objects")
     try:

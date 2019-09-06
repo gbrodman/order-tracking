@@ -1,3 +1,14 @@
+import re
+
+
+def from_row(row):
+  if len(row) >= 5:
+    url = row[4]
+  else:
+    url = None
+  return Tracking(row[0], None, row[1].split(","), row[2], row[3], url)
+
+
 class Tracking:
 
   def __init__(self,
@@ -23,3 +34,35 @@ class Tracking:
     return "number: %s, group: %s, order(s): %s, price: %s, to_email: %s, url: %s, ship_date: %s" % (
         self.tracking_number, self.group, self.order_ids, self.price,
         self.to_email, self.url, self.ship_date)
+
+  def to_row(self):
+    hyperlink = self._create_hyperlink()
+    return [
+        hyperlink, ", ".join(self.order_ids), self.price, self.to_email,
+        self.url
+    ]
+
+  def get_header(self):
+    return [
+        "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL"
+    ]
+
+  def _create_hyperlink(self):
+    link = self._get_tracking_url()
+    if link == None:
+      return self.tracking_number
+    return '=HYPERLINK("%s", "%s")' % (link, self.tracking_number)
+
+  def _get_tracking_url(self):
+    if self.tracking_number.startswith("TBA"):  # Amazon
+      return self.url
+    elif self.tracking_number.startswith("1Z"):  # UPS
+      return "https://www.ups.com/track?loc=en_US&tracknum=%s" % self.tracking_number
+    elif len(self.tracking_number) == 12 or len(
+        self.tracking_number) == 15:  # FedEx
+      return "https://www.fedex.com/apps/fedextrack/?tracknumbers=%s" % self.tracking_number
+    elif len(self.tracking_number) == 22:  # USPS
+      return "https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=%s" % self.tracking_number
+    else:
+      print("Unknown tracking number type: %s" % self.tracking_number)
+      return None
