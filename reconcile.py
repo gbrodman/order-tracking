@@ -4,6 +4,7 @@ import sys
 from expected_costs import ExpectedCosts
 from group_site_manager import GroupSiteManager
 from driver_creator import DriverCreator
+from reconciliation_uploader import ReconciliationUploader
 
 CONFIG_FILE = "config.yml"
 
@@ -61,7 +62,6 @@ if __name__ == "__main__":
     config = yaml.safe_load(config_file_stream)
 
   all_clusters = clusters.get_existing_clusters()
-
   driver_creator = DriverCreator(sys.argv)
   fill_tracked_costs(all_clusters, config, driver_creator)
   fill_purchase_orders(all_clusters, config, driver_creator)
@@ -71,3 +71,6 @@ if __name__ == "__main__":
     if cluster.expected_cost > cluster.tracked_cost:
       print(str(cluster))
   clusters.write_clusters(all_clusters)
+  
+  reconciliation_uploader = ReconciliationUploader(config)
+  reconciliation_uploader.upload_clusters(all_clusters)

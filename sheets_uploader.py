@@ -1,5 +1,3 @@
-import googleapiclient.errors
-import re
 import sheets_service
 import tracking
 from objects_to_sheet import ObjectsToSheet

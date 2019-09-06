@@ -35,6 +35,18 @@ class Cluster:
         str(self.expected_cost), str(
             self.tracked_cost), self.last_ship_date, str(self.purchase_orders))
 
+  def get_header(self):
+    return [
+        "Orders", "Trackings", "Expected Cost", "Tracked Cost",
+        "Last Ship Date", "POs"
+    ]
+
+  def to_row(self):
+    return [
+        ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
+        self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders)
+    ]
+
   def merge_with(self, other):
     print("Merging cluster %s into cluster %s" % (str(other), str(self)))
     self.orders.update(other.orders)

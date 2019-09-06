@@ -52,3 +52,13 @@ groups:
 # The default is 30 days in the past--if you change it to 2, it will only search
 # the past two days.
 #lookbackDays: 30
+
+# The aforementioned creds.json file is necessary for reconciliation, as well
+# as a base spreadsheet ID
+reconciliation:
+  baseSpreadsheetId:
+  sheetIds:
+    pointsmaker: PM
+    mysbuyinggroup: MYS
+    usa: USA
+    bfmr: BFMR
