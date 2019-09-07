@@ -71,6 +71,6 @@ if __name__ == "__main__":
     if cluster.expected_cost > cluster.tracked_cost:
       print(str(cluster))
   clusters.write_clusters(all_clusters)
-  
+
   reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.upload_clusters(all_clusters)

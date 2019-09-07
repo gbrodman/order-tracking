@@ -30,7 +30,7 @@ class DriverCreator:
     driver.implicitly_wait(10)
     driver.set_page_load_timeout(10)
     return driver
-    
+
   def _new_firefox_driver(self):
     profile = webdriver.FirefoxProfile()
     profile.native_events_enabled = False
