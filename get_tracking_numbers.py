@@ -3,6 +3,7 @@ import sys
 import traceback
 import yaml
 from amazon_tracking_retriever import AmazonTrackingRetriever
+from bestbuy_tracking_retriever import BestBuyTrackingRetriever
 from driver_creator import DriverCreator
 from email_sender import EmailSender
 from expected_costs import ExpectedCosts
@@ -38,18 +39,36 @@ if __name__ == "__main__":
   email_config = config['email']
   email_sender = EmailSender(email_config)
 
-  print("Retrieving tracking numbers from email...")
+  print("Retrieving Amazon tracking numbers from email...")
   amazon_tracking_retriever = AmazonTrackingRetriever(config, driver_creator)
   try:
     groups_dict = amazon_tracking_retriever.get_trackings()
   except:
-    send_error_email(email_sender, "Error retrieving emails")
+    send_error_email(email_sender, "Error retrieving Amazon emails")
     raise
 
   if amazon_tracking_retriever.failed_email_ids:
     print(
-        "Found %d emails without buying group labels and marked them as unread. Continuing..."
+        "Found %d Amazon emails without buying group labels and marked them as unread. Continuing..."
         % len(amazon_tracking_retriever.failed_email_ids))
+
+  print("Retrieving Best Buy tracking numbers from email...")
+  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, driver_creator)
+  try:
+    bb_groups_dict = bestbuy_tracking_retriever.get_trackings()
+    for group, trackings in bb_groups_dict.items():
+      if group in groups_dict:
+        groups_dict[group].extend(trackings)
+      else:
+        groups_dict[group] = trackings
+  except:
+    send_error_email(email_sender, "Error retrieving BB emails")
+    raise
+
+  if bestbuy_tracking_retriever.failed_email_ids:
+    print(
+        "Found %d BB emails without buying group labels and marked them as unread. Continuing..."
+        % len(bestbuy_tracking_retriever.failed_email_ids))
 
   try:
     total_trackings = sum(
