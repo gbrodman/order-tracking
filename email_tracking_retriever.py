@@ -5,8 +5,6 @@ import email
 from abc import ABC, abstractmethod
 from tracking import Tracking
 
-TODAY = datetime.date.today().strftime("%Y-%m-%d")
-
 
 class EmailTrackingRetriever(ABC):
 
@@ -75,6 +73,12 @@ class EmailTrackingRetriever(ABC):
   def get_order_url_from_email(self, raw_email):
     pass
 
+  def get_date_from_msg(self, data):
+    msg = email.message_from_string(str(data[0][1], 'utf-8'))
+    msg_date = msg['Date']
+    return datetime.datetime.strptime(
+        msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+
   def get_to_address(self, data):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return msg['To'].replace('<', '').replace('>', '')
@@ -87,6 +91,7 @@ class EmailTrackingRetriever(ABC):
                                         "=").replace('=\\r\\n', '').replace(
                                             '\\r\\n', '').replace('&amp;', '&')
     to_email = self.get_to_address(data)
+    date = self.get_date_from_msg(data)
     url = self.get_order_url_from_email(raw_email)
     tracking_number = self.get_tracking_number_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
@@ -105,7 +110,7 @@ class EmailTrackingRetriever(ABC):
       return None
 
     return Tracking(tracking_number, group, order_ids, price, to_email, url,
-                    TODAY)
+                    date)
 
   def get_all_mail_folder(self):
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
