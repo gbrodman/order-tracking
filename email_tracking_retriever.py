@@ -77,7 +77,7 @@ class EmailTrackingRetriever(ABC):
 
   def get_to_address(self, data):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
-    return msg['To']
+    return msg['To'].replace('<', '').replace('>', '')
 
   def get_tracking(self, email_id):
     mail = self.get_all_mail_folder()
