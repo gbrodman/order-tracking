@@ -6,7 +6,12 @@ def from_row(row):
     url = row[4]
   else:
     url = None
-  return Tracking(row[0], None, row[1].split(","), row[2], row[3], url)
+  if len(row) >= 6:
+    ship_date = row[5]
+  else:
+    ship_date = '0'
+  return Tracking(row[0], None, row[1].split(","), row[2], row[3], url,
+                  ship_date)
 
 
 class Tracking:
@@ -39,12 +44,13 @@ class Tracking:
     hyperlink = self._create_hyperlink()
     return [
         hyperlink, ", ".join(self.order_ids), self.price, self.to_email,
-        self.url
+        self.url, self.ship_date
     ]
 
   def get_header(self):
     return [
-        "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL"
+        "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL",
+        "Ship Date"
     ]
 
   def _create_hyperlink(self):
