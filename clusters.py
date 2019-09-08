@@ -5,6 +5,22 @@ OUTPUT_FOLDER = "output"
 CLUSTERS_FILE = OUTPUT_FOLDER + "/clusters.pickle"
 
 
+def from_row(row):
+  orders = set(row[0].split(','))
+  trackings = set(row[1].split(','))
+  expected_cost = float(row[2])
+  tracked_cost = float(row[3])
+  last_ship_date = row[4]
+  pos = set(row[5].split(','))
+  if len(row) >= 7:
+    group = row[6]
+  else:
+    group = None
+  cluster = Cluster(group)
+  cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
+                    last_ship_date, pos)
+
+
 class Cluster:
 
   def __init__(self, group):
@@ -38,13 +54,14 @@ class Cluster:
   def get_header(self):
     return [
         "Orders", "Trackings", "Expected Cost", "Tracked Cost",
-        "Last Ship Date", "POs"
+        "Last Ship Date", "POs", "Group"
     ]
 
   def to_row(self):
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
-        self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders)
+        self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
+        self.group
     ]
 
   def merge_with(self, other):
