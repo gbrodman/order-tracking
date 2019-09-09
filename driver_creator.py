@@ -37,6 +37,6 @@ class DriverCreator:
     options = webdriver.firefox.options.Options()
     options.headless = self.headless
     driver = webdriver.Firefox(profile, options=options)
-    driver.set_window_size(2000, 1600)
+    driver.set_window_size(1500, 1200)
     driver.set_page_load_timeout(60)
     return driver

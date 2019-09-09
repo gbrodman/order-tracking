@@ -63,7 +63,7 @@ class GroupSiteManager:
       first_page_button = driver.find_element_by_xpath(
           "//button[@ng-click='$pagination.first()']")
       first_page_button.click()
-      time.sleep(5)
+      time.sleep(10)
 
       while True:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
@@ -78,7 +78,7 @@ class GroupSiteManager:
             "//button[@ng-click='$pagination.next()']")
         if next_page_button.get_property("disabled") == False:
           next_page_button.click()
-          time.sleep(5)
+          time.sleep(10)
         else:
           break
 
