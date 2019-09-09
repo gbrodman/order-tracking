@@ -128,7 +128,6 @@ if __name__ == "__main__":
       send_error_email(email_sender,
                        "Error filling expected costs + writing to disk")
       raise
-Bac
     print("Done")
   except:
     print(
