@@ -57,7 +57,7 @@ class GroupSiteManager:
       driver.find_element_by_xpath('//button[@title="Clear filters"]').click()
       time.sleep(1)
       driver.find_element_by_xpath('//md-icon[text()="last_page"]').click()
-      time.sleep(1)
+      time.sleep(5)
 
       # go to the first page (page selection can get a bit messed up with the multiple sites)
       first_page_button = driver.find_element_by_xpath(
