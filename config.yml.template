@@ -37,23 +37,12 @@ groups:
     keys:
       - 1234 Fake St
 
-# Uncomment this out and include a creds.json file if you wish to append 
-# tracking information to a sheet in Google Sheets. The sheet IDs should 
-# be tabs within the sheet.
-#googleSheets:
-#  baseSpreadsheetId:
-#  sheetIds:
-#    pointsmaker: PM
-#    mysbuyinggroup: MYS
-#    usa: USA
-#    bfmr: BFMR
-
 # Uncomment this if you wish to set the lookback that we use for email searching.
 # The default is 30 days in the past--if you change it to 2, it will only search
 # the past two days.
 #lookbackDays: 30
 
-# The aforementioned creds.json file is necessary for reconciliation, as well
+# A creds.json file is necessary for reconciliation, as well
 # as a base spreadsheet ID
 reconciliation:
   baseSpreadsheetId:

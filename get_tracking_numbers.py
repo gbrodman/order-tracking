@@ -8,7 +8,7 @@ from driver_creator import DriverCreator
 from email_sender import EmailSender
 from expected_costs import ExpectedCosts
 from group_site_manager import GroupSiteManager
-from sheets_uploader import SheetsUploader
+from tracking_uploader import TrackingUploader
 from tracking_output import TrackingOutput
 
 CONFIG_FILE = "config.yml"
@@ -89,20 +89,20 @@ if __name__ == "__main__":
         raise
 
       print("Adding results to Google Sheets")
-      sheets_uploader = SheetsUploader(config)
+      tracking_uploader = TrackingUploader(config)
       try:
-        sheets_uploader.upload(groups_dict)
+        tracking_uploader.upload(groups_dict)
       except:
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise
 
-    print("Writing results to file")
-    tracking_output = TrackingOutput()
-    try:
-      tracking_output.save_trackings(groups_dict)
-    except:
-      send_error_email(email_sender, "Error writing output file")
-      raise
+      print("Writing results to file")
+      tracking_output = TrackingOutput()
+      try:
+        tracking_output.save_trackings(groups_dict)
+      except:
+        send_error_email(email_sender, "Error writing output file")
+        raise
 
     print("Getting all tracking objects")
     try:
