@@ -128,12 +128,13 @@ if __name__ == "__main__":
       send_error_email(email_sender,
                        "Error filling expected costs + writing to disk")
       raise
-
+Bac
     print("Done")
   except:
     print(
         "Exception thrown after looking at the emails. Marking all relevant emails as unread to reset."
     )
     amazon_tracking_retriever.back_out_of_all()
+    bestbuy_tracking_retriever.back_out_of_all()
     print("Marked all as unread")
     raise
