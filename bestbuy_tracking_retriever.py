@@ -8,7 +8,9 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   order_id_regex = r'(BBY01-\d{12})'
 
   def get_order_ids_from_email(self, raw_email):
-    return set([re.search(self.order_id_regex, raw_email).group(1)])
+    result = set()
+    result.add(self._get_order_id(raw_email))
+    return result
 
   def get_price_from_email(self, raw_email):
     return None  # not implementable
@@ -20,5 +22,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     return "BestBuyInfo@emailinfo.bestbuy.com"
 
   def get_order_url_from_email(self, raw_email):
-    order_id = list(self.get_order_ids_from_email(raw_email))[0]
+    order_id = self._get_order_id(raw_email)
     return "https://www.bestbuy.com/profile/ss/orders/order-details/%s/view" % order_id
+
+  def _get_order_id(self, raw_email):
+    return re.search(self.order_id_regex, raw_email).group(1)

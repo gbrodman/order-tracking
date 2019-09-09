@@ -50,6 +50,15 @@ class GroupSiteManager:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
       tracking_to_cost_map = {}
 
+      # Clear the search field since it can cache results
+      search_button = driver.find_element_by_class_name('pf-search-button')
+      search_button.click()
+      time.sleep(1)
+      driver.find_element_by_xpath('//button[@title="Clear filters"]').click()
+      time.sleep(1)
+      driver.find_element_by_xpath('//md-icon[text()="last_page"]').click()
+      time.sleep(1)
+
       # go to the first page (page selection can get a bit messed up with the multiple sites)
       first_page_button = driver.find_element_by_xpath(
           "//button[@ng-click='$pagination.first()']")
