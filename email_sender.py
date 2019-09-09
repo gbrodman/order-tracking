@@ -12,7 +12,7 @@ class EmailSender:
 
   def send_email(self, groups_dict):
     email_content = self.create_email_content(groups_dict)
-    self.send_email_content("Amazon Tracking Numbers " + TODAY, email_content)
+    self.send_email_content("Tracking Numbers " + TODAY, email_content)
 
   def create_email_content(self, groups_dict):
     content = "Tracking number / order number(s) per group:\n\n"
