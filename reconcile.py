@@ -87,9 +87,6 @@ if __name__ == "__main__":
   fill_purchase_orders(all_clusters, config, driver_creator)
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
   fill_costs_by_po(all_clusters, config, driver_creator)
-  for cluster in all_clusters:
-    if cluster.expected_cost > cluster.tracked_cost:
-      print(str(cluster))
 
   reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.download_upload_clusters(all_clusters)
