@@ -27,3 +27,6 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   def _get_order_id(self, raw_email):
     return re.search(self.order_id_regex, raw_email).group(1)
+
+  def get_items_from_email(self, data):
+    return ""

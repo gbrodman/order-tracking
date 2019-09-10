@@ -14,8 +14,16 @@ def from_row(row):
     group = row[6]
   else:
     group = ''
+  if len(row) >= 8:
+    tracked_cost = float(row[7])
+  else:
+    tracked_cost = 0.0
+  if len(row) >= 9:
+    items = row[8]
+  else:
+    items = ''
   return Tracking(row[0], group, row[1].split(","), row[2], row[3], url,
-                  ship_date)
+                  ship_date, tracked_cost, items)
 
 
 class Tracking:
@@ -27,7 +35,9 @@ class Tracking:
                price,
                to_email,
                url,
-               ship_date='0'):
+               ship_date='0',
+               tracked_cost=0.0,
+               items=''):
     self.tracking_number = tracking_number
     self.group = group
     self.order_ids = order_ids
@@ -35,6 +45,8 @@ class Tracking:
     self.to_email = to_email
     self.url = url
     self.ship_date = ship_date
+    self.tracked_cost = tracked_cost
+    self.items = items
 
   def __setstate__(self, state):
     self.__init__(**state)
@@ -48,13 +60,13 @@ class Tracking:
     hyperlink = self._create_hyperlink()
     return [
         hyperlink, ", ".join(self.order_ids), self.price, self.to_email,
-        self.url, self.ship_date, self.group
+        self.url, self.ship_date, self.group, self.tracked_cost, self.items
     ]
 
   def get_header(self):
     return [
         "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL",
-        "Ship Date", "Group"
+        "Ship Date", "Group", "Tracked Cost", "Items"
     ]
 
   def _create_hyperlink(self):

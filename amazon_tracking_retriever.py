@@ -1,5 +1,7 @@
+import quopri
 import re
 import time
+from bs4 import BeautifulSoup
 from email_tracking_retriever import EmailTrackingRetriever
 from tracking import Tracking
 
@@ -33,6 +35,23 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   def get_from_email_address(self):
     return "shipment-tracking@amazon.com"
+
+  def get_items_from_email(self, data):
+    item_regex = r'(.*Qty: \d+)'
+    soup = BeautifulSoup(
+        quopri.decodestring(data[0][1]), features="html.parser")
+    order_prefix_span = soup.find("span", {"class": "orderIdPrefix"})
+
+    if not order_prefix_span:
+      return ''
+
+    all_lis = order_prefix_span.find_all('li')
+
+    item_descriptions = []
+    for li in all_lis:
+      txt = li.getText().strip()
+      item_descriptions.append(re.match(item_regex, txt).group(1))
+    return ",".join(item_descriptions)
 
   def get_tracking_number_from_email(self, raw_email):
     url = self.get_order_url_from_email(raw_email)
