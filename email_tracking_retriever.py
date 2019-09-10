@@ -1,7 +1,7 @@
 import collections
-import imaplib
 import datetime
 import email
+import imaplib
 from abc import ABC, abstractmethod
 from tracking import Tracking
 
@@ -73,6 +73,10 @@ class EmailTrackingRetriever(ABC):
   def get_order_url_from_email(self, raw_email):
     pass
 
+  @abstractmethod
+  def get_items_from_email(self, data):
+    pass
+
   def get_date_from_msg(self, data):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     msg_date = msg['Date']
@@ -103,6 +107,7 @@ class EmailTrackingRetriever(ABC):
 
     order_ids = self.get_order_ids_from_email(raw_email)
     group = self.get_buying_group(raw_email)
+    items = self.get_items_from_email(data)
     if group == None:
       self.failed_email_ids.append(email_id)
       print("Could not find buying group for order ID %s" % order_ids)
@@ -110,7 +115,7 @@ class EmailTrackingRetriever(ABC):
       return None
 
     return Tracking(tracking_number, group, order_ids, price, to_email, url,
-                    date)
+                    date, 0.0, items)
 
   def get_all_mail_folder(self):
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])

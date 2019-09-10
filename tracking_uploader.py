@@ -34,5 +34,4 @@ class TrackingUploader:
 
     all_trackings = existing_trackings + new_trackings
     self.objects_to_sheet.upload_to_sheet(all_trackings,
-                                          self.base_spreadsheet_id,
-                                          tab_id)
+                                          self.base_spreadsheet_id, tab_id)

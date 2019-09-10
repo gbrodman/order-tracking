@@ -5,6 +5,8 @@ from expected_costs import ExpectedCosts
 from group_site_manager import GroupSiteManager
 from driver_creator import DriverCreator
 from reconciliation_uploader import ReconciliationUploader
+from tracking_output import TrackingOutput
+from tracking_uploader import TrackingUploader
 
 CONFIG_FILE = "config.yml"
 
@@ -22,9 +24,26 @@ def get_tracked_costs_by_group(all_clusters, config, driver_creator):
   return tracked_costs_by_group
 
 
+# Take the reimbursed costs we found and write them into the Tracking objects
+def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
+  tracking_output = TrackingOutput()
+  existing_trackings = tracking_output.get_existing_trackings()
+  for group, trackings in existing_trackings.items():
+    if group not in tracked_costs_by_group:
+      continue
+    this_group = tracked_costs_by_group[group]
+    for tracking in trackings:
+      if tracking.tracking_number in this_group:
+        tracking.tracked_cost = this_group[tracking.tracking_number]
+  tracking_output.save_trackings(existing_trackings)
+  tracking_uploader = TrackingUploader(config)
+  tracking_uploader.upload(existing_trackings)
+
+
 def fill_tracked_costs(all_clusters, config, driver_creator):
   tracked_costs_by_group = get_tracked_costs_by_group(all_clusters, config,
                                                       driver_creator)
+  fill_tracking_costs_and_upload(config, tracked_costs_by_group)
   for cluster in all_clusters:
     group = cluster.group
     if group in tracked_costs_by_group:
