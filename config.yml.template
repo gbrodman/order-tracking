@@ -46,8 +46,3 @@ groups:
 # as a base spreadsheet ID
 reconciliation:
   baseSpreadsheetId:
-  sheetIds:
-    pointsmaker: PM
-    mysbuyinggroup: MYS
-    usa: USA
-    bfmr: BFMR

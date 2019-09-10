@@ -16,15 +16,20 @@ def from_row(row):
     group = row[6]
   else:
     group = None
+  if len(row) >= 8 and row[7]:
+    adjustment = float(row[7])
+  else:
+    adjustment = 0.0
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
-                    last_ship_date, pos)
+                    last_ship_date, pos, adjustment)
+  return cluster
 
 
 class Cluster:
 
   def __init__(self, group):
-    self._initiate(set(), set(), group, 0, 0, '0', set())
+    self._initiate(set(), set(), group, 0, 0, '0', set(), 0.0)
 
   def _initiate(self,
                 orders,
@@ -33,7 +38,8 @@ class Cluster:
                 expected_cost,
                 tracked_cost,
                 last_ship_date='0',
-                purchase_orders=set()):
+                purchase_orders=set(),
+                adjustment=0.0):
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -41,27 +47,28 @@ class Cluster:
     self.tracked_cost = tracked_cost
     self.last_ship_date = last_ship_date
     self.purchase_orders = purchase_orders
+    self.adjustment = adjustment
 
   def __setstate__(self, state):
     self._initiate(**state)
 
   def __str__(self):
-    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s" % (
+    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s, adjustment: %s" % (
         str(self.orders), str(self.trackings), self.group,
-        str(self.expected_cost), str(
-            self.tracked_cost), self.last_ship_date, str(self.purchase_orders))
+        str(self.expected_cost), str(self.tracked_cost), self.last_ship_date,
+        str(self.purchase_orders), str(self.adjustment))
 
   def get_header(self):
     return [
         "Orders", "Trackings", "Expected Cost", "Tracked Cost",
-        "Last Ship Date", "POs", "Group"
+        "Last Ship Date", "POs", "Group", "Manual Cost Adjustment"
     ]
 
   def to_row(self):
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
         self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
-        self.group
+        self.group, self.adjustment
     ]
 
   def merge_with(self, other):
@@ -72,6 +79,7 @@ class Cluster:
     self.tracked_cost += other.tracked_cost
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
     self.purchase_orders.update(other.purchase_orders)
+    self.adjustment += other.adjustment
 
 
 def dedupe_clusters(clusters):

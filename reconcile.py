@@ -82,6 +82,7 @@ if __name__ == "__main__":
 
   all_clusters = clusters.get_existing_clusters()
   driver_creator = DriverCreator(sys.argv)
+
   fill_tracked_costs(all_clusters, config, driver_creator)
   fill_purchase_orders(all_clusters, config, driver_creator)
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
@@ -89,7 +90,7 @@ if __name__ == "__main__":
   for cluster in all_clusters:
     if cluster.expected_cost > cluster.tracked_cost:
       print(str(cluster))
-  clusters.write_clusters(all_clusters)
 
   reconciliation_uploader = ReconciliationUploader(config)
-  reconciliation_uploader.upload_clusters(all_clusters)
+  reconciliation_uploader.download_upload_clusters(all_clusters)
+  clusters.write_clusters(all_clusters)

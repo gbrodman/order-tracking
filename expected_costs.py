@@ -46,7 +46,8 @@ class ExpectedCosts:
                                             order_id)
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
     regex_tax = r'Tax[^\$]*\$([\d,]+\.[\d]{2})'
-    subtotal = float(re.search(regex_subtotal, raw_email).group(1).replace(',', ''))
+    subtotal = float(
+        re.search(regex_subtotal, raw_email).group(1).replace(',', ''))
     tax = float(re.search(regex_tax, raw_email).group(1).replace(',', ''))
     return {order_id: subtotal + tax}
 
