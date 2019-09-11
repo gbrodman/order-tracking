@@ -12,10 +12,15 @@ def compare(cluster_one, cluster_two):
   diff_one = total_tracked(cluster_one) - cluster_one.expected_cost
   diff_two = total_tracked(cluster_two) - cluster_two.expected_cost
 
-  # If both negative, return the diff. If only one is negative, that one should
-  # come first. If both are nonnegative, use the group
+  # If both negative, return the ship date diff. If only one is
+  # negative, that one should come first. If both are nonnegative, use the group
   if diff_one < 0 and diff_two < 0:
-    return diff_one - diff_two
+    if cluster_one.last_ship_date < cluster_two.last_ship_date:
+      return -1
+    elif cluster_one.last_ship_date == cluster_two.last_ship_date:
+      return 0
+    else:
+      return 1
   elif diff_one < 0:
     return -1
   elif diff_two < 0:
