@@ -20,7 +20,7 @@ class TrackingUploader:
 
   def upload_trackings(self, trackings):
     existing_trackings = self.objects_to_sheet.download_from_sheet(
-        tracking.from_row, self.base_spreadsheet_id, tab_id)
+        tracking.from_row, self.base_spreadsheet_id, "Trackings")
     existing_tracking_numbers = set([
         existing_tracking.tracking_number
         for existing_tracking in existing_trackings
