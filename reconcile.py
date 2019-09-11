@@ -36,8 +36,12 @@ def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
       if tracking.tracking_number in this_group:
         tracking.tracked_cost = this_group[tracking.tracking_number]
   tracking_output.save_trackings(existing_trackings)
+  # get a list of the trackings and upload it
   tracking_uploader = TrackingUploader(config)
-  tracking_uploader.upload(existing_trackings)
+  trackings_list = []
+  for trackings in existing_trackings.values():
+    trackings_list.extend(trackings)
+  tracking_uploader.upload_all_trackings(trackings_list)
 
 
 def fill_tracked_costs(all_clusters, config, driver_creator):
