@@ -63,7 +63,7 @@ class Cluster:
 
   def get_header(self):
     return [
-        "Orders", "Trackings", "Expected Cost", "Tracked Cost",
+        "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
         "Last Ship Date", "POs", "Group", "Manual Cost Adjustment", "Total Diff"
     ]
 

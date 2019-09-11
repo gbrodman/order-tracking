@@ -66,7 +66,7 @@ class Tracking:
   def get_header(self):
     return [
         "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL",
-        "Ship Date", "Group", "Tracked Cost", "Items"
+        "Ship Date", "Group", "Amount Reimbursed", "Items"
     ]
 
   def _create_hyperlink(self):
