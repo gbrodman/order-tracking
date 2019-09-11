@@ -40,10 +40,6 @@ class ReconciliationUploader:
     self.fill_adjustments(all_clusters, base_sheet_id)
 
     all_clusters.sort(key=cmp_to_key(compare))
-    below_cost_clusters = [
-        cluster for cluster in all_clusters
-        if (cluster.tracked_cost + cluster.adjustment) < cluster.expected_cost
-    ]
     self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
                                           "Clusters")
 
@@ -51,9 +47,14 @@ class ReconciliationUploader:
     print("Filling in cost adjustments if applicable")
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(
         clusters.from_row, base_sheet_id, "Clusters")
+
+    for cluster in all_clusters:
+      candidate_downloads = self.find_candidate_downloads(cluster, downloaded_clusters)
+      cluster.adjustment = sum([candidate.adjustment for candidate in candidate_downloads])
+
+  def find_candidate_downloads(self, cluster, downloaded_clusters):
+    result = []
     for downloaded_cluster in downloaded_clusters:
-      if downloaded_cluster.adjustment:
-        for cluster in all_clusters:
-          if cluster.trackings.intersection(downloaded_cluster.trackings):
-            cluster.adjustment += downloaded_cluster.adjustment
-            break
+      if downloaded_cluster.trackings.intersection(cluster.trackings):
+        result.append(downloaded_cluster)
+    return result
