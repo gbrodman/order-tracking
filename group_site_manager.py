@@ -32,6 +32,7 @@ class GroupSiteManager:
   def __init__(self, config, driver_creator):
     self.config = config
     self.driver_creator = driver_creator
+    self.melul_portal_groups = config['melulPortals']
 
   def upload(self, groups_dict):
     for group, trackings in groups_dict.items():
@@ -41,11 +42,11 @@ class GroupSiteManager:
         self._upload_to_group(numbers, group)
 
   def get_tracked_costs(self, group):
-    if group != "mysbuyinggroup" and group != "pointsmaker":
+    if group not in self.melul_portal_groups:
       return {}
 
     print("Loading group %s" % group)
-    driver = self._login_mys_pm(group)
+    driver = self._login_melul(group)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
       tracking_to_cost_map = {}
@@ -89,8 +90,8 @@ class GroupSiteManager:
   def _upload_to_group(self, numbers, group):
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
-        if group == "mysbuyinggroup" or group == "pointsmaker":
-          return self._upload_mys_pm(numbers, group)
+        if group in self.melul_portal_groups:
+          return self._upload_melul(numbers, group)
         elif group == "usa":
           return self._upload_usa(numbers)
         else:
@@ -103,8 +104,8 @@ class GroupSiteManager:
     driver.get(url)
     time.sleep(2)
 
-  def _upload_mys_pm(self, numbers, group):
-    driver = self._login_mys_pm(group)
+  def _upload_melul(self, numbers, group):
+    driver = self._login_melul(group)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
       driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
@@ -113,7 +114,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _login_mys_pm(self, group):
+  def _login_melul(self, group):
     driver = self.driver_creator.new()
     self._load_page(driver, BASE_URL_FORMAT % group)
     group_config = self.config['groups'][group]

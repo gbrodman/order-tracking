@@ -49,8 +49,10 @@ class ReconciliationUploader:
         clusters.from_row, base_sheet_id, "Clusters")
 
     for cluster in all_clusters:
-      candidate_downloads = self.find_candidate_downloads(cluster, downloaded_clusters)
-      cluster.adjustment = sum([candidate.adjustment for candidate in candidate_downloads])
+      candidate_downloads = self.find_candidate_downloads(
+          cluster, downloaded_clusters)
+      cluster.adjustment = sum(
+          [candidate.adjustment for candidate in candidate_downloads])
 
   def find_candidate_downloads(self, cluster, downloaded_clusters):
     result = []
