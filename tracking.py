@@ -15,7 +15,7 @@ def from_row(row):
   else:
     group = ''
   if len(row) >= 8:
-    tracked_cost = float(row[7])
+    tracked_cost = float(row[7].replace(',', '').replace('$', ''))
   else:
     tracked_cost = 0.0
   if len(row) >= 9:

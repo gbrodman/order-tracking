@@ -8,8 +8,8 @@ CLUSTERS_FILE = OUTPUT_FOLDER + "/clusters.pickle"
 def from_row(row):
   orders = set(row[0].split(','))
   trackings = set(row[1].split(','))
-  expected_cost = float(row[2])
-  tracked_cost = float(row[3])
+  expected_cost = float(row[2].replace(',', '').replace('$', ''))
+  tracked_cost = float(row[3].replace(',', '').replace('$', ''))
   last_ship_date = row[4]
   pos = set(row[5].split(','))
   if len(row) >= 7:
@@ -20,6 +20,9 @@ def from_row(row):
     adjustment = float(row[7])
   else:
     adjustment = 0.0
+  # the 9th element (index 8) is expected - tracked - adjustment
+  if len(row) >= 9:
+    ignored_diff = 0
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, adjustment)
@@ -61,14 +64,15 @@ class Cluster:
   def get_header(self):
     return [
         "Orders", "Trackings", "Expected Cost", "Tracked Cost",
-        "Last Ship Date", "POs", "Group", "Manual Cost Adjustment"
+        "Last Ship Date", "POs", "Group", "Manual Cost Adjustment", "Total Diff"
     ]
 
   def to_row(self):
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
         self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
-        self.group, self.adjustment
+        self.group, self.adjustment,
+        self.expected_cost - self.tracked_cost - self.adjustment
     ]
 
   def merge_with(self, other):
