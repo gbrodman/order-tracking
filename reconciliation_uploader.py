@@ -46,12 +46,12 @@ class ReconciliationUploader:
 
     all_clusters.sort(key=cmp_to_key(compare))
     self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
-                                          "Clusters")
+                                          "Reconciliation")
 
   def fill_adjustments(self, all_clusters, base_sheet_id):
     print("Filling in cost adjustments if applicable")
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(
-        clusters.from_row, base_sheet_id, "Clusters")
+        clusters.from_row, base_sheet_id, "Reconciliation")
 
     for cluster in all_clusters:
       candidate_downloads = self.find_candidate_downloads(
