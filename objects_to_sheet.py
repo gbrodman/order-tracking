@@ -14,8 +14,9 @@ class ObjectsToSheet:
           spreadsheetId=base_sheet_id, range=range).execute()
       if 'values' not in result:  # blank sheet
         return []
+      header = result['values'][0]
       values = result['values'][1:]  # ignore the header
-      return [from_row_fn(value) for value in values]
+      return [from_row_fn(header, value) for value in values]
     except googleapiclient.errors.HttpError:
       # Tab doesn't exist
       self._create_tab(base_sheet_id, tab_title)

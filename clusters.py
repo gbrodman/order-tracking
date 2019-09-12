@@ -5,24 +5,21 @@ OUTPUT_FOLDER = "output"
 CLUSTERS_FILE = OUTPUT_FOLDER + "/clusters.pickle"
 
 
-def from_row(row):
-  orders = set(row[0].split(','))
-  trackings = set(row[1].split(','))
-  expected_cost = float(row[2].replace(',', '').replace('$', ''))
-  tracked_cost = float(row[3].replace(',', '').replace('$', ''))
-  last_ship_date = row[4]
-  pos = set(row[5].split(','))
-  if len(row) >= 7:
-    group = row[6]
-  else:
-    group = None
-  if len(row) >= 8 and row[7]:
-    adjustment = float(row[7])
-  else:
-    adjustment = 0.0
-  # the 9th element (index 8) is expected - tracked - adjustment
-  if len(row) >= 9:
-    ignored_diff = 0
+def from_row(header, row):
+  orders = set(
+      row[header.index('Orders')].split(',')) if 'Orders' in header else set()
+  trackings = set(row[header.index('Trackings')].split(
+      ',')) if 'Trackings' in header else set()
+  expected_cost = float(row[header.index('Amount Billed')].replace(
+      ',', '').replace('$', '')) if 'Amount Billed' in header else 0.0
+  tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
+      ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
+  last_ship_date = row[header.index(
+      'Last Ship Date')] if 'Last Ship Date' in header else '0'
+  pos = set(row[header.index('POs')].split(',')) if 'POs' in header else set()
+  group = row[header.index('Group')] if 'Group' in header else ''
+  adjustment = float(row[header.index('Manual Cost Adjustment')].replace(
+      ',', '').replace('$', '')) if 'Manual Cost Adjustment' in header else 0.0
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, adjustment)

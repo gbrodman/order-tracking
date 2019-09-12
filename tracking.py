@@ -1,29 +1,21 @@
 import re
 
 
-def from_row(row):
-  if len(row) >= 5:
-    url = row[4]
-  else:
-    url = None
-  if len(row) >= 6:
-    ship_date = row[5]
-  else:
-    ship_date = '0'
-  if len(row) >= 7:
-    group = row[6]
-  else:
-    group = ''
-  if len(row) >= 8:
-    tracked_cost = float(row[7].replace(',', '').replace('$', ''))
-  else:
-    tracked_cost = 0.0
-  if len(row) >= 9:
-    items = row[8]
-  else:
-    items = ''
-  return Tracking(row[0], group, row[1].split(","), row[2], row[3], url,
-                  ship_date, tracked_cost, items)
+def from_row(header, row):
+  tracking = row[header.index('Tracking Number')]
+  orders = set(row[header.index('Order Number(s)')].split(
+      ',')) if 'Order Number(s)' in header else set()
+  price = float(row[header.index('Price')].replace(',', '').replace(
+      '$', '')) if 'Price' in header else 0.0
+  to_email = row[header.index("To Email")]
+  url = row[header.index("Order URL")]
+  ship_date = row[header.index("Ship Date")]
+  group = row[header.index("Group")]
+  tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
+      ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
+  items = row[header.index("Items")] if items in header else ""
+  return Tracking(tracking, group, orders, price, to_email, url, ship_date,
+                  tracked_cost, items)
 
 
 class Tracking:
