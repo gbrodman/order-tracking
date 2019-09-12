@@ -53,6 +53,8 @@ class ExpectedCosts:
 
   def load_order_total_amazon(self, order_id):
     raw_email = self.get_relevant_raw_email("auto-confirm@amazon.com", order_id)
+    if not raw_email:
+      return {order_id: 0.0}
 
     regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
     regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
@@ -85,7 +87,7 @@ class ExpectedCosts:
                                      'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
-      return {order_id: 0.0}
+      return None
 
     email_ids = search_result[0].decode('utf-8').split()
 
