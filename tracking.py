@@ -14,7 +14,7 @@ def from_row(header, row):
   group = row[header.index("Group")]
   tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
       ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
-  items = row[header.index("Items")] if items in header else ""
+  items = row[header.index("Items")] if 'Items' in header else ""
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
                   tracked_cost, items)
 
