@@ -1,0 +1,99 @@
+import datetime
+import sys
+import yaml
+from objects_to_sheet import ObjectsToSheet
+from tracking import Tracking
+from tracking_output import TrackingOutput
+
+CONFIG_FILE = "config.yml"
+with open(CONFIG_FILE, 'r') as config_file_stream:
+  config = yaml.safe_load(config_file_stream)
+
+
+def get_group(header, row):
+  address = row[header.index("Shipping Address")]
+  address = address.upper()
+  for group in config['groups'].keys():
+    group_keys = config['groups'][group]['keys']
+    if isinstance(group_keys, str):
+      group_keys = [group_keys]
+    for group_key in group_keys:
+      if str(group_key).upper() in address:
+        return group
+  return None
+
+
+def from_amazon_row(header, row):
+  tracking = row[header.index('Carrier Tracking #')]
+  orders = {row[header.index('Order ID')]}
+  price = float(row[header.index('Shipment Subtotal')].replace(',', '').replace(
+      '$', '').replace('N/A', '0.0'))
+  to_email = row[header.index("Account User Email")]
+  url = ''
+  original_ship_date = row[header.index("Shipment Date")]
+  ship_date = datetime.datetime.strptime(
+      original_ship_date,
+      "%m/%d/%Y").strftime("%Y-%m-%d") if original_ship_date != 'N/A' else ''
+  group = get_group(header, row)
+  tracked_cost = 0.0
+  items = row[header.index("Title")] + " Qty:" + row[header.index(
+      "Item Quantity")]
+  return Tracking(tracking, group, orders, price, to_email, url, ship_date,
+                  tracked_cost, items)
+
+
+def find_candidate(tracking, candidates):
+  for candidate in candidates:
+    if tracking.tracking_number == candidate.tracking_number:
+      return candidate
+  return None
+
+
+def dedupe_trackings(trackings):
+  result = []
+  for tracking in trackings:
+    candidate = find_candidate(tracking, result)
+    if candidate:
+      candidate.order_ids = set(candidate.order_ids)
+      candidate.order_ids.update(tracking.order_ids)
+      if candidate.price:
+        candidate.price = float(candidate.price) + tracking.price
+      candidate.items += "," + tracking.items
+    else:
+      result.append(tracking)
+  return result
+
+
+if __name__ == "__main__":
+  if len(sys.argv) < 3:
+    print("Usage: %s <amazon order export Google Sheet ID> <tab_name>" %
+          sys.argv[0])
+    quit(1)
+  sheet_id = sys.argv[1]
+  tab_name = sys.argv[2]
+  objects_to_sheet = ObjectsToSheet()
+  all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row,
+                                                       sheet_id, tab_name)
+  all_trackings = [
+      tracking for tracking in all_trackings
+      if tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
+  ]
+  tracking_output = TrackingOutput()
+  existing_trackings = tracking_output.get_existing_trackings()
+  total_trackings = sum(
+      [len(trackings) for trackings in existing_trackings.values()])
+  print("Number of previous trackings: %d" % total_trackings)
+  print("Number from sheet: %d" % len(all_trackings))
+
+  # Append the found trackings to the appropriate group's list
+  for tracking in all_trackings:
+    existing_trackings[tracking.group].append(tracking)
+
+  # Dedupe all lists of trackings (by group)
+  for group in existing_trackings.keys():
+    existing_trackings[group] = dedupe_trackings(existing_trackings[group])
+
+  total_trackings = sum(
+      [len(trackings) for trackings in existing_trackings.values()])
+  print("Number of trackings after merge: %d" % total_trackings)
+  tracking_output.save_trackings(existing_trackings)
