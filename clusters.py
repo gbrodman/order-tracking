@@ -69,7 +69,7 @@ class Cluster:
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
         self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
         self.group, self.adjustment,
-        self.expected_cost - self.tracked_cost - self.adjustment
+        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("H", ROW()))'
     ]
 
   def merge_with(self, other):
