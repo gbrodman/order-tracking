@@ -16,11 +16,17 @@ class ObjectsToSheet:
         return []
       header = result['values'][0]
       values = result['values'][1:]  # ignore the header
+      self.extend_values_to_header(header, values)
       return [from_row_fn(header, value) for value in values]
     except googleapiclient.errors.HttpError:
       # Tab doesn't exist
       self._create_tab(base_sheet_id, tab_title)
       return []
+    
+  def extend_values_to_header(self, header, values):
+    for value in values:
+      while len(value) < len(header):
+        value.append('')
 
   def upload_to_sheet(self, objects, base_sheet_id, tab_title):
     try:
