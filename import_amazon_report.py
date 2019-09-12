@@ -63,6 +63,11 @@ def dedupe_trackings(trackings):
       result.append(tracking)
   return result
 
+def print_num_existing_trackings(tracking_output):
+  existing_trackings = tracking_output.get_existing_trackings()
+  total_trackings = sum(
+      [len(trackings) for trackings in existing_trackings.values()])
+  print("Num saved trackings: %d" % total_trackings)
 
 if __name__ == "__main__":
   if len(sys.argv) < 3:
@@ -78,22 +83,17 @@ if __name__ == "__main__":
       tracking for tracking in all_trackings
       if tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
+  all_trackings = dedupe_trackings(all_trackings)
   tracking_output = TrackingOutput()
-  existing_trackings = tracking_output.get_existing_trackings()
-  total_trackings = sum(
-      [len(trackings) for trackings in existing_trackings.values()])
-  print("Number of previous trackings: %d" % total_trackings)
+  print_num_existing_trackings(tracking_output)
   print("Number from sheet: %d" % len(all_trackings))
 
-  # Append the found trackings to the appropriate group's list
+  groups_dict = {}
   for tracking in all_trackings:
-    existing_trackings[tracking.group].append(tracking)
+    if tracking.group not in groups_dict:
+      groups_dict[tracking.group] = []
+    groups_dict[tracking.group].append(tracking)
 
-  # Dedupe all lists of trackings (by group)
-  for group in existing_trackings.keys():
-    existing_trackings[group] = dedupe_trackings(existing_trackings[group])
+  tracking_output.save_trackings(groups_dict)
+  print_num_existing_trackings(tracking_output)
 
-  total_trackings = sum(
-      [len(trackings) for trackings in existing_trackings.values()])
-  print("Number of trackings after merge: %d" % total_trackings)
-  tracking_output.save_trackings(existing_trackings)
