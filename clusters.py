@@ -122,7 +122,7 @@ def update_clusters(all_clusters, trackings_dict):
   for group, trackings in trackings_dict.items():
     for tracking in trackings:
       cluster = find_cluster(all_clusters, tracking)
-      if cluster == None:
+      if cluster is None:
         cluster = Cluster(tracking.group)
         all_clusters.append(cluster)
 

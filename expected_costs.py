@@ -46,9 +46,14 @@ class ExpectedCosts:
                                             order_id)
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
     regex_tax = r'Tax[^\$]*\$([\d,]+\.[\d]{2})'
-    subtotal = float(
-        re.search(regex_subtotal, raw_email).group(1).replace(',', ''))
-    tax = float(re.search(regex_tax, raw_email).group(1).replace(',', ''))
+    subtotal_match = re.search(regex_subtotal, raw_email)
+    if not subtotal_match:
+      return {order_id: 0.0}
+    subtotal = float(subtotal_match.group(1).replace(',', ''))
+    tax_match = re.search(regex_tax, raw_email)
+    if not tax_match:
+      return {order_id: 0.0}
+    tax = float(tax_match.group(1).replace(',', ''))
     return {order_id: subtotal + tax}
 
   def load_order_total_amazon(self, order_id):

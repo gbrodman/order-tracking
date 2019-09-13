@@ -13,6 +13,7 @@ class EmailTrackingRetriever(ABC):
     self.email_config = config['email']
     self.driver_creator = driver_creator
     self.failed_email_ids = []
+    self.all_email_ids = []
 
   # If we receive an exception, we should reset all the emails to be unread
   def back_out_of_all(self):
@@ -85,7 +86,7 @@ class EmailTrackingRetriever(ABC):
 
   def get_to_address(self, data):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
-    return msg['To'].replace('<', '').replace('>', '')
+    return str(msg['To']).replace('<', '').replace('>', '')
 
   def get_tracking(self, email_id):
     mail = self.get_all_mail_folder()

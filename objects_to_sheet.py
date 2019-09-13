@@ -22,7 +22,7 @@ class ObjectsToSheet:
       # Tab doesn't exist
       self._create_tab(base_sheet_id, tab_title)
       return []
-    
+
   def extend_values_to_header(self, header, values):
     for value in values:
       while len(value) < len(header):

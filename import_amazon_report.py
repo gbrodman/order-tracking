@@ -63,17 +63,19 @@ def dedupe_trackings(trackings):
       result.append(tracking)
   return result
 
+
 def print_num_existing_trackings(tracking_output):
   existing_trackings = tracking_output.get_existing_trackings()
   total_trackings = sum(
       [len(trackings) for trackings in existing_trackings.values()])
   print("Num saved trackings: %d" % total_trackings)
 
+
 if __name__ == "__main__":
   if len(sys.argv) < 3:
     print("Usage: %s <amazon order export Google Sheet ID> <tab_name>" %
           sys.argv[0])
-    quit(1)
+    sys.exit(1)
   sheet_id = sys.argv[1]
   tab_name = sys.argv[2]
   objects_to_sheet = ObjectsToSheet()
@@ -96,4 +98,3 @@ if __name__ == "__main__":
 
   tracking_output.save_trackings(groups_dict)
   print_num_existing_trackings(tracking_output)
-
