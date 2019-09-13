@@ -7,14 +7,14 @@ TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
 
 class EmailSender:
 
-  def __init__(self, email_config):
+  def __init__(self, email_config) -> None:
     self.email_config = email_config
 
-  def send_email(self, groups_dict):
+  def send_email(self, groups_dict) -> None:
     email_content = self.create_email_content(groups_dict)
     self.send_email_content("Tracking Numbers " + TODAY, email_content)
 
-  def create_email_content(self, groups_dict):
+  def create_email_content(self, groups_dict) -> str:
     content = "Tracking number / order number(s) per group:\n\n"
     for group, trackings in groups_dict.items():
       numbers = [
@@ -29,7 +29,7 @@ class EmailSender:
     content += "These are tracking numbers we found based on unread emails. Some may have been found in the past."
     return content
 
-  def send_email_content(self, subject, content):
+  def send_email_content(self, subject, content) -> None:
     s = smtplib.SMTP(self.email_config['smtpUrl'],
                      self.email_config['smtpPort'])
     s.starttls()

@@ -1,5 +1,8 @@
 import pickle
 import os.path
+from typing import Any, TypeVar
+
+_T0 = TypeVar('_T0')
 
 OUTPUT_FOLDER = "output"
 TRACKINGS_FILE = OUTPUT_FOLDER + "/trackings.pickle"
@@ -7,12 +10,12 @@ TRACKINGS_FILE = OUTPUT_FOLDER + "/trackings.pickle"
 
 class TrackingOutput:
 
-  def save_trackings(self, trackings):
+  def save_trackings(self, trackings) -> None:
     old_trackings = self.get_existing_trackings()
     merged_trackings = self.merge_trackings(old_trackings, trackings)
     self.write_merged(merged_trackings)
 
-  def write_merged(self, merged_trackings):
+  def write_merged(self, merged_trackings) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
@@ -21,7 +24,7 @@ class TrackingOutput:
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
-  def merge_trackings(self, old_trackings, trackings):
+  def merge_trackings(self, old_trackings: _T0, trackings) -> _T0:
     for group, group_trackings in trackings.items():
       if group in old_trackings:
         old_group_trackings = old_trackings[group]
@@ -35,13 +38,13 @@ class TrackingOutput:
         old_trackings[group] = group_trackings
     return old_trackings
 
-  def get_existing_trackings(self):
+  def get_existing_trackings(self) -> Any:
     if not os.path.exists(TRACKINGS_FILE):
       return {}
 
     with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
       return pickle.load(tracking_file_stream)
 
-  def clear(self):
+  def clear(self) -> None:
     # self.write_merged([])
     pass

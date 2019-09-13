@@ -4,11 +4,15 @@ import email
 import imaplib
 from abc import ABC, abstractmethod
 from tracking import Tracking
+import tracking
+from typing import Any, Callable, Optional, TypeVar
+
+_FuncT = TypeVar('_FuncT', bound=Callable)
 
 
 class EmailTrackingRetriever(ABC):
 
-  def __init__(self, config, driver_creator):
+  def __init__(self, config, driver_creator) -> None:
     self.config = config
     self.email_config = config['email']
     self.driver_creator = driver_creator
@@ -16,15 +20,15 @@ class EmailTrackingRetriever(ABC):
     self.all_email_ids = []
 
   # If we receive an exception, we should reset all the emails to be unread
-  def back_out_of_all(self):
+  def back_out_of_all(self) -> None:
     for email_id in self.all_email_ids:
       self.mark_as_unread(email_id)
 
-  def mark_as_unread(self, email_id):
+  def mark_as_unread(self, email_id) -> None:
     mail = self.get_all_mail_folder()
     mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
-  def get_trackings(self):
+  def get_trackings(self) -> collections.defaultdict:
     groups_dict = collections.defaultdict(list)
     self.all_email_ids = self.get_email_ids()
     print("Found %d unread shipping emails in the dates we searched" %
@@ -43,7 +47,7 @@ class EmailTrackingRetriever(ABC):
       groups_dict[tracking.group].append(tracking)
     return groups_dict
 
-  def get_buying_group(self, raw_email):
+  def get_buying_group(self, raw_email) -> Any:
     raw_email = raw_email.upper()
     for group in self.config['groups'].keys():
       group_keys = self.config['groups'][group]['keys']
@@ -55,40 +59,40 @@ class EmailTrackingRetriever(ABC):
     return None
 
   @abstractmethod
-  def get_order_ids_from_email(self, raw_email):
+  def get_order_ids_from_email(self, raw_email) -> Any:
     pass
 
   @abstractmethod
-  def get_price_from_email(self, raw_email):
+  def get_price_from_email(self, raw_email) -> Any:
     pass
 
   @abstractmethod
-  def get_tracking_number_from_email(self, raw_email):
+  def get_tracking_number_from_email(self, raw_email) -> Any:
     pass
 
   @abstractmethod
-  def get_from_email_address(self):
+  def get_from_email_address(self) -> Any:
     pass
 
   @abstractmethod
-  def get_order_url_from_email(self, raw_email):
+  def get_order_url_from_email(self, raw_email) -> Any:
     pass
 
   @abstractmethod
-  def get_items_from_email(self, data):
+  def get_items_from_email(self, data) -> Any:
     pass
 
-  def get_date_from_msg(self, data):
+  def get_date_from_msg(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     msg_date = msg['Date']
     return datetime.datetime.strptime(
         msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
 
-  def get_to_address(self, data):
+  def get_to_address(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  def get_tracking(self, email_id):
+  def get_tracking(self, email_id) -> Optional[tracking.Tracking]:
     mail = self.get_all_mail_folder()
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
@@ -118,13 +122,13 @@ class EmailTrackingRetriever(ABC):
     return Tracking(tracking_number, group, order_ids, price, to_email, url,
                     date, 0.0, items)
 
-  def get_all_mail_folder(self):
+  def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
     mail.login(self.email_config['username'], self.email_config['password'])
     mail.select('"[Gmail]/All Mail"')
     return mail
 
-  def get_email_ids(self):
+  def get_email_ids(self) -> Any:
     date_to_search = self.get_date_to_search()
     mail = self.get_all_mail_folder()
     from_email_address = self.get_from_email_address()
@@ -136,7 +140,7 @@ class EmailTrackingRetriever(ABC):
 
     return email_ids.split()
 
-  def get_date_to_search(self):
+  def get_date_to_search(self) -> str:
     if "lookbackDays" in self.config:
       lookback_days = int(self.config['lookbackDays'])
     else:

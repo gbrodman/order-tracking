@@ -2,6 +2,9 @@ import pickle
 import os.path
 import imaplib
 import re
+from typing import Any, Dict, Optional, TypeVar
+
+_T0 = TypeVar('_T0')
 
 OUTPUT_FOLDER = "output"
 COSTS_FILE = OUTPUT_FOLDER + "/expected_costs.pickle"
@@ -9,25 +12,25 @@ COSTS_FILE = OUTPUT_FOLDER + "/expected_costs.pickle"
 
 class ExpectedCosts:
 
-  def __init__(self, config):
+  def __init__(self, config) -> None:
     self.email_config = config['email']
     self.costs_dict = self.load_dict()
 
-  def flush(self):
+  def flush(self) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
     with open(COSTS_FILE, 'wb') as stream:
       pickle.dump(self.costs_dict, stream)
 
-  def load_dict(self):
+  def load_dict(self) -> Any:
     if not os.path.exists(COSTS_FILE):
       return {}
 
     with open(COSTS_FILE, 'rb') as stream:
       return pickle.load(stream)
 
-  def get_expected_cost(self, order_id):
+  def get_expected_cost(self, order_id) -> Any:
     print("Getting cost for order_id %s" % order_id)
     if order_id not in self.costs_dict:
       from_email = self.load_order_total(order_id)
@@ -35,13 +38,13 @@ class ExpectedCosts:
       self.flush()
     return self.costs_dict[order_id]
 
-  def load_order_total(self, order_id):
+  def load_order_total(self, order_id: _T0) -> dict:
     if order_id.startswith("BBY01"):
       return self.load_order_total_bb(order_id)
     else:
       return self.load_order_total_amazon(order_id)
 
-  def load_order_total_bb(self, order_id):
+  def load_order_total_bb(self, order_id: _T0) -> Dict[_T0, float]:
     raw_email = self.get_relevant_raw_email("BestBuyInfo@emailinfo.bestbuy.com",
                                             order_id)
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
@@ -56,7 +59,7 @@ class ExpectedCosts:
     tax = float(tax_match.group(1).replace(',', ''))
     return {order_id: subtotal + tax}
 
-  def load_order_total_amazon(self, order_id):
+  def load_order_total_amazon(self, order_id: _T0) -> Dict[_T0, float]:
     raw_email = self.get_relevant_raw_email("auto-confirm@amazon.com", order_id)
     if not raw_email:
       return {order_id: 0.0}
@@ -83,7 +86,7 @@ class ExpectedCosts:
     order_totals = [t[0] + t[1] for t in zip(pretax_totals, taxes)]
     return dict(zip(orders, order_totals))
 
-  def get_relevant_raw_email(self, from_address, order_id):
+  def get_relevant_raw_email(self, from_address, order_id) -> Optional[str]:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
     mail.login(self.email_config['username'], self.email_config['password'])
     mail.select('"[Gmail]/All Mail"')

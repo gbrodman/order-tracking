@@ -4,13 +4,14 @@ import yaml
 from objects_to_sheet import ObjectsToSheet
 from tracking import Tracking
 from tracking_output import TrackingOutput
+from typing import Any
 
 CONFIG_FILE = "config.yml"
 with open(CONFIG_FILE, 'r') as config_file_stream:
   config = yaml.safe_load(config_file_stream)
 
 
-def get_group(header, row):
+def get_group(header, row) -> Any:
   address = row[header.index("Shipping Address")]
   address = address.upper()
   for group in config['groups'].keys():
@@ -23,7 +24,7 @@ def get_group(header, row):
   return None
 
 
-def from_amazon_row(header, row):
+def from_amazon_row(header, row) -> Tracking:
   tracking = row[header.index('Carrier Tracking #')]
   orders = {row[header.index('Order ID')]}
   price = float(row[header.index('Shipment Subtotal')].replace(',', '').replace(
@@ -42,14 +43,14 @@ def from_amazon_row(header, row):
                   tracked_cost, items)
 
 
-def find_candidate(tracking, candidates):
+def find_candidate(tracking, candidates) -> Any:
   for candidate in candidates:
     if tracking.tracking_number == candidate.tracking_number:
       return candidate
   return None
 
 
-def dedupe_trackings(trackings):
+def dedupe_trackings(trackings) -> list:
   result = []
   for tracking in trackings:
     candidate = find_candidate(tracking, result)
@@ -64,7 +65,7 @@ def dedupe_trackings(trackings):
   return result
 
 
-def print_num_existing_trackings(tracking_output):
+def print_num_existing_trackings(tracking_output) -> None:
   existing_trackings = tracking_output.get_existing_trackings()
   total_trackings = sum(
       [len(trackings) for trackings in existing_trackings.values()])

@@ -2,6 +2,7 @@ import time
 import re
 import datetime
 from selenium import webdriver
+from typing import Any, Dict
 
 LOGIN_EMAIL_FIELD = "fldEmail"
 LOGIN_PASSWORD_FIELD = "fldPassword"
@@ -29,19 +30,19 @@ START = "20000101"
 
 class GroupSiteManager:
 
-  def __init__(self, config, driver_creator):
+  def __init__(self, config, driver_creator) -> None:
     self.config = config
     self.driver_creator = driver_creator
     self.melul_portal_groups = config['melulPortals']
 
-  def upload(self, groups_dict):
+  def upload(self, groups_dict) -> None:
     for group, trackings in groups_dict.items():
       numbers = [tracking.tracking_number for tracking in trackings]
       group_config = self.config['groups'][group]
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_tracked_costs(self, group):
+  def get_tracked_costs(self, group) -> Dict[Any, float]:
     if group not in self.melul_portal_groups:
       return {}
 
@@ -88,7 +89,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _upload_to_group(self, numbers, group):
+  def _upload_to_group(self, numbers, group) -> None:
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
         if group in self.melul_portal_groups:
@@ -101,11 +102,11 @@ class GroupSiteManager:
         print("Received exception when uploading: " + str(e))
     raise
 
-  def _load_page(self, driver, url):
+  def _load_page(self, driver, url) -> None:
     driver.get(url)
     time.sleep(2)
 
-  def _upload_melul(self, numbers, group):
+  def _upload_melul(self, numbers, group) -> None:
     driver = self._login_melul(group)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
@@ -115,7 +116,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _login_melul(self, group):
+  def _login_melul(self, group) -> Any:
     driver = self.driver_creator.new()
     self._load_page(driver, BASE_URL_FORMAT % group)
     group_config = self.config['groups'][group]
@@ -127,7 +128,7 @@ class GroupSiteManager:
     time.sleep(1)
     return driver
 
-  def get_po_to_price(self, group):
+  def get_po_to_price(self, group) -> Dict[Any, float]:
     if group != 'usa':
       return {}
 
@@ -158,7 +159,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def get_tracking_to_purchase_order(self, group):
+  def get_tracking_to_purchase_order(self, group) -> dict:
     if group != 'usa':
       return {}
 
@@ -219,7 +220,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _login_usa(self):
+  def _login_usa(self) -> Any:
     driver = self.driver_creator.new()
     self._load_page(driver, USA_LOGIN_URL)
     group_config = self.config['groups']['usa']
@@ -235,7 +236,7 @@ class GroupSiteManager:
     time.sleep(2)
     return driver
 
-  def _upload_usa(self, numbers):
+  def _upload_usa(self, numbers) -> None:
     driver = self._login_usa()
     try:
       self._load_page(driver, USA_TRACKING_URL)

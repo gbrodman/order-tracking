@@ -16,7 +16,10 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     return None  # not implementable
 
   def get_tracking_number_from_email(self, raw_email):
-    return re.search(self.tracking_regex, raw_email).group(1)
+    match = re.search(self.tracking_regex, raw_email)
+    if not match:
+      return None
+    return match.group(1)
 
   def get_from_email_address(self):
     return "BestBuyInfo@emailinfo.bestbuy.com"
@@ -26,7 +29,10 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     return "https://www.bestbuy.com/profile/ss/orders/order-details/%s/view" % order_id
 
   def _get_order_id(self, raw_email):
-    return re.search(self.order_id_regex, raw_email).group(1)
+    match = re.search(self.order_id_regex, raw_email)
+    if not match:
+      return None
+    return match.group(1)
 
   def get_items_from_email(self, data):
     return ""

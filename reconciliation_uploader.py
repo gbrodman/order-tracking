@@ -2,13 +2,16 @@ import clusters
 import sheets_service
 from functools import cmp_to_key
 from objects_to_sheet import ObjectsToSheet
+from typing import Any, TypeVar
+
+_T = TypeVar('_T')
 
 
-def total_tracked(cluster):
+def total_tracked(cluster) -> Any:
   return cluster.tracked_cost + cluster.adjustment
 
 
-def compare(cluster_one, cluster_two):
+def compare(cluster_one, cluster_two) -> int:
   diff_one = total_tracked(cluster_one) - cluster_one.expected_cost
   diff_two = total_tracked(cluster_two) - cluster_two.expected_cost
 
@@ -35,12 +38,12 @@ def compare(cluster_one, cluster_two):
 
 class ReconciliationUploader:
 
-  def __init__(self, config):
+  def __init__(self, config) -> None:
     self.config = config
     self.service = sheets_service.create()
     self.objects_to_sheet = ObjectsToSheet()
 
-  def download_upload_clusters(self, all_clusters):
+  def download_upload_clusters(self, all_clusters) -> None:
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
     self.fill_adjustments(all_clusters, base_sheet_id)
 
@@ -48,7 +51,7 @@ class ReconciliationUploader:
     self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
                                           "Reconciliation")
 
-  def fill_adjustments(self, all_clusters, base_sheet_id):
+  def fill_adjustments(self, all_clusters, base_sheet_id) -> None:
     print("Filling in cost adjustments if applicable")
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(
         clusters.from_row, base_sheet_id, "Reconciliation")
@@ -59,7 +62,7 @@ class ReconciliationUploader:
       cluster.adjustment = sum(
           [candidate.adjustment for candidate in candidate_downloads])
 
-  def find_candidate_downloads(self, cluster, downloaded_clusters):
+  def find_candidate_downloads(self, cluster, downloaded_clusters) -> list:
     result = []
     for downloaded_cluster in downloaded_clusters:
       if downloaded_cluster.trackings.intersection(cluster.trackings):

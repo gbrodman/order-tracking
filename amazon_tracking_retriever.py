@@ -50,7 +50,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     item_descriptions = []
     for li in all_lis:
       txt = li.getText().strip()
-      item_descriptions.append(re.match(item_regex, txt).group(1))
+      item_match = re.match(item_regex, txt)
+      if item_match:
+        item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
   def get_tracking_number_from_email(self, raw_email):
@@ -64,6 +66,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
           "//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
+      if not match:
+        return None
       tracking_number = match.group(1)
       return tracking_number.upper()
     except:

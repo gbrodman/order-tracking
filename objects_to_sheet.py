@@ -4,10 +4,10 @@ import googleapiclient.errors
 
 class ObjectsToSheet:
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.service = sheets_service.create()
 
-  def download_from_sheet(self, from_row_fn, base_sheet_id, tab_title):
+  def download_from_sheet(self, from_row_fn, base_sheet_id, tab_title) -> list:
     try:
       range = tab_title
       result = self.service.spreadsheets().values().get(
@@ -23,12 +23,12 @@ class ObjectsToSheet:
       self._create_tab(base_sheet_id, tab_title)
       return []
 
-  def extend_values_to_header(self, header, values):
+  def extend_values_to_header(self, header, values) -> None:
     for value in values:
       while len(value) < len(header):
         value.append('')
 
-  def upload_to_sheet(self, objects, base_sheet_id, tab_title):
+  def upload_to_sheet(self, objects, base_sheet_id, tab_title) -> None:
     try:
       self._clear_tab(base_sheet_id, tab_title)
     except googleapiclient.errors.HttpError:
@@ -48,7 +48,7 @@ class ObjectsToSheet:
         valueInputOption="USER_ENTERED",
         body=body).execute()
 
-  def _write_header(self, objects, base_sheet_id, tab_title):
+  def _write_header(self, objects, base_sheet_id, tab_title) -> None:
     header = objects[0].get_header()
     values = [header]
     body = {"values": values}
@@ -58,13 +58,13 @@ class ObjectsToSheet:
         valueInputOption="RAW",
         body=body).execute()
 
-  def _clear_tab(self, base_sheet_id, tab_title):
+  def _clear_tab(self, base_sheet_id, tab_title) -> None:
     ranges = [tab_title]
     body = {"ranges": ranges}
     self.service.spreadsheets().values().batchClear(
         spreadsheetId=base_sheet_id, body=body).execute()
 
-  def _create_tab(self, base_sheet_id, tab_title):
+  def _create_tab(self, base_sheet_id, tab_title) -> None:
     batch_update_body = {
         'requests': [{
             'addSheet': {
