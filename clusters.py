@@ -58,7 +58,7 @@ class Cluster:
         self.group,
         self.to_email,
         self.adjustment,
-        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("H", ROW()))',
+        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
     ]
 
   def merge_with(self, other) -> None:
