@@ -106,20 +106,22 @@ class EmailTrackingRetriever(ABC):
     to_email = self.get_to_address(data)
     date = self.get_date_from_msg(data)
     url = self.get_order_url_from_email(raw_email)
-    tracking_number = self.get_tracking_number_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
+    order_ids = self.get_order_ids_from_email(raw_email)
+    tracking_number = self.get_tracking_number_from_email(raw_email)
     if tracking_number == None:
       self.failed_email_ids.append(email_id)
-      print("Could not find tracking number from email with ID %s" % email_id)
+      print("Could not find tracking number from email with order(s) %s" %
+            order_ids)
       self.mark_as_unread(email_id)
       return None
 
-    order_ids = self.get_order_ids_from_email(raw_email)
     group = self.get_buying_group(raw_email)
     items = self.get_items_from_email(data)
     if group == None:
       self.failed_email_ids.append(email_id)
-      print("Could not find buying group for order ID %s" % order_ids)
+      print("Could not find buying group for email with order(s) %s" %
+            order_ids)
       self.mark_as_unread(email_id)
       return None
 
