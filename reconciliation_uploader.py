@@ -1,5 +1,4 @@
 import clusters
-import sheets_service
 from functools import cmp_to_key
 from objects_to_sheet import ObjectsToSheet
 from typing import Any, TypeVar
@@ -40,7 +39,6 @@ class ReconciliationUploader:
 
   def __init__(self, config) -> None:
     self.config = config
-    self.service = sheets_service.create()
     self.objects_to_sheet = ObjectsToSheet()
 
   def download_upload_clusters(self, all_clusters) -> None:

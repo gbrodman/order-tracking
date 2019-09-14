@@ -1,11 +1,11 @@
-import sheets_service
+import drive_service
 import googleapiclient.errors
 
 
 class ObjectsToSheet:
 
   def __init__(self) -> None:
-    self.service = sheets_service.create()
+    self.service = drive_service.create_sheets()
 
   def download_from_sheet(self, from_row_fn, base_sheet_id, tab_title) -> list:
     try:

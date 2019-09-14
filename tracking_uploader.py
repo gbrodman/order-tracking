@@ -1,4 +1,3 @@
-import sheets_service
 import tracking
 from objects_to_sheet import ObjectsToSheet
 
@@ -8,7 +7,6 @@ class TrackingUploader:
   def __init__(self, config) -> None:
     self.config = config
     self.objects_to_sheet = ObjectsToSheet()
-    self.service = sheets_service.create()
     self.base_spreadsheet_id = config['reconciliation']['baseSpreadsheetId']
 
   def upload(self, groups_dict) -> None:
