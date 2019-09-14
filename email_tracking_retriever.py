@@ -75,6 +75,10 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
+  def get_merchant(self) -> str:
+    pass
+
+  @abstractmethod
   def get_order_url_from_email(self, raw_email) -> Any:
     pass
 
@@ -119,8 +123,9 @@ class EmailTrackingRetriever(ABC):
       self.mark_as_unread(email_id)
       return None
 
+    merchant = self.get_merchant()
     return Tracking(tracking_number, group, order_ids, price, to_email, url,
-                    date, 0.0, items)
+                    date, 0.0, items, merchant)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])

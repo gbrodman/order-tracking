@@ -19,7 +19,8 @@ class Cluster:
                 tracked_cost,
                 last_ship_date='0',
                 purchase_orders=set(),
-                adjustment=0.0) -> None:
+                adjustment=0.0,
+                to_email='') -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -28,6 +29,7 @@ class Cluster:
     self.last_ship_date = last_ship_date
     self.purchase_orders = purchase_orders
     self.adjustment = adjustment
+    self.to_email = to_email
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
@@ -41,15 +43,22 @@ class Cluster:
   def get_header(self) -> List[str]:
     return [
         "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
-        "Last Ship Date", "POs", "Group", "Manual Cost Adjustment", "Total Diff"
+        "Last Ship Date", "POs", "Group", "To Email", "Manual Cost Adjustment",
+        "Total Diff"
     ]
 
   def to_row(self) -> list:
     return [
-        ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
-        self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
-        self.group, self.adjustment,
-        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("H", ROW()))'
+        ",".join(self.orders),
+        ",".join(self.trackings),
+        self.expected_cost,
+        self.tracked_cost,
+        self.last_ship_date,
+        ",".join(self.purchase_orders),
+        self.group,
+        self.to_email,
+        self.adjustment,
+        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("H", ROW()))',
     ]
 
   def merge_with(self, other) -> None:
@@ -109,6 +118,7 @@ def update_clusters(all_clusters, trackings_dict) -> None:
       cluster.orders.update(tracking.order_ids)
       cluster.trackings.add(tracking.tracking_number)
       cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
+      cluster.to_email = tracking.to_email
 
 
 def merge_by_purchase_orders(clusters) -> list:
@@ -157,6 +167,7 @@ def from_row(header, row) -> Cluster:
   group = row[header.index('Group')] if 'Group' in header else ''
   adjustment = float(row[header.index('Manual Cost Adjustment')].replace(
       ',', '').replace('$', '')) if 'Manual Cost Adjustment' in header else 0.0
+  to_email = row[header.index('To Email')] if 'To Email' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, adjustment)

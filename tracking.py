@@ -13,7 +13,8 @@ class Tracking:
                url,
                ship_date='0',
                tracked_cost=0.0,
-               items='') -> None:
+               items='',
+               merchant='') -> None:
     self.tracking_number = tracking_number
     self.group = group
     self.order_ids = order_ids
@@ -23,6 +24,7 @@ class Tracking:
     self.ship_date = ship_date
     self.tracked_cost = tracked_cost
     self.items = items
+    self.merchant = merchant
 
   def __setstate__(self, state) -> None:
     self.__init__(**state)
@@ -36,13 +38,14 @@ class Tracking:
     hyperlink = self._create_hyperlink()
     return [
         hyperlink, ", ".join(self.order_ids), self.price, self.to_email,
-        self.url, self.ship_date, self.group, self.tracked_cost, self.items
+        self.url, self.ship_date, self.group, self.tracked_cost, self.merchant,
+        self.items
     ]
 
   def get_header(self) -> List[str]:
     return [
         "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL",
-        "Ship Date", "Group", "Amount Reimbursed", "Items"
+        "Ship Date", "Group", "Amount Reimbursed", "Merchant", "Items"
     ]
 
   def _create_hyperlink(self) -> Any:
@@ -79,5 +82,6 @@ def from_row(header, row) -> Tracking:
   tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
       ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
   items = row[header.index("Items")] if 'Items' in header else ""
+  merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
                   tracked_cost, items)

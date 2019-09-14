@@ -36,6 +36,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_from_email_address(self):
     return "shipment-tracking@amazon.com"
 
+  def get_merchant(self) -> str:
+    return "Amazon"
+
   def get_items_from_email(self, data):
     item_regex = r'(.*Qty: \d+)'
     soup = BeautifulSoup(
