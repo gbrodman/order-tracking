@@ -1,26 +1,33 @@
 import pickle
 import os.path
+from objects_to_drive import ObjectsToDrive
 from typing import Any, TypeVar
 
 _T0 = TypeVar('_T0')
 
 OUTPUT_FOLDER = "output"
-TRACKINGS_FILE = OUTPUT_FOLDER + "/trackings.pickle"
+TRACKINGS_FILENAME = "trackings.pickle"
+TRACKINGS_FILE = OUTPUT_FOLDER + "/" + TRACKINGS_FILENAME
 
 
 class TrackingOutput:
 
-  def save_trackings(self, trackings) -> None:
-    old_trackings = self.get_existing_trackings()
+  def save_trackings(self, config, trackings) -> None:
+    old_trackings = self.get_existing_trackings(config)
     merged_trackings = self.merge_trackings(old_trackings, trackings)
-    self.write_merged(merged_trackings)
+    self._write_merged(config, merged_trackings)
 
-  def write_merged(self, merged_trackings) -> None:
+  def _write_merged(self, config, merged_trackings) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
     with open(TRACKINGS_FILE, 'wb') as output:
       pickle.dump(merged_trackings, output)
+
+    if 'driveFolder' in config:
+      objects_to_drive = ObjectsToDrive()
+      objects_to_drive.save(config['driveFolder'], TRACKINGS_FILENAME,
+                            TRACKINGS_FILE)
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
@@ -38,7 +45,17 @@ class TrackingOutput:
         old_trackings[group] = group_trackings
     return old_trackings
 
-  def get_existing_trackings(self) -> Any:
+  def get_existing_trackings(self, config) -> Any:
+    if 'driveFolder' in config:
+      objects_to_drive = ObjectsToDrive()
+      from_drive = objects_to_drive.load(config['driveFolder'],
+                                         TRACKINGS_FILENAME)
+      if from_drive:
+        return from_drive
+
+    print(
+        "Drive folder ID not present or we couldn't load from drive. Loading from local"
+    )
     if not os.path.exists(TRACKINGS_FILE):
       return {}
 

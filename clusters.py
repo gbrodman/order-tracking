@@ -1,9 +1,11 @@
 import pickle
 import os.path
+from objects_to_drive import ObjectsToDrive
 from typing import Any, List
 
 OUTPUT_FOLDER = "output"
-CLUSTERS_FILE = OUTPUT_FOLDER + "/clusters.pickle"
+CLUSTERS_FILENAME = "clusters.pickle"
+CLUSTERS_FILE = OUTPUT_FOLDER + "/" + CLUSTERS_FILENAME
 
 
 class Cluster:
@@ -81,7 +83,7 @@ def dedupe_clusters(clusters) -> list:
   return result
 
 
-def write_clusters(clusters) -> None:
+def write_clusters(config, clusters) -> None:
   clusters = dedupe_clusters(clusters)
   if not os.path.exists(OUTPUT_FOLDER):
     os.mkdir(OUTPUT_FOLDER)
@@ -89,8 +91,22 @@ def write_clusters(clusters) -> None:
   with open(CLUSTERS_FILE, 'wb') as output:
     pickle.dump(clusters, output)
 
+  if 'driveFolder' in config:
+    objects_to_drive = ObjectsToDrive()
+    objects_to_drive.save(config['driveFolder'], CLUSTERS_FILENAME,
+                          CLUSTERS_FILE)
 
-def get_existing_clusters() -> list:
+
+def get_existing_clusters(config) -> list:
+  if 'driveFolder' in config:
+    objects_to_drive = ObjectsToDrive()
+    from_drive = objects_to_drive.load(config['driveFolder'], CLUSTERS_FILENAME)
+    if from_drive:
+      return from_drive
+
+  print(
+      "Drive folder ID not present or we couldn't load from drive. Loading from local"
+  )
   if not os.path.exists(CLUSTERS_FILE):
     return []
 

@@ -27,7 +27,7 @@ def get_tracked_costs_by_group(all_clusters, config, driver_creator):
 # Take the reimbursed costs we found and write them into the Tracking objects
 def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
   tracking_output = TrackingOutput()
-  existing_trackings = tracking_output.get_existing_trackings()
+  existing_trackings = tracking_output.get_existing_trackings(config)
   for group, trackings in existing_trackings.items():
     if group not in tracked_costs_by_group:
       continue
@@ -35,7 +35,7 @@ def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
     for tracking in trackings:
       if tracking.tracking_number in this_group:
         tracking.tracked_cost = this_group[tracking.tracking_number]
-  tracking_output.save_trackings(existing_trackings)
+  tracking_output.save_trackings(config, existing_trackings)
   # get a list of the trackings and upload it
   tracking_uploader = TrackingUploader(config)
   trackings_list = []
@@ -84,7 +84,7 @@ if __name__ == "__main__":
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
 
-  all_clusters = clusters.get_existing_clusters()
+  all_clusters = clusters.get_existing_clusters(config)
   driver_creator = DriverCreator(sys.argv)
 
   fill_tracked_costs(all_clusters, config, driver_creator)
@@ -94,4 +94,4 @@ if __name__ == "__main__":
 
   reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.download_upload_clusters(all_clusters)
-  clusters.write_clusters(all_clusters)
+  clusters.write_clusters(config, all_clusters)

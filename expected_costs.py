@@ -2,17 +2,20 @@ import pickle
 import os.path
 import imaplib
 import re
+from objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, TypeVar
 
 _T0 = TypeVar('_T0')
 
 OUTPUT_FOLDER = "output"
-COSTS_FILE = OUTPUT_FOLDER + "/expected_costs.pickle"
+COSTS_FILENAME = "expected_costs.pickle"
+COSTS_FILE = OUTPUT_FOLDER + "/" + COSTS_FILENAME
 
 
 class ExpectedCosts:
 
   def __init__(self, config) -> None:
+    self.config = config
     self.email_config = config['email']
     self.costs_dict = self.load_dict()
 
@@ -23,7 +26,19 @@ class ExpectedCosts:
     with open(COSTS_FILE, 'wb') as stream:
       pickle.dump(self.costs_dict, stream)
 
+    if 'driveFolder' in self.config:
+      objects_to_drive = ObjectsToDrive()
+      objects_to_drive.save(self.config['driveFolder'], COSTS_FILENAME,
+                            COSTS_FILE)
+
   def load_dict(self) -> Any:
+    if 'driveFolder' in self.config:
+      objects_to_drive = ObjectsToDrive()
+      from_drive = objects_to_drive.load(self.config['driveFolder'],
+                                         COSTS_FILENAME)
+      if from_drive:
+        return from_drive
+
     if not os.path.exists(COSTS_FILE):
       return {}
 

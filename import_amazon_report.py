@@ -66,7 +66,7 @@ def dedupe_trackings(trackings) -> list:
 
 
 def print_num_existing_trackings(tracking_output) -> None:
-  existing_trackings = tracking_output.get_existing_trackings()
+  existing_trackings = tracking_output.get_existing_trackings(config)
   total_trackings = sum(
       [len(trackings) for trackings in existing_trackings.values()])
   print("Num saved trackings: %d" % total_trackings)
@@ -97,5 +97,5 @@ if __name__ == "__main__":
       groups_dict[tracking.group] = []
     groups_dict[tracking.group].append(tracking)
 
-  tracking_output.save_trackings(groups_dict)
+  tracking_output.save_trackings(config, groups_dict)
   print_num_existing_trackings(tracking_output)

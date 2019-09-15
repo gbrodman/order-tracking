@@ -99,14 +99,14 @@ if __name__ == "__main__":
     print("Writing results to file")
     tracking_output = TrackingOutput()
     try:
-      tracking_output.save_trackings(groups_dict)
+      tracking_output.save_trackings(config, groups_dict)
     except:
       send_error_email(email_sender, "Error writing output file")
       raise
 
     print("Getting all tracking objects")
     try:
-      trackings_dict = tracking_output.get_existing_trackings()
+      trackings_dict = tracking_output.get_existing_trackings(config)
     except:
       send_error_email(email_sender,
                        "Error retrieving tracking objects from file")
@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     print("Converting to Cluster objects")
     try:
-      all_clusters = clusters.get_existing_clusters()
+      all_clusters = clusters.get_existing_clusters(config)
       clusters.update_clusters(all_clusters, trackings_dict)
     except:
       send_error_email(email_sender, "Error converting to Cluster objects")
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     print("Filling out expected costs and writing result to disk")
     try:
       fill_expected_costs(all_clusters, config)
-      clusters.write_clusters(all_clusters)
+      clusters.write_clusters(config, all_clusters)
     except:
       send_error_email(email_sender,
                        "Error filling expected costs + writing to disk")
