@@ -163,7 +163,8 @@ def from_row(header, row) -> Cluster:
       'Amount Reimbursed')]) if 'Amount Reimbursed' in header else 0.0
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
-  pos = set(row[header.index('POs')].split(',')) if 'POs' in header else set()
+  pos = set(str(
+      row[header.index('POs')]).split(',')) if 'POs' in header else set()
   group = row[header.index('Group')] if 'Group' in header else ''
   adjustment = float(row[header.index(
       'Manual Cost Adjustment')]) if 'Manual Cost Adjustment' in header else 0.0
