@@ -37,14 +37,13 @@ class Tracking:
   def to_row(self) -> list:
     hyperlink = self._create_hyperlink()
     return [
-        hyperlink, ", ".join(self.order_ids), self.price, self.to_email,
-        self.url, self.ship_date, self.group, self.tracked_cost, self.merchant,
-        self.items
+        hyperlink, ", ".join(self.order_ids), self.to_email, self.url,
+        self.ship_date, self.group, self.tracked_cost, self.merchant, self.items
     ]
 
   def get_header(self) -> List[str]:
     return [
-        "Tracking Number", "Order Number(s)", "Price", "To Email", "Order URL",
+        "Tracking Number", "Order Number(s)", "To Email", "Order URL",
         "Ship Date", "Group", "Amount Reimbursed", "Merchant", "Items"
     ]
 
@@ -72,15 +71,15 @@ class Tracking:
 def from_row(header, row) -> Tracking:
   tracking = row[header.index('Tracking Number')]
   orders = set(row[header.index('Order Number(s)')].split(','))
-  price_str = row[header.index('Price')].replace(',', '').replace(
-      '$', '') if 'Price' in header else ''
+  price_str = str(row[header.index('Price')].replace(',', '').replace(
+      '$', '')) if 'Price' in header else ''
   price = float(price_str) if price_str else 0.0
   to_email = row[header.index("To Email")]
   url = row[header.index("Order URL")]
   ship_date = row[header.index("Ship Date")]
   group = row[header.index("Group")]
-  tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
-      ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
+  tracked_cost = float(row[header.index(
+      'Amount Reimbursed')]) if 'Amount Reimbursed' in header else 0.0
   items = row[header.index("Items")] if 'Items' in header else ""
   merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,

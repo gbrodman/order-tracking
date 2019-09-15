@@ -157,16 +157,16 @@ def from_row(header, row) -> Cluster:
       row[header.index('Orders')].split(',')) if 'Orders' in header else set()
   trackings = set(row[header.index('Trackings')].split(
       ',')) if 'Trackings' in header else set()
-  expected_cost = float(row[header.index('Amount Billed')].replace(
-      ',', '').replace('$', '')) if 'Amount Billed' in header else 0.0
-  tracked_cost = float(row[header.index('Amount Reimbursed')].replace(
-      ',', '').replace('$', '')) if 'Amount Reimbursed' in header else 0.0
+  expected_cost = float(
+      row[header.index('Amount Billed')]) if 'Amount Billed' in header else 0.0
+  tracked_cost = float(row[header.index(
+      'Amount Reimbursed')]) if 'Amount Reimbursed' in header else 0.0
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos = set(row[header.index('POs')].split(',')) if 'POs' in header else set()
   group = row[header.index('Group')] if 'Group' in header else ''
-  adjustment = float(row[header.index('Manual Cost Adjustment')].replace(
-      ',', '').replace('$', '')) if 'Manual Cost Adjustment' in header else 0.0
+  adjustment = float(row[header.index(
+      'Manual Cost Adjustment')]) if 'Manual Cost Adjustment' in header else 0.0
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
