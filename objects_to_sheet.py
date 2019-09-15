@@ -10,8 +10,11 @@ class ObjectsToSheet:
   def download_from_sheet(self, from_row_fn, base_sheet_id, tab_title) -> list:
     try:
       range = tab_title
+      value_render_option = "UNFORMATTED_VALUE"
       result = self.service.spreadsheets().values().get(
-          spreadsheetId=base_sheet_id, range=range).execute()
+          spreadsheetId=base_sheet_id,
+          range=range,
+          valueRenderOption=value_render_option).execute()
       if 'values' not in result:  # blank sheet
         return []
       header = result['values'][0]

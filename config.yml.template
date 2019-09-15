@@ -47,6 +47,10 @@ groups:
 reconciliation:
   baseSpreadsheetId:
 
+# A Google Drive folder into which we will save tracking/cluster objects
+# in between script runs.
+driveFolder:
+
 # A list of portals that use the same website template. This should be the 
 # URL without the ".com" part
 melulPortals:
