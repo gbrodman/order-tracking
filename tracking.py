@@ -71,8 +71,8 @@ class Tracking:
 def from_row(header, row) -> Tracking:
   tracking = row[header.index('Tracking Number')]
   orders = set(row[header.index('Order Number(s)')].split(','))
-  price_str = str(row[header.index('Price')].replace(',', '').replace(
-      '$', '')) if 'Price' in header else ''
+  price_str = str(row[header.index('Price')]).replace(',', '').replace(
+      '$', '') if 'Price' in header else ''
   price = float(price_str) if price_str else 0.0
   to_email = row[header.index("To Email")]
   url = row[header.index("Order URL")]
