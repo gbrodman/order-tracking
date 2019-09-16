@@ -25,8 +25,8 @@ def get_group(header, row) -> Any:
 
 
 def from_amazon_row(header, row) -> Tracking:
-  tracking = row[header.index('Carrier Tracking #')]
-  orders = {row[header.index('Order ID')]}
+  tracking = row[header.index('Carrier Tracking #')].upper()
+  orders = {row[header.index('Order ID')].upper()}
   price = float(row[header.index('Shipment Subtotal')].replace(',', '').replace(
       '$', '').replace('N/A', '0.0'))
   to_email = row[header.index("Account User Email")]
