@@ -40,25 +40,34 @@ This is the script for reconciliation. It does the following:
 - One must be able to run a headless browser with Selenium, either Chrome or Firefox. Chromedriver or geckodriver (respectively) must be on the user's PATH.
 - Python3 and pip3 (these should come together)
 
-## Instructions (basic)
+## Instructions
 
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
 - If you don't have it already, add either Chromedriver or Geckodriver to your PATH. The default is Chrome; download it from [here](https://sites.google.com/a/chromium.org/chromedriver/home) and add it to your PATH (this will vary based on operating system, search on Google for results particular to your system).
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
 - `pip3 install pyyaml selenium google-api-python-client google-auth-oauthlib bs4`
 - Copy config.yml.template to config.yml
-- In config.yml, fill in the values for your email, password, and buying group info. For GMail, you should use an application-specific password. Also fill in your username/password for the buying groups you wish to use.
-- For the reconciliation sheet ID, see "Sheets Configuration" below
+- Set up the configuration (see the "Configuration" section below for more info)
 - Run `python3 get_tracking_numbers.py` followed by `python3 reconcile.py`
 
-### Arguments
+## Configuration
+
+Here are details of the fields on config.yml:
+
+- The email and password should be a GMail account -- specifically, the password should be an [app-specific password](https://support.google.com/accounts/answer/185833?hl=en). You can likely keep the IMAP and SMTP configuration the same (unless you know for sure that you shouldn't).
+- For each group in 'groups', include the full name of the group (for sites like MYS, this should be the URL minus the ".com" bit). Include a unique key per group (default is based on the address) that will appear only in shipping notifications to that group. The username and password should be to the group's online portal so that we can upload tracking numbers and scrape reconciliation data.
+- lookbackDays is how far back in your email account we'll search for unread Amazon shipping emails. Note: the shipment links expire after 45 days so we shouldn't go past that
+- The reconciliation baseSpreadsheetId should be the ID of an existing Google Sheet. See the section below on how to give correct permissions to that sheet. The ID can be retrieved form the URL, which is of the form "https://docs.google.com/spreadsheets/d/SHEET_ID"
+- The "driveFolder" field should be the ID of a Google Drive folder into which we will store persistent data. This can be retrieved from the URL of the folder, which is of the form "https://drive.google.com/drive/folders/FOLDER_ID"
+
+### Sheets / Drive Configuration and Permissions
+
+TODO
+
+## Arguments
 
 - `--no-headless` to run in a standard browser, rather than a headless browser. This is useful if you want to see what the Selenium browser automation is actually doing.
 - `--firefox` to run using Firefox/Geckodriver rather than Chrome
-
-## Sheets Configuration
-
-TODO
 
 ## Sheets Output
 
