@@ -1,4 +1,4 @@
-# order-tracking
+# Order Tracking
 
 This is a set of Python scripts meant for streamlining and automating the process of reconciling one's orders with buying groups. In a basic sense, it automates the retrieval of tracking information, upload to buying groups' sites, and order reconciliation after reimbursement. The main purposes of these scripts is so that one can look at a single Google Sheet and immediately know what orders have been properly tracked and reimbursed by the buying groups, and to give the user the tools to fix any issues that may arise.
 
@@ -28,7 +28,7 @@ This is the script for reconciliation. It does the following:
 - Applies manual adjustments (see "Sheets Output" below).
 - Uploads the reconciliation output to a Google Sheet in a human-readable format. See "Sheets Output" below for more information.
 
-# Limitations
+## Limitations
 
 - This will only work for one email account at a time
 - This will only work for GMail
@@ -62,7 +62,16 @@ Here are details of the fields on config.yml:
 
 ### Sheets / Drive Configuration and Permissions
 
-TODO
+We need to create and use an automated Google Cloud account to write to Drive and to Sheets. Here's how we do that:
+
+- First, create a Google Cloud project at https://console.cloud.google.com
+- Next, create the serivce account in Google Cloud and get the credentials for it, by following steps 1-5 on [this page](https://docs.bmc.com/docs/PATROL4GoogleCloudPlatform/10/creating-a-service-account-key-in-the-google-cloud-platform-project-799095477.html). Make sure to note the email address of the service account -- it should be very long, and it should include ".gserviceaccount.com" at the end.
+- When you download the credentials JSON file, rename it "creds.json" and put it in the same directory as these scripts.
+- In the Google Cloud console website, use the left navigation pane to go to "APIs and Services"
+- Next, click "Enable APIs and Services". This will take you to the API library. You need to search for and enable the "Google Drive API" and "Google Sheets API". For each, search for it, click the term, and enable it.
+- Next, for the reconciliation Google Sheet and the Google Drive folder that we set up, make sure to share the sheet/folder with the service account that we created before. Just share them both with the email address that ends in ".gserviceaccount.com" (make sure the address has editing permissions on the sheet and folder).
+
+That should be it -- the "creds.json" file will give the scripts the ability to run as the service account, and we've given the service account permissions to the things it needs to write to.
 
 ## Arguments
 
