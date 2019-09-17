@@ -82,12 +82,10 @@ That should be it -- the "creds.json" file will give the scripts the ability to 
 
 TODO
 
-## Google Sheets Integration (optional)
+## Amazon Report Import
 
-If you wish to upload order number + tracking number to a Google Sheet, uncomment out the relevant section in the configuration, then create a credentials file ([see example here](https://www.makeuseof.com/tag/read-write-google-sheets-python/)). Note that the account key you create should be based on a non-UI cron-job type account (a service account key). Take the resulting credentials file and save it as `creds.json` in the same directory as the scripts. Also, [enable the Sheets API for your project](https://console.developers.google.com/apis/api/sheets.googleapis.com/overview).
-
-Create the spreadsheet, then include the base spreadsheet ID in the config
+TODO
 
 ## Donations
 
-This software is completely free, licensed under the Apache 2.0 license. However, if you feel like you wish to donate some money to me, feel free to send any amount of money through Paypal to `gustav@gustav.dev`.
+This software is completely free, licensed under the Apache 2.0 license. However, if you feel like you wish to donate some money to me, feel free to send any amount of money through Paypal to https://paypal.me/GustavBrodman
