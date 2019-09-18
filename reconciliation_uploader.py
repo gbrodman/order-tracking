@@ -59,6 +59,8 @@ class ReconciliationUploader:
           cluster, downloaded_clusters)
       cluster.adjustment = sum(
           [candidate.adjustment for candidate in candidate_downloads])
+      cluster.notes = ", ".join(
+          [candidate.notes for candidate in candidate_downloads])
 
   def find_candidate_downloads(self, cluster, downloaded_clusters) -> list:
     result = []

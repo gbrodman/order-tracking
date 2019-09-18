@@ -22,7 +22,8 @@ class Cluster:
                 last_ship_date='0',
                 purchase_orders=set(),
                 adjustment=0.0,
-                to_email='') -> None:
+                to_email='',
+                notes='') -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -32,6 +33,7 @@ class Cluster:
     self.purchase_orders = purchase_orders
     self.adjustment = adjustment
     self.to_email = to_email
+    self.notes = notes
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
@@ -46,21 +48,16 @@ class Cluster:
     return [
         "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
         "Last Ship Date", "POs", "Group", "To Email", "Manual Cost Adjustment",
-        "Total Diff"
+        "Total Diff", "Notes"
     ]
 
   def to_row(self) -> list:
     return [
-        ",".join(self.orders),
-        ",".join(self.trackings),
-        self.expected_cost,
-        self.tracked_cost,
-        self.last_ship_date,
-        ",".join(self.purchase_orders),
-        self.group,
-        self.to_email,
-        self.adjustment,
+        ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
+        self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
+        self.group, self.to_email, self.adjustment,
         '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
+        self.notes
     ]
 
   def merge_with(self, other) -> None:
@@ -71,6 +68,10 @@ class Cluster:
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
     self.purchase_orders.update(other.purchase_orders)
     self.adjustment += other.adjustment
+    if self.notes and other.notes:
+      self.notes += ", " + other.notes
+    elif other.notes:
+      self.notes = other.notes
 
 
 def dedupe_clusters(clusters) -> list:
@@ -185,7 +186,8 @@ def from_row(header, row) -> Cluster:
   adjustment = float(row[header.index(
       'Manual Cost Adjustment')]) if 'Manual Cost Adjustment' in header else 0.0
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
+  notes = row[header.index('Notes')] if 'Notes' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
-                    last_ship_date, pos, adjustment)
+                    last_ship_date, pos, adjustment, to_email, notes)
   return cluster
