@@ -43,6 +43,7 @@ class GroupSiteManager:
         self._upload_to_group(numbers, group)
 
   def get_tracked_costs_by_group(self, group) -> Dict[Any, float]:
+    print("Loading group %s" % group)
     driver = self._login_melul(group)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
@@ -90,13 +91,10 @@ class GroupSiteManager:
     if group not in self.melul_portal_groups:
       return {}
 
-    print("Loading group %s" % group)
-    if group == "mysbuyinggroup":
-      costs = self.get_tracked_costs_by_group(group)
+    costs = self.get_tracked_costs_by_group(group)
+    if group == "mysbuyinggroup" and "mys2018" in self.config['groups']:
       costs.update(self.get_tracked_costs_by_group("mys2018"))
-      return costs
-    else:
-      return self.get_tracked_costs_by_group(group)
+    return costs
 
 
   def _upload_to_group(self, numbers, group) -> None:
