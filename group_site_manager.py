@@ -86,7 +86,6 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-
   def get_tracked_costs(self, group) -> Dict[Any, float]:
     if group not in self.melul_portal_groups:
       return {}
@@ -95,7 +94,6 @@ class GroupSiteManager:
     if group == "mysbuyinggroup" and "mys2018" in self.config['groups']:
       costs.update(self.get_tracked_costs_by_group("mys2018"))
     return costs
-
 
   def _upload_to_group(self, numbers, group) -> None:
     for attempt in range(MAX_UPLOAD_ATTEMPTS):

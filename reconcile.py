@@ -11,30 +11,23 @@ from tracking_uploader import TrackingUploader
 CONFIG_FILE = "config.yml"
 
 
-def get_tracked_costs_by_group(all_clusters, config, driver_creator):
-  groups = set()
-  for cluster in all_clusters:
-    groups.add(cluster.group)
+def get_tracked_costs(config, driver_creator):
+  group_site_manager = GroupSiteManager(config, driver_creator)
+  tracked_costs = {}
+  for group in config['groups'].keys():
+    tracked_costs.update(group_site_manager.get_tracked_costs(group))
 
-  tracked_costs_by_group = {}
-  for group in groups:
-    group_site_manager = GroupSiteManager(config, driver_creator)
-    tracked_costs_by_group[group] = group_site_manager.get_tracked_costs(group)
-
-  return tracked_costs_by_group
+  return tracked_costs
 
 
 # Take the reimbursed costs we found and write them into the Tracking objects
-def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
+def fill_tracking_costs_and_upload(config, tracked_costs):
   tracking_output = TrackingOutput()
   existing_trackings = tracking_output.get_existing_trackings(config)
   for group, trackings in existing_trackings.items():
-    if group not in tracked_costs_by_group:
-      continue
-    this_group = tracked_costs_by_group[group]
     for tracking in trackings:
-      if tracking.tracking_number in this_group:
-        tracking.tracked_cost = this_group[tracking.tracking_number]
+      if tracking.tracking_number in tracked_costs:
+        tracking.tracked_cost = tracked_costs[tracking.tracking_number]
   tracking_output.save_trackings(config, existing_trackings)
   # get a list of the trackings and upload it
   tracking_uploader = TrackingUploader(config)
@@ -45,17 +38,14 @@ def fill_tracking_costs_and_upload(config, tracked_costs_by_group):
 
 
 def fill_tracked_costs(all_clusters, config, driver_creator):
-  tracked_costs_by_group = get_tracked_costs_by_group(all_clusters, config,
-                                                      driver_creator)
-  fill_tracking_costs_and_upload(config, tracked_costs_by_group)
+  tracked_costs = get_tracked_costs(config, driver_creator)
+  fill_tracking_costs_and_upload(config, tracked_costs)
   for cluster in all_clusters:
-    group = cluster.group
-    if group in tracked_costs_by_group:
-      tracked_cost = sum([
-          tracked_costs_by_group[group].get(tracking_number, 0.0)
-          for tracking_number in cluster.trackings
-      ])
-      cluster.tracked_cost = tracked_cost
+    tracked_cost = sum([
+        tracked_costs.get(tracking_number, 0.0)
+        for tracking_number in cluster.trackings
+    ])
+    cluster.tracked_cost = tracked_cost
 
 
 def fill_purchase_orders(all_clusters, config, driver_creator):
