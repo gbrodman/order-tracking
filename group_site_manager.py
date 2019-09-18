@@ -42,11 +42,7 @@ class GroupSiteManager:
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_tracked_costs(self, group) -> Dict[Any, float]:
-    if group not in self.melul_portal_groups:
-      return {}
-
-    print("Loading group %s" % group)
+  def get_tracked_costs_by_group(self, group) -> Dict[Any, float]:
     driver = self._login_melul(group)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
@@ -88,6 +84,20 @@ class GroupSiteManager:
       return tracking_to_cost_map
     finally:
       driver.close()
+
+
+  def get_tracked_costs(self, group) -> Dict[Any, float]:
+    if group not in self.melul_portal_groups:
+      return {}
+
+    print("Loading group %s" % group)
+    if group == "mysbuyinggroup":
+      costs = self.get_tracked_costs_by_group(group)
+      costs.update(self.get_tracked_costs_by_group("mys2018"))
+      return costs
+    else:
+      return self.get_tracked_costs_by_group(group)
+
 
   def _upload_to_group(self, numbers, group) -> None:
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
