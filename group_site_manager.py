@@ -110,7 +110,7 @@ class GroupSiteManager:
 
   def _load_page(self, driver, url) -> None:
     driver.get(url)
-    time.sleep(2)
+    time.sleep(5)
 
   def _upload_melul(self, numbers, group) -> None:
     driver = self._login_melul(group)
@@ -157,7 +157,7 @@ class GroupSiteManager:
         if next_page_button:
           link = next_page_button[0].find_element_by_tag_name('a')
           link.click()
-          time.sleep(2)
+          time.sleep(5)
         else:
           break
 
