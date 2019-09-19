@@ -16,7 +16,6 @@ class ExpectedCosts:
 
   def __init__(self, config) -> None:
     self.config = config
-    self.email_config = config['email']
     self.costs_dict = self.load_dict()
 
   def flush(self) -> None:
@@ -102,8 +101,9 @@ class ExpectedCosts:
     return dict(zip(orders, order_totals))
 
   def get_relevant_raw_email(self, from_address, order_id) -> Optional[str]:
-    mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
-    mail.login(self.email_config['username'], self.email_config['password'])
+    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
+    mail.login(self.config['email']['username'],
+               self.config['email']['password'])
     mail.select('"[Gmail]/All Mail"')
 
     status, search_result = mail.uid('SEARCH', None, 'FROM "%s"' % from_address,

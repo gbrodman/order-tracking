@@ -30,9 +30,9 @@ class Tracking:
     self.__init__(**state)
 
   def __str__(self) -> str:
-    return "number: %s, group: %s, order(s): %s, price: %s, to_email: %s, url: %s, ship_date: %s" % (
+    return "number: %s, group: %s, order(s): %s, price: %s, to_email: %s, url: %s, ship_date: %s, items: %s, merchant: %s" % (
         self.tracking_number, self.group, self.order_ids, self.price,
-        self.to_email, self.url, self.ship_date)
+        self.to_email, self.url, self.ship_date, self.items, self.merchant)
 
   def to_row(self) -> list:
     hyperlink = self._create_hyperlink()
@@ -78,7 +78,8 @@ def from_row(header, row) -> Tracking:
   url = row[header.index("Order URL")]
   ship_date = row[header.index("Ship Date")]
   group = row[header.index("Group")]
-  tracked_cost_str = row[header.index("Amount Reimbursed")] if "Amount Reimbursed" in header else ""
+  tracked_cost_str = row[header.index(
+      "Amount Reimbursed")] if "Amount Reimbursed" in header else ""
   tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   items = row[header.index("Items")] if 'Items' in header else ""
   merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
