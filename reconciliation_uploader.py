@@ -190,6 +190,8 @@ class ReconciliationUploader:
           [candidate.adjustment for candidate in candidate_downloads])
       cluster.notes = ", ".join(
           [candidate.notes for candidate in candidate_downloads])
+      cluster.manual_override = all(
+          [candidate.manual_override for candidate in candidate_downloads])
 
   def find_candidate_downloads(self, cluster, downloaded_clusters) -> list:
     result = []
