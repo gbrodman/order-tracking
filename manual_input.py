@@ -65,5 +65,6 @@ if __name__ == "__main__":
     ec.costs_dict.update(orders_to_costs)
     ec.flush()
     print("Wrote billed amounts")
+    print("Run get_order_tracking.py to combine this with existing trackings")
   else:
     print("Submission cancelled.")

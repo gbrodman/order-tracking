@@ -23,7 +23,8 @@ class Cluster:
                 purchase_orders=set(),
                 adjustment=0.0,
                 to_email='',
-                notes='') -> None:
+                notes='',
+                manual_override=False) -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -34,6 +35,7 @@ class Cluster:
     self.adjustment = adjustment
     self.to_email = to_email
     self.notes = notes
+    self.manual_override = manual_override
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
@@ -48,14 +50,14 @@ class Cluster:
     return [
         "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
         "Last Ship Date", "POs", "Group", "To Email", "Manual Cost Adjustment",
-        "Total Diff", "Notes"
+        "Manual Override", "Total Diff", "Notes"
     ]
 
   def to_row(self) -> list:
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
         self.tracked_cost, self.last_ship_date, ",".join(self.purchase_orders),
-        self.group, self.to_email, self.adjustment,
+        self.group, self.to_email, self.adjustment, self.manual_override,
         '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
         self.notes
     ]
@@ -72,6 +74,7 @@ class Cluster:
       self.notes += ", " + other.notes
     elif other.notes:
       self.notes = other.notes
+    self.manual_override = self.manual_override and other.manual_override
 
 
 def dedupe_clusters(clusters) -> list:
@@ -187,9 +190,12 @@ def from_row(header, row) -> Cluster:
   adj_string = row[header.index(
       "Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
   adjustment = float(adj_string) if adj_string else 0.0
+  manual_override = row[header.index(
+      'Manual Override')] if 'Manual Override' in header else False
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
   notes = row[header.index('Notes')] if 'Notes' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
-                    last_ship_date, pos, adjustment, to_email, notes)
+                    last_ship_date, pos, adjustment, to_email, notes,
+                    manual_override)
   return cluster

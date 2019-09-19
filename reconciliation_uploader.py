@@ -6,13 +6,15 @@ from typing import Any, TypeVar
 _T = TypeVar('_T')
 
 
-def total_tracked(cluster) -> Any:
-  return cluster.tracked_cost + cluster.adjustment
+def total_diff(cluster) -> Any:
+  if cluster.manual_override:
+    return 0
+  return cluster.tracked_cost + cluster.adjustment - cluster.expected_cost
 
 
 def compare(cluster_one, cluster_two) -> int:
-  diff_one = total_tracked(cluster_one) - cluster_one.expected_cost
-  diff_two = total_tracked(cluster_two) - cluster_two.expected_cost
+  diff_one = total_diff(cluster_one)
+  diff_two = total_diff(cluster_two)
 
   # If both negative, return the ship date diff. If only one is
   # negative, that one should come first. If both are nonnegative, use the group
@@ -35,6 +37,132 @@ def compare(cluster_one, cluster_two) -> int:
     return 1
 
 
+def has_formatting(service, base_sheet_id, ranges):
+  response = service.spreadsheets().get(
+      spreadsheetId=base_sheet_id, ranges=ranges).execute()
+  return "conditionalFormats" in str(response)
+
+
+def clear_formatting(service, base_sheet_id, tab_id, tab_title):
+  while has_formatting(service, base_sheet_id, [tab_title]):
+    body = {
+        "requests": [{
+            "deleteConditionalFormatRule": {
+                "sheetId": int(tab_id),
+                "index": 0
+            }
+        }]
+    }
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=base_sheet_id, body=body).execute()
+
+
+def get_conditional_formatting_body(service, base_sheet_id, tab_title,
+                                    num_objects):
+  response = service.spreadsheets().get(
+      spreadsheetId=base_sheet_id, ranges=[tab_title]).execute()
+  tab = [
+      sheet for sheet in response['sheets']
+      if sheet['properties']['title'] == tab_title
+  ][0]
+  tab_id = tab['properties']['sheetId']
+  clear_formatting(service, base_sheet_id, tab_id, "Reconciliation")
+
+  checkbox_range = {
+      "sheetId": int(tab_id),
+      "startRowIndex": 1,
+      "endRowIndex": num_objects + 1,
+      "startColumnIndex": 9,
+      "endColumnIndex": 10
+  }
+  total_diff_range = {
+      "sheetId": int(tab_id),
+      "startRowIndex": 1,
+      "endRowIndex": num_objects + 1,
+      "startColumnIndex": 10,
+      "endColumnIndex": 11
+  }
+  requests = [{
+      "setDataValidation": {
+          "range": checkbox_range,
+          "rule": {
+              "condition": {
+                  'type': 'BOOLEAN'
+              }
+          }
+      }
+  }, {
+      "addConditionalFormatRule": {
+          "index": 0,
+          "rule": {
+              "ranges": [total_diff_range],
+              "booleanRule": {
+                  "condition": {
+                      "type":
+                          "CUSTOM_FORMULA",
+                      "values": [{
+                          'userEnteredValue':
+                              '=OR((I2:I)+(D2:D)=C2:C, J2:J= TRUE)'
+                      }]
+                  },
+                  "format": {
+                      'backgroundColor': {
+                          'red': 0.7176471,
+                          'green': 0.88235295,
+                          'blue': 0.8039216
+                      }
+                  }
+              }
+          }
+      }
+  }, {
+      "addConditionalFormatRule": {
+          "index": 1,
+          "rule": {
+              "ranges": [total_diff_range],
+              "booleanRule": {
+                  "condition": {
+                      "type": "CUSTOM_FORMULA",
+                      "values": [{
+                          'userEnteredValue': '=(I2:I)+(D2:D)>C2:C'
+                      }]
+                  },
+                  "format": {
+                      'backgroundColor': {
+                          'red': 0.9882353,
+                          'green': 0.9098039,
+                          'blue': 0.69803923
+                      }
+                  }
+              }
+          }
+      }
+  }, {
+      "addConditionalFormatRule": {
+          "index": 2,
+          "rule": {
+              "ranges": [total_diff_range],
+              "booleanRule": {
+                  "condition": {
+                      "type": "CUSTOM_FORMULA",
+                      "values": [{
+                          'userEnteredValue': '=(I2:I)+(D2:D)<C2:C'
+                      }]
+                  },
+                  "format": {
+                      'backgroundColor': {
+                          'red': 0.95686275,
+                          'green': 0.78039217,
+                          'blue': 0.7647059
+                      }
+                  }
+              }
+          }
+      }
+  }]
+  return {"requests": requests}
+
+
 class ReconciliationUploader:
 
   def __init__(self, config) -> None:
@@ -47,7 +175,8 @@ class ReconciliationUploader:
 
     all_clusters.sort(key=cmp_to_key(compare))
     self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
-                                          "Reconciliation")
+                                          "Reconciliation",
+                                          get_conditional_formatting_body)
 
   def fill_adjustments(self, all_clusters, base_sheet_id) -> None:
     print("Filling in cost adjustments if applicable")

@@ -31,7 +31,11 @@ class ObjectsToSheet:
       while len(value) < len(header):
         value.append('')
 
-  def upload_to_sheet(self, objects, base_sheet_id, tab_title) -> None:
+  def upload_to_sheet(self,
+                      objects,
+                      base_sheet_id,
+                      tab_title,
+                      batch_update_body_fn=None) -> None:
     try:
       self._clear_tab(base_sheet_id, tab_title)
     except googleapiclient.errors.HttpError:
@@ -50,6 +54,11 @@ class ObjectsToSheet:
         range=tab_title + "!A1:A1",
         valueInputOption="USER_ENTERED",
         body=body).execute()
+    if batch_update_body_fn:
+      body = batch_update_body_fn(self.service, base_sheet_id, tab_title,
+                                  len(values))
+      self.service.spreadsheets().batchUpdate(
+          spreadsheetId=base_sheet_id, body=body).execute()
 
   def _write_header(self, objects, base_sheet_id, tab_title) -> None:
     header = objects[0].get_header()
