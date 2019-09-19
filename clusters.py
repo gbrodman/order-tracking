@@ -176,15 +176,15 @@ def from_row(header, row) -> Cluster:
       ',')) if 'Trackings' in header else set()
   expected_cost = float(
       row[header.index('Amount Billed')]) if 'Amount Billed' in header else 0.0
-  tracked_cost = float(row[header.index(
-      'Amount Reimbursed')]) if 'Amount Reimbursed' in header else 0.0
+  tracked_cost_str = row[header.index("Amount Reimbursed")] if "Amount Reimbursed" in header else ''
+  tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
-  pos = set(str(
-      row[header.index('POs')]).split(',')) if 'POs' in header else set()
+  pos_string = row[header.index('POs')] if 'POs' in header else ''
+  pos = set(pos_string.split(',')) if pos_string else set()
   group = row[header.index('Group')] if 'Group' in header else ''
-  adjustment = float(row[header.index(
-      'Manual Cost Adjustment')]) if 'Manual Cost Adjustment' in header else 0.0
+  adj_string = row[header.index("Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
+  adjustment = float(adj_string) if adj_string else 0.0
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
   notes = row[header.index('Notes')] if 'Notes' in header else ''
   cluster = Cluster(group)

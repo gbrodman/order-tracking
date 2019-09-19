@@ -78,8 +78,8 @@ def from_row(header, row) -> Tracking:
   url = row[header.index("Order URL")]
   ship_date = row[header.index("Ship Date")]
   group = row[header.index("Group")]
-  tracked_cost = float(row[header.index(
-      'Amount Reimbursed')]) if 'Amount Reimbursed' in header else 0.0
+  tracked_cost_str = row[header.index("Amount Reimbursed")] if "Amount Reimbursed" in header else ""
+  tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   items = row[header.index("Items")] if 'Items' in header else ""
   merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
