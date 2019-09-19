@@ -172,7 +172,7 @@ def find_by_purchase_orders(cluster, all_clusters) -> Any:
 def from_row(header, row) -> Cluster:
   orders = set(
       row[header.index('Orders')].split(',')) if 'Orders' in header else set()
-  trackings = set(row[header.index('Trackings')].split(
+  trackings = set(str(row[header.index('Trackings')]).split(
       ',')) if 'Trackings' in header else set()
   expected_cost = float(
       row[header.index('Amount Billed')]) if 'Amount Billed' in header else 0.0
@@ -180,7 +180,7 @@ def from_row(header, row) -> Cluster:
   tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
-  pos_string = row[header.index('POs')] if 'POs' in header else ''
+  pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
   pos = set(pos_string.split(',')) if pos_string else set()
   group = row[header.index('Group')] if 'Group' in header else ''
   adj_string = row[header.index("Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
