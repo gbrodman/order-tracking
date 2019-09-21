@@ -127,18 +127,17 @@ def find_cluster(all_clusters, tracking) -> Any:
   return None
 
 
-def update_clusters(all_clusters, trackings_dict) -> None:
-  for group, trackings in trackings_dict.items():
-    for tracking in trackings:
-      cluster = find_cluster(all_clusters, tracking)
-      if cluster is None:
-        cluster = Cluster(tracking.group)
-        all_clusters.append(cluster)
+def update_clusters(all_clusters, trackings) -> None:
+  for tracking in trackings:
+    cluster = find_cluster(all_clusters, tracking)
+    if cluster is None:
+      cluster = Cluster(tracking.group)
+      all_clusters.append(cluster)
 
-      cluster.orders.update(tracking.order_ids)
-      cluster.trackings.add(tracking.tracking_number)
-      cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
-      cluster.to_email = tracking.to_email
+    cluster.orders.update(tracking.order_ids)
+    cluster.trackings.add(tracking.tracking_number)
+    cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
+    cluster.to_email = tracking.to_email
 
 
 def merge_by_purchase_orders(clusters) -> list:

@@ -1,4 +1,3 @@
-import collections
 import datetime
 import email
 import imaplib
@@ -28,8 +27,7 @@ class EmailTrackingRetriever(ABC):
     mail = self.get_all_mail_folder()
     mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
-  def get_trackings(self) -> collections.defaultdict:
-    groups_dict = collections.defaultdict(list)
+  def get_trackings(self) -> list:
     self.all_email_ids = self.get_email_ids()
     print("Found %d unread shipping emails in the dates we searched" %
           len(self.all_email_ids))
@@ -42,10 +40,7 @@ class EmailTrackingRetriever(ABC):
       print("Error when parsing emails. Marking emails as unread.")
       self.back_out_of_all()
       raise
-
-    for tracking in trackings:
-      groups_dict[tracking.group].append(tracking)
-    return groups_dict
+    return trackings
 
   def get_buying_group(self, raw_email) -> Any:
     raw_email = raw_email.upper()

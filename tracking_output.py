@@ -1,3 +1,4 @@
+import collections
 import pickle
 import os.path
 from objects_to_drive import ObjectsToDrive
@@ -18,11 +19,15 @@ class TrackingOutput:
     self._write_merged(config, merged_trackings)
 
   def _write_merged(self, config, merged_trackings) -> None:
+    groups_dict = collections.defaultdict(list)
+    for tracking in merged_trackings:
+      groups_dict[tracking.group].append(tracking)
+
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
     with open(TRACKINGS_FILE, 'wb') as output:
-      pickle.dump(merged_trackings, output)
+      pickle.dump(groups_dict, output)
 
     if 'driveFolder' in config:
       objects_to_drive = ObjectsToDrive()
@@ -32,17 +37,10 @@ class TrackingOutput:
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
   def merge_trackings(self, old_trackings: _T0, trackings) -> _T0:
-    for group, group_trackings in trackings.items():
-      if group in old_trackings:
-        old_group_trackings = old_trackings[group]
-        old_tracking_numbers = set(
-            [ogt.tracking_number for ogt in old_group_trackings])
-        for new_group_tracking in group_trackings:
-          if new_group_tracking.tracking_number not in old_tracking_numbers:
-            old_group_trackings.append(new_group_tracking)
-        old_trackings[group] = old_group_trackings
-      else:
-        old_trackings[group] = group_trackings
+    old_tracking_numbers = set([ot.tracking_number for ot in old_trackings])
+    for tracking in trackings:
+      if tracking.tracking_number not in old_tracking_numbers:
+        old_trackings.append(tracking)
     return old_trackings
 
   def get_existing_trackings(self, config) -> Any:
@@ -51,7 +49,7 @@ class TrackingOutput:
       from_drive = objects_to_drive.load(config['driveFolder'],
                                          TRACKINGS_FILENAME)
       if from_drive:
-        return from_drive
+        return self._convert_to_list(from_drive)
 
     print(
         "Drive folder ID not present or we couldn't load from drive. Loading from local"
@@ -60,7 +58,14 @@ class TrackingOutput:
       return {}
 
     with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
-      return pickle.load(tracking_file_stream)
+      trackings_dict = pickle.load(tracking_file_stream)
+    return self._convert_to_list(trackings_dict)
+
+  def _convert_to_list(self, trackings_dict):
+    result = []
+    for trackings in trackings_dict.values():
+      result.extend(trackings)
+    return result
 
   def clear(self) -> None:
     # self.write_merged([])

@@ -12,6 +12,7 @@ CONFIG_FILE = "config.yml"
 
 
 def get_tracked_costs(config, driver_creator):
+  print("Loading tracked costs. This will take several minutes.")
   group_site_manager = GroupSiteManager(config, driver_creator)
   tracked_costs = {}
   for group in config['groups'].keys():
@@ -24,17 +25,13 @@ def get_tracked_costs(config, driver_creator):
 def fill_tracking_costs_and_upload(config, tracked_costs):
   tracking_output = TrackingOutput()
   existing_trackings = tracking_output.get_existing_trackings(config)
-  for group, trackings in existing_trackings.items():
-    for tracking in trackings:
-      if tracking.tracking_number in tracked_costs:
-        tracking.tracked_cost = tracked_costs[tracking.tracking_number]
+  for tracking in existing_trackings:
+    if tracking.tracking_number in tracked_costs:
+      tracking.tracked_cost = tracked_costs[tracking.tracking_number]
   tracking_output.save_trackings(config, existing_trackings)
-  # get a list of the trackings and upload it
+  # also upload it
   tracking_uploader = TrackingUploader(config)
-  trackings_list = []
-  for trackings in existing_trackings.values():
-    trackings_list.extend(trackings)
-  tracking_uploader.upload_all_trackings(trackings_list)
+  tracking_uploader.upload_all_trackings(existing_trackings)
 
 
 def fill_tracked_costs(all_clusters, config, driver_creator):

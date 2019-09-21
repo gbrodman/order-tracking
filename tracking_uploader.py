@@ -9,13 +9,6 @@ class TrackingUploader:
     self.objects_to_sheet = ObjectsToSheet()
     self.base_spreadsheet_id = config['reconciliation']['baseSpreadsheetId']
 
-  def upload(self, groups_dict) -> None:
-    all_trackings = []
-    for trackings in groups_dict.values():
-      all_trackings.extend(trackings)
-
-    self.upload_trackings(all_trackings)
-
   def upload_trackings(self, trackings) -> None:
     existing_trackings = self.objects_to_sheet.download_from_sheet(
         tracking.from_row, self.base_spreadsheet_id, "Trackings")

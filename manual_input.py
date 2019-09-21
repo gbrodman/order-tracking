@@ -59,7 +59,7 @@ if __name__ == "__main__":
   submit = get_submit()
   if submit:
     output = TrackingOutput()
-    output.save_trackings(config, {group: [tracking]})
+    output.save_trackings(config, [tracking])
     print("Wrote tracking")
     ec = ExpectedCosts(config)
     ec.costs_dict.update(orders_to_costs)

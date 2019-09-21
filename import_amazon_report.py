@@ -94,11 +94,5 @@ if __name__ == "__main__":
   print_num_existing_trackings(tracking_output)
   print("Number from sheet: %d" % len(all_trackings))
 
-  groups_dict = {}
-  for tracking in all_trackings:
-    if tracking.group not in groups_dict:
-      groups_dict[tracking.group] = []
-    groups_dict[tracking.group].append(tracking)
-
-  tracking_output.save_trackings(config, groups_dict)
+  tracking_output.save_trackings(config, all_trackings)
   print_num_existing_trackings(tracking_output)

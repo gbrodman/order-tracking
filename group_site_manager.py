@@ -1,3 +1,4 @@
+import collections
 import time
 import re
 import datetime
@@ -35,7 +36,11 @@ class GroupSiteManager:
     self.driver_creator = driver_creator
     self.melul_portal_groups = config['melulPortals']
 
-  def upload(self, groups_dict) -> None:
+  def upload(self, trackings) -> None:
+    groups_dict = collections.defaultdict(list)
+    for tracking in trackings:
+      groups_dict[tracking.group].append(tracking)
+
     for group, trackings in groups_dict.items():
       numbers = [tracking.tracking_number for tracking in trackings]
       group_config = self.config['groups'][group]

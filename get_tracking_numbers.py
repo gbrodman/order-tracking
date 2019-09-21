@@ -42,7 +42,7 @@ if __name__ == "__main__":
   print("Retrieving Amazon tracking numbers from email...")
   amazon_tracking_retriever = AmazonTrackingRetriever(config, driver_creator)
   try:
-    groups_dict = amazon_tracking_retriever.get_trackings()
+    trackings = amazon_tracking_retriever.get_trackings()
   except:
     send_error_email(email_sender, "Error retrieving Amazon emails")
     raise
@@ -55,12 +55,8 @@ if __name__ == "__main__":
   print("Retrieving Best Buy tracking numbers from email...")
   bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, driver_creator)
   try:
-    bb_groups_dict = bestbuy_tracking_retriever.get_trackings()
-    for group, trackings in bb_groups_dict.items():
-      if group in groups_dict:
-        groups_dict[group].extend(trackings)
-      else:
-        groups_dict[group] = trackings
+    bb_trackings = bestbuy_tracking_retriever.get_trackings()
+    trackings.extend(bb_trackings)
   except:
     send_error_email(email_sender, "Error retrieving BB emails")
     raise
@@ -71,19 +67,17 @@ if __name__ == "__main__":
         % len(bestbuy_tracking_retriever.failed_email_ids))
 
   try:
-    total_trackings = sum(
-        [len(trackings) for trackings in groups_dict.values()])
-    print("Found %d total tracking numbers" % total_trackings)
+    print("Found %d total tracking numbers" % len(trackings))
 
     # We only need to process and upload new tracking numbers if there are any;
     # otherwise skip straight to processing existing locally stored data.
-    if total_trackings > 0:
-      email_sender.send_email(groups_dict)
+    if trackings:
+      email_sender.send_email(trackings)
 
       print("Uploading tracking numbers...")
       group_site_manager = GroupSiteManager(config, driver_creator)
       try:
-        group_site_manager.upload(groups_dict)
+        group_site_manager.upload(trackings)
       except:
         send_error_email(email_sender, "Error uploading tracking numbers")
         raise
@@ -91,7 +85,7 @@ if __name__ == "__main__":
       print("Adding results to Google Sheets")
       tracking_uploader = TrackingUploader(config)
       try:
-        tracking_uploader.upload(groups_dict)
+        tracking_uploader.upload_trackings(trackings)
       except:
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise
@@ -99,14 +93,14 @@ if __name__ == "__main__":
     print("Writing results to file")
     tracking_output = TrackingOutput()
     try:
-      tracking_output.save_trackings(config, groups_dict)
+      tracking_output.save_trackings(config, trackings)
     except:
       send_error_email(email_sender, "Error writing output file")
       raise
 
     print("Getting all tracking objects")
     try:
-      trackings_dict = tracking_output.get_existing_trackings(config)
+      trackings = tracking_output.get_existing_trackings(config)
     except:
       send_error_email(email_sender,
                        "Error retrieving tracking objects from file")
@@ -115,7 +109,7 @@ if __name__ == "__main__":
     print("Converting to Cluster objects")
     try:
       all_clusters = clusters.get_existing_clusters(config)
-      clusters.update_clusters(all_clusters, trackings_dict)
+      clusters.update_clusters(all_clusters, trackings)
     except:
       send_error_email(email_sender, "Error converting to Cluster objects")
       raise

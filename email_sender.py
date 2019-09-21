@@ -1,3 +1,4 @@
+import collections
 import datetime
 import smtplib
 from email.mime.text import MIMEText
@@ -14,7 +15,11 @@ class EmailSender:
     email_content = self.create_email_content(groups_dict)
     self.send_email_content("Tracking Numbers " + TODAY, email_content)
 
-  def create_email_content(self, groups_dict) -> str:
+  def create_email_content(self, trackings) -> str:
+    groups_dict = collections.defaultdict(list)
+    for tracking in trackings:
+      groups_dict[tracking.group].append(tracking)
+
     content = "Tracking number / order number(s) per group:\n\n"
     for group, trackings in groups_dict.items():
       numbers = [
