@@ -72,7 +72,8 @@ class GroupSiteManager:
               '$', '').replace(',', '')
           tracking = row.find_elements_by_tag_name('td')[14].text.replace(
               '-', '')
-          tracking_to_cost_map[tracking] = float(cost)
+          if tracking and cost:
+            tracking_to_cost_map[tracking] = float(cost)
 
         next_page_button = driver.find_element_by_xpath(
             "//button[@ng-click='$pagination.next()']")
