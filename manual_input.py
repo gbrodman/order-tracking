@@ -6,13 +6,11 @@ from lib.tracking_output import TrackingOutput
 CONFIG_FILE = "config.yml"
 
 
-def get_submit():
+def get_required_from_options(prompt, options):
   while True:
-    result = get_required("Submit? [y/n]: ")
-    if result.lower()[0] == "y":
-      return True
-    elif result.lower()[0] == "n":
-      return False
+    result = get_required(prompt + " [" + "/".join(options) + "]: ")
+    if result.lower()[0] in options:
+      return result.lower()[0]
 
 
 def get_optional(prompt):
@@ -37,10 +35,31 @@ def get_orders_to_costs():
   return result
 
 
-if __name__ == "__main__":
-  with open(CONFIG_FILE, 'r') as config_file_stream:
-    config = yaml.safe_load(config_file_stream)
+def run_delete(config):
+  print("Manual deletion of Tracking object")
+  tracking_number = get_required("Tracking number: ")
+  tracking_output = TrackingOutput()
+  existing_trackings = tracking_output.get_existing_trackings(config)
 
+  found_list = [
+      tracking for tracking in existing_trackings
+      if tracking.tracking_number == tracking_number
+  ]
+  if found_list:
+    to_delete = found_list[0]
+    print("This is the Tracking object: %s" % to_delete)
+    submit = get_required_from_options(
+        "Are you sure you want to delete this tracking?", ['y', 'n'])
+    if submit == 'y':
+      existing_trackings.remove(to_delete)
+      tracking_output._write_merged(config, existing_trackings)
+    else:
+      print("Deletion stopped.")
+  else:
+    print("Could not find that tracking number.")
+
+
+def run_add(config):
   print("Manual input of Tracking object.")
   tracking_number = get_required("Tracking number: ")
   orders_to_costs = get_orders_to_costs()
@@ -56,8 +75,8 @@ if __name__ == "__main__":
   print(tracking)
   print("Order to cost map: ")
   print(orders_to_costs)
-  submit = get_submit()
-  if submit:
+  submit = get_required_from_options("Submit? ", ['y', 'n'])
+  if submit == 'y':
     output = TrackingOutput()
     output.save_trackings(config, [tracking])
     print("Wrote tracking")
@@ -68,3 +87,14 @@ if __name__ == "__main__":
     print("Run get_order_tracking.py to combine this with existing trackings")
   else:
     print("Submission cancelled.")
+
+
+if __name__ == "__main__":
+  with open(CONFIG_FILE, 'r') as config_file_stream:
+    config = yaml.safe_load(config_file_stream)
+  action = get_required_from_options(
+      "Enter 'n' for new tracking, 'd' to delete existing", ["n", "d"])
+  if action == "n":
+    run_add(config)
+  elif action == "d":
+    run_delete(config)
