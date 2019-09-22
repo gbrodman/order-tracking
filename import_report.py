@@ -69,17 +69,9 @@ def dedupe_trackings(trackings) -> list:
   return result
 
 
-def print_num_existing_trackings(tracking_output) -> None:
-  existing_trackings = tracking_output.get_existing_trackings(config)
-  total_trackings = sum(
-      [len(trackings) for trackings in existing_trackings.values()])
-  print("Num saved trackings: %d" % total_trackings)
-
-
 if __name__ == "__main__":
   if len(sys.argv) < 3:
-    print("Usage: %s <order export Google Sheet ID> <tab_name>" %
-          sys.argv[0])
+    print("Usage: %s <order export Google Sheet ID> <tab_name>" % sys.argv[0])
     sys.exit(1)
   sheet_id = sys.argv[1]
   tab_name = sys.argv[2]
@@ -92,8 +84,9 @@ if __name__ == "__main__":
   ]
   all_trackings = dedupe_trackings(all_trackings)
   tracking_output = TrackingOutput()
-  print_num_existing_trackings(tracking_output)
+  print("Number of trackings beforehand: %d" %
+        len(tracking_output.get_existing_trackings(config)))
   print("Number from sheet: %d" % len(all_trackings))
-
   tracking_output.save_trackings(config, all_trackings)
-  print_num_existing_trackings(tracking_output)
+  print("Number of trackings after: %d" %
+        len(tracking_output.get_existing_trackings(config)))

@@ -66,6 +66,7 @@ def fill_costs_by_po(all_clusters, config, driver_creator):
       cluster.tracked_cost = sum(
           [po_to_price.get(po, 0.0) for po in cluster.purchase_orders])
 
+
 def fill_expected_costs(all_clusters, config):
   expected_costs = ExpectedCosts(config)
   for cluster in all_clusters:
