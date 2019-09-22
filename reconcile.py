@@ -66,10 +66,35 @@ def fill_costs_by_po(all_clusters, config, driver_creator):
       cluster.tracked_cost = sum(
           [po_to_price.get(po, 0.0) for po in cluster.purchase_orders])
 
+def fill_expected_costs(all_clusters, config):
+  expected_costs = ExpectedCosts(config)
+  for cluster in all_clusters:
+    total_expected_cost = sum([
+        expected_costs.get_expected_cost(order_id)
+        for order_id in cluster.orders
+    ])
+    cluster.expected_cost = total_expected_cost
+
+
+def clusterify(config):
+  tracking_output = TrackingOutput()
+  print("Getting all tracking objects")
+  trackings = tracking_output.get_existing_trackings(config)
+
+  print("Converting to Cluster objects")
+  all_clusters = clusters.get_existing_clusters(config)
+  clusters.update_clusters(all_clusters, trackings)
+
+  print("Filling out expected costs and writing result to disk")
+  fill_expected_costs(all_clusters, config)
+  clusters.write_clusters(config, all_clusters)
+
 
 if __name__ == "__main__":
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
+
+  clusterify(config)
 
   all_clusters = clusters.get_existing_clusters(config)
   driver_creator = DriverCreator(sys.argv)
