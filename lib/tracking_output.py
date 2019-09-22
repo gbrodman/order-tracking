@@ -1,7 +1,7 @@
 import collections
 import pickle
 import os.path
-from objects_to_drive import ObjectsToDrive
+from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, TypeVar
 
 _T0 = TypeVar('_T0')

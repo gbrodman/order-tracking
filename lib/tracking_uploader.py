@@ -1,5 +1,5 @@
-import tracking
-from objects_to_sheet import ObjectsToSheet
+from lib import tracking
+from lib.objects_to_sheet import ObjectsToSheet
 
 
 class TrackingUploader:

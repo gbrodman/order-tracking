@@ -2,8 +2,8 @@ import quopri
 import re
 import time
 from bs4 import BeautifulSoup
-from email_tracking_retriever import EmailTrackingRetriever
-from tracking import Tracking
+from lib.email_tracking_retriever import EmailTrackingRetriever
+from lib.tracking import Tracking
 
 
 class AmazonTrackingRetriever(EmailTrackingRetriever):

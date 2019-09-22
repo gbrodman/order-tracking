@@ -2,8 +2,8 @@ import datetime
 import email
 import imaplib
 from abc import ABC, abstractmethod
-from tracking import Tracking
-import tracking
+from lib.tracking import Tracking
+import lib.tracking
 from typing import Any, Callable, Optional, TypeVar
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
@@ -91,7 +91,7 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  def get_tracking(self, email_id) -> Optional[tracking.Tracking]:
+  def get_tracking(self, email_id) -> Any:
     mail = self.get_all_mail_folder()
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")

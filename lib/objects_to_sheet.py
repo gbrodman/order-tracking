@@ -1,4 +1,4 @@
-import drive_service
+from lib import drive_service
 import googleapiclient.errors
 
 

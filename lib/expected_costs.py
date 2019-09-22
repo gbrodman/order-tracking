@@ -2,7 +2,7 @@ import pickle
 import os.path
 import imaplib
 import re
-from objects_to_drive import ObjectsToDrive
+from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, TypeVar
 
 _T0 = TypeVar('_T0')

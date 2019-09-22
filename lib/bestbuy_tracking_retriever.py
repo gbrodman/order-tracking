@@ -1,5 +1,5 @@
 import re
-from email_tracking_retriever import EmailTrackingRetriever
+from lib.email_tracking_retriever import EmailTrackingRetriever
 
 
 class BestBuyTrackingRetriever(EmailTrackingRetriever):

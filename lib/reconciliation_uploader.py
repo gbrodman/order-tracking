@@ -1,6 +1,6 @@
-import clusters
+from lib import clusters
 from functools import cmp_to_key
-from objects_to_sheet import ObjectsToSheet
+from lib.objects_to_sheet import ObjectsToSheet
 from typing import Any, TypeVar
 
 _T = TypeVar('_T')
