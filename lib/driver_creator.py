@@ -66,9 +66,9 @@ class DriverCreator:
     options.headless = self.headless
 
     if sys.platform.startswith("darwin"):  # osx
-      return self._create_osx_driver(options)
+      driver = self._create_osx_driver(options)
     elif sys.platform.startswith("win"):  # windows
-      return self._create_windows_driver(options)
+      driver = self._create_windows_driver(options)
     else:  # ??? probably Linux. Linux users can figure this out themselves
       driver = webdriver.Chrome(options=options)
 
