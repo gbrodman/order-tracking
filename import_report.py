@@ -42,8 +42,9 @@ def from_amazon_row(header, row) -> Tracking:
   tracked_cost = 0.0
   items = row[header.index("Title")] + " Qty:" + row[header.index(
       "Item Quantity")]
+  merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
-                  tracked_cost, items)
+                  tracked_cost, items, merchant)
 
 
 def find_candidate(tracking, candidates) -> Any:
@@ -77,7 +78,7 @@ def print_num_existing_trackings(tracking_output) -> None:
 
 if __name__ == "__main__":
   if len(sys.argv) < 3:
-    print("Usage: %s <amazon order export Google Sheet ID> <tab_name>" %
+    print("Usage: %s <order export Google Sheet ID> <tab_name>" %
           sys.argv[0])
     sys.exit(1)
   sheet_id = sys.argv[1]
