@@ -70,6 +70,7 @@ def dedupe_trackings(trackings) -> list:
       result.append(tracking)
   return result
 
+
 def main(argv):
   if len(argv) < 3:
     print("Usage: %s <order export Google Sheet ID> <tab_name>" % argv[0])
@@ -91,6 +92,7 @@ def main(argv):
   tracking_output.save_trackings(config, all_trackings)
   print("Number of trackings after: %d" %
         len(tracking_output.get_existing_trackings(config)))
+
 
 if __name__ == "__main__":
   main(sys.argv)

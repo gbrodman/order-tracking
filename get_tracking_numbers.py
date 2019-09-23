@@ -97,5 +97,6 @@ def main(argv):
     print("Marked all as unread")
     raise
 
+
 if __name__ == "__main__":
   main(sys.argv)

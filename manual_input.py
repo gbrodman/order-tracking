@@ -90,6 +90,7 @@ def run_add(config):
   else:
     print("Submission cancelled.")
 
+
 def main(argv):
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
@@ -99,6 +100,7 @@ def main(argv):
     run_add(config)
   elif action == "d":
     run_delete(config)
+
 
 if __name__ == "__main__":
   main([])
