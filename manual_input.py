@@ -9,6 +9,7 @@ from lib.tracking_output import TrackingOutput
 CONFIG_FILE = "config.yml"
 TODAY = datetime.date.today().strftime("%Y-%m-%d")
 
+
 def get_required_from_options(prompt, options):
   while True:
     result = get_required(prompt + " [" + "/".join(options) + "]: ")
@@ -21,6 +22,7 @@ def get_optional_with_default(prompt, default):
   if result:
     return result
   return default
+
 
 def get_optional(prompt):
   return input(prompt).strip()
@@ -74,7 +76,8 @@ def run_add(config):
   print("")
   tracking_number = get_required("Tracking number: ")
   orders_to_costs = get_orders_to_costs()
-  ship_date = get_optional_with_default("Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
+  ship_date = get_optional_with_default(
+      "Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
   group = get_required("Group, e.g. mysbuyinggroup: ")
   email = get_optional("Optional email address: ")
   order_url = get_optional("Optional order URL: ")
@@ -86,7 +89,8 @@ def run_add(config):
   print(tracking)
   print("Order to cost map: ")
   print(orders_to_costs)
-  submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ", ['y', 'n'])
+  submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ",
+                                     ['y', 'n'])
   if submit == 'y':
     output = TrackingOutput()
     output.save_trackings(config, [tracking])

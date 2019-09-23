@@ -1,7 +1,8 @@
 import collections
-import time
-import re
 import datetime
+import re
+import time
+
 from selenium import webdriver
 from typing import Any, Dict
 
@@ -61,13 +62,13 @@ class GroupSiteManager:
       driver.find_element_by_xpath('//button[@title="Clear filters"]').click()
       time.sleep(1)
       driver.find_element_by_xpath('//md-icon[text()="last_page"]').click()
-      time.sleep(10)
+      time.sleep(7)
 
       # go to the first page (page selection can get a bit messed up with the multiple sites)
       first_page_button = driver.find_element_by_xpath(
           "//button[@ng-click='$pagination.first()']")
       first_page_button.click()
-      time.sleep(10)
+      time.sleep(7)
 
       while True:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
@@ -84,7 +85,7 @@ class GroupSiteManager:
             "//button[@ng-click='$pagination.next()']")
         if next_page_button.get_property("disabled") == False:
           next_page_button.click()
-          time.sleep(10)
+          time.sleep(7)
         else:
           break
 
@@ -92,13 +93,22 @@ class GroupSiteManager:
     finally:
       driver.close()
 
+  def get_tracked_costs_by_group_with_retry(self, group):
+    for i in range(5):
+      try:
+        return self.get_tracked_costs_by_group(group)
+      except Exception as e:
+        print("Received exception when getting costs: " + str(e))
+        print("Retrying up to five times")
+    raise
+
   def get_tracked_costs(self, group) -> Dict[Any, float]:
     if group not in self.melul_portal_groups:
       return {}
 
-    costs = self.get_tracked_costs_by_group(group)
+    costs = self.get_tracked_costs_by_group_with_retry(group)
     if group == "mysbuyinggroup" and "mys2018" in self.config['groups']:
-      costs.update(self.get_tracked_costs_by_group("mys2018"))
+      costs.update(self.get_tracked_costs_by_group_with_retry("mys2018"))
     return costs
 
   def _upload_to_group(self, numbers, group) -> None:
@@ -141,6 +151,24 @@ class GroupSiteManager:
     return driver
 
   def get_po_to_price(self, group) -> Dict[Any, float]:
+    for i in range(5):
+      try:
+        return self._get_po_to_price_internal(group)
+      except Exception as e:
+        print("Received exception when getting PO to price map: " + str(e))
+        print("Retrying up to five times")
+    raise
+
+  def get_tracking_to_purchase_order(self, group) -> dict:
+    for i in range(5):
+      try:
+        return self._get_tracking_to_purchase_order_internal(group)
+      except Exception as e:
+        print("Received exception when getting tracking:PO map: " + str(e))
+        print("Retrying up to five times")
+    raise
+
+  def _get_po_to_price_internal(self, group) -> Dict[Any, float]:
     if group != 'usa':
       return {}
 
@@ -171,7 +199,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def get_tracking_to_purchase_order(self, group) -> dict:
+  def _get_tracking_to_purchase_order_internal(self, group) -> dict:
     if group != 'usa':
       return {}
 

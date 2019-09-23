@@ -70,6 +70,7 @@ def dedupe_trackings(trackings) -> list:
       result.append(tracking)
   return result
 
+
 def get_required(prompt):
   result = ""
   while not result:

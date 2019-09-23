@@ -37,15 +37,13 @@ This is the script for reconciliation. It does the following:
 
 ## Prerequisites
 
-- One must be able to run a headless browser with Selenium, either Chrome or Firefox. Chromedriver or geckodriver (respectively) must be on the user's PATH.
 - Python3 and pip3 (these should come together)
 
 ## Instructions
 
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
-- If you don't have it already, add either Chromedriver or Geckodriver to your PATH. The default is Chrome; download it from [here](https://sites.google.com/a/chromium.org/chromedriver/home) and add it to your PATH (this will vary based on operating system, search on Google for results particular to your system).
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
-- `pip3 install pyyaml selenium google-api-python-client google-auth-oauthlib bs4`
+- `pip3 install -r requirements.txt`
 - Copy config.yml.template to config.yml
 - Set up the configuration (see the "Configuration" section below for more info)
 - Run `python3 get_tracking_numbers.py` followed by `python3 reconcile.py`
