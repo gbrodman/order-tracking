@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import yaml
 from lib.expected_costs import ExpectedCosts
 from lib.tracking import Tracking
@@ -88,8 +90,7 @@ def run_add(config):
   else:
     print("Submission cancelled.")
 
-
-if __name__ == "__main__":
+def main(argv):
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
   action = get_required_from_options(
@@ -98,3 +99,6 @@ if __name__ == "__main__":
     run_add(config)
   elif action == "d":
     run_delete(config)
+
+if __name__ == "__main__":
+  main([])

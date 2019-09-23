@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import datetime
 import sys
 import yaml
@@ -68,13 +70,12 @@ def dedupe_trackings(trackings) -> list:
       result.append(tracking)
   return result
 
-
-if __name__ == "__main__":
-  if len(sys.argv) < 3:
-    print("Usage: %s <order export Google Sheet ID> <tab_name>" % sys.argv[0])
+def main(argv):
+  if len(argv) < 3:
+    print("Usage: %s <order export Google Sheet ID> <tab_name>" % argv[0])
     sys.exit(1)
-  sheet_id = sys.argv[1]
-  tab_name = sys.argv[2]
+  sheet_id = argv[1]
+  tab_name = argv[2]
   objects_to_sheet = ObjectsToSheet()
   all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row,
                                                        sheet_id, tab_name)
@@ -90,3 +91,6 @@ if __name__ == "__main__":
   tracking_output.save_trackings(config, all_trackings)
   print("Number of trackings after: %d" %
         len(tracking_output.get_existing_trackings(config)))
+
+if __name__ == "__main__":
+  main(sys.argv)

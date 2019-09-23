@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from lib import clusters
 import yaml
 import sys
@@ -91,14 +93,14 @@ def clusterify(config):
   clusters.write_clusters(config, all_clusters)
 
 
-if __name__ == "__main__":
+def main(argv):
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
 
   clusterify(config)
 
   all_clusters = clusters.get_existing_clusters(config)
-  driver_creator = DriverCreator(sys.argv)
+  driver_creator = DriverCreator(argv)
 
   fill_tracked_costs(all_clusters, config, driver_creator)
   fill_purchase_orders(all_clusters, config, driver_creator)
@@ -108,3 +110,6 @@ if __name__ == "__main__":
   reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.download_upload_clusters(all_clusters)
   clusters.write_clusters(config, all_clusters)
+
+if __name__ == "__main__":
+  main(sys.argv)

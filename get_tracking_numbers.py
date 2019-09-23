@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import traceback
 import yaml
@@ -19,8 +21,8 @@ def send_error_email(email_sender, subject):
   email_sender.send_email_content(subject, "\n".join(lines))
 
 
-if __name__ == "__main__":
-  driver_creator = DriverCreator(sys.argv)
+def main(argv):
+  driver_creator = DriverCreator(argv)
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
@@ -94,3 +96,6 @@ if __name__ == "__main__":
     bestbuy_tracking_retriever.back_out_of_all()
     print("Marked all as unread")
     raise
+
+if __name__ == "__main__":
+  main(sys.argv)
