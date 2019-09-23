@@ -100,7 +100,7 @@ class GroupSiteManager:
       except Exception as e:
         print("Received exception when getting costs: " + str(e))
         print("Retrying up to five times")
-    raise
+    raise Exception("Exceeded retry limit")
 
   def get_tracked_costs(self, group) -> Dict[Any, float]:
     if group not in self.melul_portal_groups:
@@ -122,7 +122,7 @@ class GroupSiteManager:
           raise Exception("Unknown group: " + group)
       except Exception as e:
         print("Received exception when uploading: " + str(e))
-    raise
+    raise Exception("Exceeded retry limit")
 
   def _load_page(self, driver, url) -> None:
     driver.get(url)
@@ -157,7 +157,7 @@ class GroupSiteManager:
       except Exception as e:
         print("Received exception when getting PO to price map: " + str(e))
         print("Retrying up to five times")
-    raise
+    raise Exception("Exceeded retry limit")
 
   def get_tracking_to_purchase_order(self, group) -> dict:
     for i in range(5):
@@ -166,7 +166,7 @@ class GroupSiteManager:
       except Exception as e:
         print("Received exception when getting tracking:PO map: " + str(e))
         print("Retrying up to five times")
-    raise
+    raise Exception("Exceeded retry limit")
 
   def _get_po_to_price_internal(self, group) -> Dict[Any, float]:
     if group != 'usa':
