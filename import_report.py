@@ -70,13 +70,16 @@ def dedupe_trackings(trackings) -> list:
       result.append(tracking)
   return result
 
+def get_required(prompt):
+  result = ""
+  while not result:
+    result = str(input(prompt)).strip()
+  return result
+
 
 def main(argv):
-  if len(argv) < 3:
-    print("Usage: %s <order export Google Sheet ID> <tab_name>" % argv[0])
-    sys.exit(1)
-  sheet_id = argv[1]
-  tab_name = argv[2]
+  sheet_id = get_required("Enter Google Sheet ID: ")
+  tab_name = get_required("Enter the name of the tab within the sheet: ")
   objects_to_sheet = ObjectsToSheet()
   all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row,
                                                        sheet_id, tab_name)
