@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import datetime
 import yaml
 from lib.expected_costs import ExpectedCosts
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
 
 CONFIG_FILE = "config.yml"
-
+TODAY = datetime.date.today().strftime("%Y-%m-%d")
 
 def get_required_from_options(prompt, options):
   while True:
@@ -14,6 +15,12 @@ def get_required_from_options(prompt, options):
     if result.lower()[0] in options:
       return result.lower()[0]
 
+
+def get_optional_with_default(prompt, default):
+  result = input(prompt).strip()
+  if result:
+    return result
+  return default
 
 def get_optional(prompt):
   return input(prompt).strip()
@@ -63,21 +70,23 @@ def run_delete(config):
 
 def run_add(config):
   print("Manual input of Tracking object.")
+  print("Optional fields will display a default in brackets if one exists.")
+  print("")
   tracking_number = get_required("Tracking number: ")
   orders_to_costs = get_orders_to_costs()
-  ship_date = get_required("Ship date, formatted YYYY-MM-DD, e.g. 2019-01-31: ")
+  ship_date = get_optional_with_default("Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
   group = get_required("Group, e.g. mysbuyinggroup: ")
-  email = get_optional("Email address (can leave blank): ")
-  order_url = get_optional("Order url (can leave blank): ")
-  merchant = get_optional("Merchant (can leave blank): ")
-  description = get_optional("Item descriptions (can leave blank): ")
+  email = get_optional("Optional email address: ")
+  order_url = get_optional("Optional order URL: ")
+  merchant = get_optional("Optional merchant: ")
+  description = get_optional("Optional item descriptions: ")
   tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '',
                       email, order_url, ship_date, 0.0, description, merchant)
   print("Resulting tracking object: ")
   print(tracking)
   print("Order to cost map: ")
   print(orders_to_costs)
-  submit = get_required_from_options("Submit? ", ['y', 'n'])
+  submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ", ['y', 'n'])
   if submit == 'y':
     output = TrackingOutput()
     output.save_trackings(config, [tracking])
@@ -86,8 +95,8 @@ def run_add(config):
     ec.costs_dict.update(orders_to_costs)
     ec.flush()
     print("Wrote billed amounts")
-    print("Run get_order_tracking.py to combine this with existing trackings")
-  else:
+    print("This will be picked up on next reconciliation run.")
+  elif submit == 'n':
     print("Submission cancelled.")
 
 
