@@ -78,9 +78,34 @@ That should be it -- the "creds.json" file will give the scripts the ability to 
 
 ## Sheets Output
 
-TODO
+The reconciliation task has output that consists of two tabs in the Google Sheet that we configured earlier. The tabs are:
+
+### Reconciliation
+
+This is the main spreadsheet. Because a single tracking number can consist of multiple orders and a single order can contain multiple tracking numbers, we group them into orders based on how the shipments were divided up. The columns are:
+
+- Orders: Order IDs contained in this group
+- Trackings: Tracking numbers contained in this group
+- Amount Billed: Total amount that you were charged for this group
+- Amount Reimbursed: Total amount that the buying groups' sites show for this group
+- Last Ship Date: This is the date of the most recent shipment. If it was long ago and the order is under-reimbursed, you probably have a problem.
+- POs: List of purchase orders (currently only for USA)
+- Group: the buying group
+- To Email: the email to which the shipping/order emails were sent
+- Manual Cost Adjustment: This is a way to adjust the expected reimbursed cost for an order. If you know that an item was under-reimbursed for a good reason, you can add that amount here. We expect that the amount billed is equal to the amount reimbursed plus this manual cost adjustment. This is saved if you change it.
+- Manual Override: Another manual field, check this if you're sure that the group looks correct -- it will ignore anything else and mark as resolved
+- Total Diff: This is the total difference between amount billed and reimbursed (plus manual adjustments). Green means that the amounts were equal or the override was checked, yellow means you were over-reimbursed, and red means you were under-reimbursed.
+- Notes: Notes for your own personal use
+
+### Trackings
+
+Each row on this sheet corresponds to a tracking number. It contains order(s) for that tracking and other information about it, including the reimbursed amount if we could find one. This tab is most useful in figuring out exactly where a problem occurred, if a group has mis-scanned some item.
 
 ## Amazon Report Import
+
+TODO
+
+## Manual Order Import
 
 TODO
 
