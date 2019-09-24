@@ -48,7 +48,7 @@ def fill_tracked_costs(all_clusters, config, driver_creator):
 
 
 def fill_purchase_orders(all_clusters, config, driver_creator):
-  print("Filling purchase_orders")
+  print("Filling purchase orders")
   group_site_manager = GroupSiteManager(config, driver_creator)
   tracking_to_purchase_order = group_site_manager.get_tracking_to_purchase_order(
       'usa')
@@ -60,7 +60,6 @@ def fill_purchase_orders(all_clusters, config, driver_creator):
 
 
 def fill_costs_by_po(all_clusters, config, driver_creator):
-  print("Finding costs by PO")
   group_site_manager = GroupSiteManager(config, driver_creator)
   po_to_price = group_site_manager.get_po_to_price('usa')
   for cluster in all_clusters:

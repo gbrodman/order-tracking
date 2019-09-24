@@ -79,6 +79,7 @@ class GroupSiteManager:
           tracking = row.find_elements_by_tag_name('td')[14].text.replace(
               '-', '')
           if tracking and cost:
+            print("%s: $%d" % (tracking, float(cost)))
             tracking_to_cost_map[tracking] = float(cost)
 
         next_page_button = driver.find_element_by_xpath(
@@ -184,6 +185,7 @@ class GroupSiteManager:
           entries = row.find_elements_by_tag_name('td')
           po = entries[1].text
           cost = float(entries[5].text.replace('$', '').replace(',', ''))
+          print("%s: $%d" % (po, float(cost)))
           result[po] = cost
 
         next_page_button = driver.find_elements_by_xpath(
@@ -246,6 +248,7 @@ class GroupSiteManager:
           tracking = entries[2].text
           purchase_order = entries[3].text.split(' ')[0]
           result[tracking] = purchase_order
+          print("%s: %s" % (tracking, purchase_order))
 
         next_page_button = driver.find_elements_by_xpath(
             "//li[contains(@title, 'next page')]")

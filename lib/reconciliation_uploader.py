@@ -174,6 +174,7 @@ class ReconciliationUploader:
     self.fill_adjustments(all_clusters, base_sheet_id)
 
     all_clusters.sort(key=cmp_to_key(compare))
+    print("Uploading reconciliation to sheet")
     self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
                                           "Reconciliation",
                                           get_conditional_formatting_body)
