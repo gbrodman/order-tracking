@@ -47,9 +47,12 @@ groups:
 reconciliation:
   baseSpreadsheetId:
 
-# A Google Drive folder into which we will save tracking/cluster objects
-# in between script runs.
-driveFolder:
+# A Google Drive folder ID into which we will save tracking/cluster objects
+# in between script runs. Create a new Drive folder and paste the last part of
+# the URL here; it will look like this: 0BA-lHppejR64TGtudzRSZmpia1U
+# (Note: The full folder ID is 28 characters long and may contain hyphens and
+# underscores.)
+driveFolderId:
 
 # A list of portals that use the same website template. This should be the 
 # URL without the ".com" part

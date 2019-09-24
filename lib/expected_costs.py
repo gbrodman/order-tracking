@@ -27,14 +27,12 @@ class ExpectedCosts:
 
     if 'driveFolder' in self.config:
       objects_to_drive = ObjectsToDrive()
-      objects_to_drive.save(self.config['driveFolder'], COSTS_FILENAME,
-                            COSTS_FILE)
+      objects_to_drive.save(self.config, COSTS_FILENAME, COSTS_FILE)
 
   def load_dict(self) -> Any:
     if 'driveFolder' in self.config:
       objects_to_drive = ObjectsToDrive()
-      from_drive = objects_to_drive.load(self.config['driveFolder'],
-                                         COSTS_FILENAME)
+      from_drive = objects_to_drive.load(self.config, COSTS_FILENAME)
       if from_drive:
         return from_drive
 

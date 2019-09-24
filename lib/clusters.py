@@ -97,14 +97,13 @@ def write_clusters(config, clusters) -> None:
 
   if 'driveFolder' in config:
     objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(config['driveFolder'], CLUSTERS_FILENAME,
-                          CLUSTERS_FILE)
+    objects_to_drive.save(config, CLUSTERS_FILENAME, CLUSTERS_FILE)
 
 
 def get_existing_clusters(config) -> list:
   if 'driveFolder' in config:
     objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(config['driveFolder'], CLUSTERS_FILENAME)
+    from_drive = objects_to_drive.load(config, CLUSTERS_FILENAME)
     if from_drive:
       return from_drive
 
