@@ -31,8 +31,7 @@ class TrackingOutput:
 
     if 'driveFolder' in config:
       objects_to_drive = ObjectsToDrive()
-      objects_to_drive.save(config['driveFolder'], TRACKINGS_FILENAME,
-                            TRACKINGS_FILE)
+      objects_to_drive.save(config, TRACKINGS_FILENAME, TRACKINGS_FILE)
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
@@ -46,8 +45,7 @@ class TrackingOutput:
   def get_existing_trackings(self, config) -> Any:
     if 'driveFolder' in config:
       objects_to_drive = ObjectsToDrive()
-      from_drive = objects_to_drive.load(config['driveFolder'],
-                                         TRACKINGS_FILENAME)
+      from_drive = objects_to_drive.load(config, TRACKINGS_FILENAME)
       if from_drive:
         return self._convert_to_list(from_drive)
 

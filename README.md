@@ -56,7 +56,7 @@ Here are details of the fields on config.yml:
 - For each group in 'groups', include the full name of the group (for sites like MYS, this should be the URL minus the ".com" bit). Include a unique key per group (default is based on the address) that will appear only in shipping notifications to that group. The username and password should be to the group's online portal so that we can upload tracking numbers and scrape reconciliation data.
 - lookbackDays is how far back in your email account we'll search for unread Amazon shipping emails. Note: the shipment links expire after 45 days so we shouldn't go past that
 - The reconciliation baseSpreadsheetId should be the ID of an existing Google Sheet. See the section below on how to give correct permissions to that sheet. The ID can be retrieved form the URL, which is of the form "https://docs.google.com/spreadsheets/d/SHEET_ID"
-- The "driveFolder" field should be the ID of a Google Drive folder into which we will store persistent data. This can be retrieved from the URL of the folder, which is of the form "https://drive.google.com/drive/folders/FOLDER_ID"
+- The "driveFolderId" field should be the ID of a Google Drive folder into which we will store persistent data. This can be retrieved from the URL of the folder, which is of the form "https://drive.google.com/drive/folders/FOLDER_ID"
 
 ### Sheets / Drive Configuration and Permissions
 

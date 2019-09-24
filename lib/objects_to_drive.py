@@ -10,7 +10,8 @@ class ObjectsToDrive:
   def __init__(self):
     self.service = drive_service.create_drive()
 
-  def save(self, folder_id, filename, local_filename):
+  def save(self, config, filename, local_filename):
+    folder_id = self._get_folder_id(config)
     file_metadata = {"name": filename, "mimeType": "*/*"}
     media = MediaFileUpload(local_filename, mimetype='*/*', resumable=True)
 
@@ -25,12 +26,20 @@ class ObjectsToDrive:
       # update
       self.service.files().update(fileId=file_id, media_body=media).execute()
 
-  def load(self, folder_id, filename):
+  def load(self, config, filename):
+    folder_id = self._get_folder_id(config)
     files_in_folder = self._get_files_in_folder(folder_id)
     file_id = self._find_file_id(files_in_folder, filename)
     if file_id is None:
       return None
     return self._download_file(file_id)
+
+  def _get_folder_id(self, config):
+    if "driveFolderId" in config:
+      return config["driveFolderId"]
+    if "driveFolder" in config:
+      return config["driveFolder"]
+    raise Exception("Please include 'driveFolderId' in the config")
 
   def _find_file_id(self, files, filename):
     for file in files:
