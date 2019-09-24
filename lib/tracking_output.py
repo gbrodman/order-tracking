@@ -29,9 +29,9 @@ class TrackingOutput:
     with open(TRACKINGS_FILE, 'wb') as output:
       pickle.dump(groups_dict, output)
 
-    if 'driveFolder' in config:
+    if 'driveFolderId' in config:
       objects_to_drive = ObjectsToDrive()
-      objects_to_drive.save(config['driveFolder'], TRACKINGS_FILENAME,
+      objects_to_drive.save(config['driveFolderId'], TRACKINGS_FILENAME,
                             TRACKINGS_FILE)
 
   # Adds each Tracking object to the appropriate group
@@ -44,9 +44,9 @@ class TrackingOutput:
     return old_trackings
 
   def get_existing_trackings(self, config) -> Any:
-    if 'driveFolder' in config:
+    if 'driveFolderId' in config:
       objects_to_drive = ObjectsToDrive()
-      from_drive = objects_to_drive.load(config['driveFolder'],
+      from_drive = objects_to_drive.load(config['driveFolderId'],
                                          TRACKINGS_FILENAME)
       if from_drive:
         return self._convert_to_list(from_drive)

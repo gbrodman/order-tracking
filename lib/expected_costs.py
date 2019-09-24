@@ -25,15 +25,15 @@ class ExpectedCosts:
     with open(COSTS_FILE, 'wb') as stream:
       pickle.dump(self.costs_dict, stream)
 
-    if 'driveFolder' in self.config:
+    if 'driveFolderId' in self.config:
       objects_to_drive = ObjectsToDrive()
-      objects_to_drive.save(self.config['driveFolder'], COSTS_FILENAME,
+      objects_to_drive.save(self.config['driveFolderId'], COSTS_FILENAME,
                             COSTS_FILE)
 
   def load_dict(self) -> Any:
-    if 'driveFolder' in self.config:
+    if 'driveFolderId' in self.config:
       objects_to_drive = ObjectsToDrive()
-      from_drive = objects_to_drive.load(self.config['driveFolder'],
+      from_drive = objects_to_drive.load(self.config['driveFolderId'],
                                          COSTS_FILENAME)
       if from_drive:
         return from_drive
