@@ -64,7 +64,7 @@ class DriverCreator:
   def _new_chrome_driver(self) -> Any:
     options = webdriver.chrome.options.Options()
     options.headless = self.headless
-    options.add_argument("--log-level=3");
+    options.add_argument("--log-level=3")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     if sys.platform.startswith("darwin"):  # osx

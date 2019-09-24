@@ -65,6 +65,8 @@ class TrackingOutput:
     result = []
     for trackings in trackings_dict.values():
       result.extend(trackings)
+    for tracking in result:
+      tracking.tracking_number = tracking.tracking_number.upper()
     return result
 
   def clear(self) -> None:
