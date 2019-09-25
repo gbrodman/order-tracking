@@ -51,7 +51,7 @@ class TrackingOutput:
         "Drive folder ID not present or we couldn't load from drive. Loading from local"
     )
     if not os.path.exists(TRACKINGS_FILE):
-      return {}
+      return []
 
     with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
       trackings_dict = pickle.load(tracking_file_stream)
