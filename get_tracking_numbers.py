@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import lib.donations
 import sys
 import traceback
 import yaml

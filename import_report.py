@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+import lib.donations
 import sys
 import yaml
 from lib.objects_to_sheet import ObjectsToSheet

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+import lib.donations
 import yaml
 from lib.expected_costs import ExpectedCosts
 from lib.tracking import Tracking

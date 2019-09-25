@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import lib.donations
 from lib import clusters
 import yaml
 import sys
