@@ -95,17 +95,15 @@ def write_clusters(config, clusters) -> None:
   with open(CLUSTERS_FILE, 'wb') as output:
     pickle.dump(clusters, output)
 
-  if 'driveFolder' in config:
-    objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(config, CLUSTERS_FILENAME, CLUSTERS_FILE)
+  objects_to_drive = ObjectsToDrive()
+  objects_to_drive.save(config, CLUSTERS_FILENAME, CLUSTERS_FILE)
 
 
 def get_existing_clusters(config) -> list:
-  if 'driveFolder' in config:
-    objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(config, CLUSTERS_FILENAME)
-    if from_drive:
-      return from_drive
+  objects_to_drive = ObjectsToDrive()
+  from_drive = objects_to_drive.load(config, CLUSTERS_FILENAME)
+  if from_drive:
+    return from_drive
 
   print(
       "Drive folder ID not present or we couldn't load from drive. Loading from local"
