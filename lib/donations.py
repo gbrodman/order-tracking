@@ -8,6 +8,7 @@ LAST_MONTH_FILE = OUTPUT_FOLDER + "/last_month.pickle"
 
 PAYPAL_URL = "https://www.paypal.me/gusbrodman"
 
+
 def should_open_page():
   # Open a donation page the first time the script is run every month
   this_month = datetime.date.today().strftime("%Y-%m")
@@ -23,6 +24,7 @@ def should_open_page():
   with open(LAST_MONTH_FILE, 'wb') as f:
     pickle.dump(this_month, f)
   return True
+
 
 if should_open_page():
   webbrowser.open(PAYPAL_URL)

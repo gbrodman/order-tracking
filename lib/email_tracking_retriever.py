@@ -66,7 +66,7 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_from_email_address(self) -> Any:
+  def get_subject_searches(self) -> Any:
     pass
 
   @abstractmethod
@@ -135,20 +135,24 @@ class EmailTrackingRetriever(ABC):
   def get_email_ids(self) -> Any:
     date_to_search = self.get_date_to_search()
     mail = self.get_all_mail_folder()
-    from_email_address = self.get_from_email_address()
-    status, response = mail.uid('SEARCH', None,
-                                'FROM "%s"' % from_email_address, '(UNSEEN)',
-                                '(SUBJECT "shipped")',
-                                '(SINCE "%s")' % date_to_search)
-    email_ids = response[0].decode('utf-8')
+    subject_searches = self.get_subject_searches()
 
-    return email_ids.split()
+    result = set()
+    for search_terms in subject_searches:
+      search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
+      status, response = mail.uid('SEARCH', None, '(UNSEEN)',
+                                  '(SINCE "%s")' % date_to_search,
+                                  *search_terms)
+      email_ids = response[0].decode('utf-8')
+      result.update(email_ids.split())
+
+    return result
 
   def get_date_to_search(self) -> str:
     if "lookbackDays" in self.config:
       lookback_days = int(self.config['lookbackDays'])
     else:
-      lookback_days = 30
+      lookback_days = 45
     date = datetime.date.today() - datetime.timedelta(days=lookback_days)
     string_date = date.strftime("%d-%b-%Y")
     print("Searching for emails since %s" % string_date)

@@ -21,8 +21,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
       return None
     return match.group(1)
 
-  def get_from_email_address(self):
-    return "BestBuyInfo@emailinfo.bestbuy.com"
+  def get_subject_searches(self):
+    return [["Your order #BBY01", "has shipped"]]
 
   def get_merchant(self) -> str:
     return "Best Buy"
