@@ -33,8 +33,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       return match.group(1)
     return ''
 
-  def get_from_email_address(self):
-    return "shipment-tracking@amazon.com"
+  def get_subject_searches(self):
+    return [["Your AmazonSmile order", "has shipped"],
+            ["Your Amazon.com order", "has shipped"]]
 
   def get_merchant(self) -> str:
     return "Amazon"
