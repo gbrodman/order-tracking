@@ -2,6 +2,8 @@ import pickle
 import os.path
 import imaplib
 import re
+import quopri
+from bs4 import BeautifulSoup
 from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, TypeVar
 
@@ -25,16 +27,14 @@ class ExpectedCosts:
     with open(COSTS_FILE, 'wb') as stream:
       pickle.dump(self.costs_dict, stream)
 
-    if 'driveFolder' in self.config:
-      objects_to_drive = ObjectsToDrive()
-      objects_to_drive.save(self.config, COSTS_FILENAME, COSTS_FILE)
+    objects_to_drive = ObjectsToDrive()
+    objects_to_drive.save(self.config, COSTS_FILENAME, COSTS_FILE)
 
   def load_dict(self) -> Any:
-    if 'driveFolder' in self.config:
-      objects_to_drive = ObjectsToDrive()
-      from_drive = objects_to_drive.load(self.config, COSTS_FILENAME)
-      if from_drive:
-        return from_drive
+    objects_to_drive = ObjectsToDrive()
+    from_drive = objects_to_drive.load(self.config, COSTS_FILENAME)
+    if from_drive:
+      return from_drive
 
     if not os.path.exists(COSTS_FILE):
       return {}
@@ -46,6 +46,7 @@ class ExpectedCosts:
     print("Getting cost for order_id %s" % order_id)
     if order_id not in self.costs_dict:
       from_email = self.load_order_total(order_id)
+      from_email = from_email if from_email else {order_id: 0.0}
       self.costs_dict.update(from_email)
       self.flush()
     return self.costs_dict[order_id]
@@ -57,55 +58,61 @@ class ExpectedCosts:
       return self.load_order_total_amazon(order_id)
 
   def load_order_total_bb(self, order_id: _T0) -> Dict[_T0, float]:
-    raw_email = self.get_relevant_raw_email("BestBuyInfo@emailinfo.bestbuy.com",
-                                            order_id)
+    data = self.get_relevant_raw_email_data(order_id)
+    raw_email = str(data[0][1])
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
     regex_tax = r'Tax[^\$]*\$([\d,]+\.[\d]{2})'
     subtotal_match = re.search(regex_subtotal, raw_email)
     if not subtotal_match:
-      return {order_id: 0.0}
+      return {}
     subtotal = float(subtotal_match.group(1).replace(',', ''))
     tax_match = re.search(regex_tax, raw_email)
     if not tax_match:
-      return {order_id: 0.0}
+      return {}
     tax = float(tax_match.group(1).replace(',', ''))
     return {order_id: subtotal + tax}
 
   def load_order_total_amazon(self, order_id: _T0) -> Dict[_T0, float]:
-    raw_email = self.get_relevant_raw_email("auto-confirm@amazon.com", order_id)
+    data = self.get_relevant_raw_email_data(order_id)
+    raw_email = str(data[0][1])
     if not raw_email:
-      return {order_id: 0.0}
+      return {}
 
     regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
     regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
     regex_order = r'(\d{3}-\d{7}-\d{7})'
 
-    # Sometimes it's been split into multiple orders. Find totals for each
-    pretax_totals = [
-        float(cost.replace(',', ''))
-        for cost in re.findall(regex_pretax, raw_email)
-    ]
-    taxes = [
-        float(cost.replace(',', ''))
-        for cost in re.findall(regex_est_tax, raw_email)
-    ]
     orders_with_duplicates = re.findall(regex_order, raw_email)
     orders = []
     for order in orders_with_duplicates:
       if order not in orders:
         orders.append(order)
 
+    # Sometimes it's been split into multiple orders. Find totals for each
+    pretax_totals = [
+        float(cost.replace(',', ''))
+        for cost in re.findall(regex_pretax, raw_email)
+    ]
+
+    # personal emails might not have the regexes, need to do something different
+    if not pretax_totals:
+      return self.get_personal_amazon_totals(data, orders)
+
+    taxes = [
+        float(cost.replace(',', ''))
+        for cost in re.findall(regex_est_tax, raw_email)
+    ]
+
     order_totals = [t[0] + t[1] for t in zip(pretax_totals, taxes)]
     return dict(zip(orders, order_totals))
 
-  def get_relevant_raw_email(self, from_address, order_id) -> Optional[str]:
+  def get_relevant_raw_email_data(self, order_id) -> Optional[str]:
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
     mail.login(self.config['email']['username'],
                self.config['email']['password'])
     mail.select('"[Gmail]/All Mail"')
 
-    status, search_result = mail.uid('SEARCH', None, 'FROM "%s"' % from_address,
-                                     'BODY "%s"' % order_id)
+    status, search_result = mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
       return None
@@ -113,4 +120,20 @@ class ExpectedCosts:
     email_ids = search_result[0].decode('utf-8').split()
 
     result, data = mail.uid("FETCH", email_ids[0], "(RFC822)")
-    return str(data[0][1])
+    return data
+
+  def get_personal_amazon_totals(self, data, orders):
+    soup = BeautifulSoup(
+        quopri.decodestring(data[0][1]), features="html.parser")
+    prices = [
+        elem.getText().strip().replace(',', '').replace('$', '')
+        for elem in soup.find_all('td', {"class": "price"})
+    ]
+    prices = [float(price) for price in prices if price]
+
+    result = {}
+    # prices alternate between pretax / tax
+    for i in range(len(prices) // 2):
+      total = prices[i * 2] + prices[i * 2 + 1]
+      result[orders[i]] = total
+    return result
