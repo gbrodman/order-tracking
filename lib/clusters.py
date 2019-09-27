@@ -189,7 +189,7 @@ def from_row(header, row) -> Cluster:
   manual_override = row[header.index(
       'Manual Override')] if 'Manual Override' in header else False
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
-  notes = row[header.index('Notes')] if 'Notes' in header else ''
+  notes = str(row[header.index('Notes')]) if 'Notes' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, adjustment, to_email, notes,
