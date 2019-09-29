@@ -65,6 +65,12 @@ class DriverCreator:
     options = webdriver.chrome.options.Options()
     options.headless = self.headless
     options.add_argument("--log-level=3")
+
+    # no idea why, but it's a million times slower in headless mode in Windows without these lines
+    options.add_argument("--proxy-server='direct://'")
+    options.add_argument("--proxy-bypass-list=*")
+
+    # reduce Windows log spam
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     if sys.platform.startswith("darwin"):  # osx

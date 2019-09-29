@@ -62,13 +62,13 @@ class GroupSiteManager:
       driver.find_element_by_xpath('//button[@title="Clear filters"]').click()
       time.sleep(1)
       driver.find_element_by_xpath('//md-icon[text()="last_page"]').click()
-      time.sleep(7)
+      time.sleep(4)
 
       # go to the first page (page selection can get a bit messed up with the multiple sites)
       first_page_button = driver.find_element_by_xpath(
           "//button[@ng-click='$pagination.first()']")
       first_page_button.click()
-      time.sleep(7)
+      time.sleep(4)
 
       while True:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
@@ -86,7 +86,7 @@ class GroupSiteManager:
             "//button[@ng-click='$pagination.next()']")
         if next_page_button.get_property("disabled") == False:
           next_page_button.click()
-          time.sleep(7)
+          time.sleep(3)
         else:
           break
 
@@ -127,7 +127,7 @@ class GroupSiteManager:
 
   def _load_page(self, driver, url) -> None:
     driver.get(url)
-    time.sleep(5)
+    time.sleep(3)
 
   def _upload_melul(self, numbers, group) -> None:
     driver = self._login_melul(group)
@@ -193,7 +193,7 @@ class GroupSiteManager:
         if next_page_button:
           link = next_page_button[0].find_element_by_tag_name('a')
           link.click()
-          time.sleep(5)
+          time.sleep(3)
         else:
           break
 
