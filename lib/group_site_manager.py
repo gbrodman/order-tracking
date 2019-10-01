@@ -1,8 +1,11 @@
 import collections
 import datetime
+import imaplib
+import quopri
 import re
 import time
 
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from typing import Any, Dict
 
@@ -104,7 +107,9 @@ class GroupSiteManager:
     raise Exception("Exceeded retry limit")
 
   def get_tracked_costs(self, group) -> Dict[Any, float]:
-    if group not in self.melul_portal_groups:
+    if group == 'bfmr':
+      return self._get_bfmr_costs()
+    elif group not in self.melul_portal_groups:
       return {}
 
     costs = self.get_tracked_costs_by_group_with_retry(group)
@@ -290,3 +295,39 @@ class GroupSiteManager:
       time.sleep(3)
     finally:
       driver.close()
+
+  def _get_bfmr_costs(self):
+    print("Getting costs from BFMR emails")
+    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
+    mail.login(self.config['email']['username'],
+               self.config['email']['password'])
+    mail.select('"[Gmail]/All Mail"')
+    status, response = mail.uid('SEARCH', None,
+                                'SUBJECT "BuyForMeRetail - Payment Sent"')
+    email_ids = response[0].decode('utf-8').split()
+    result = {}
+    for email_id in email_ids:
+      fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
+      soup = BeautifulSoup(
+          quopri.decodestring(data[0][1]), features="html.parser")
+      body = soup.find('td', id='email_body')
+      if not body:
+        continue
+      tables = body.find_all('table')
+      if not tables or len(tables) < 2:
+        continue
+      table = tables[1]
+      trs = table.find_all('tr')
+      # busted-ass html doesn't close the <tr> tags until the end
+      tds = trs[1].find_all('td')
+      # shave out the "total amount" tds
+      tds = tds[:-2]
+
+      for i in range(len(tds) // 5):
+        tracking = tds[i * 5].getText()
+        total = float(tds[i * 5 + 4].getText().replace(',',
+                                                       '').replace('$', ''))
+        print("%s: $%d" % (tracking, total))
+        result[tracking] = total
+
+    return result
