@@ -303,9 +303,10 @@ class GroupSiteManager:
                self.config['email']['password'])
     mail.select('"[Gmail]/All Mail"')
     status, response = mail.uid('SEARCH', None,
-                                'SUBJECT "BuyForMeRetail - Payment Sent"')
+                                'SUBJECT "BuyForMeRetail - Payment Sent"',
+                                'SINCE "01-Aug-2019"')
     email_ids = response[0].decode('utf-8').split()
-    result = {}
+    result = collections.defaultdict(float)
     for email_id in email_ids:
       fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
       soup = BeautifulSoup(
@@ -325,9 +326,9 @@ class GroupSiteManager:
 
       for i in range(len(tds) // 5):
         tracking = tds[i * 5].getText()
-        total = float(tds[i * 5 + 4].getText().replace(',',
-                                                       '').replace('$', ''))
+        total_text = tds[i * 5 + 4].getText()
+        total = float(total_text.replace(',', '').replace('$', ''))
         print("%s: $%d" % (tracking, total))
-        result[tracking] = total
+        result[tracking] += total
 
     return result
