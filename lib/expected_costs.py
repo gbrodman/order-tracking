@@ -44,7 +44,7 @@ class ExpectedCosts:
 
   def get_expected_cost(self, order_id) -> Any:
     print("Getting cost for order_id %s" % order_id)
-    if order_id not in self.costs_dict:
+    if order_id not in self.costs_dict or not self.costs_dict[order_id]:
       from_email = self.load_order_total(order_id)
       from_email = from_email if from_email else {order_id: 0.0}
       self.costs_dict.update(from_email)
