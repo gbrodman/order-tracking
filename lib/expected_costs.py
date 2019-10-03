@@ -43,8 +43,8 @@ class ExpectedCosts:
       return pickle.load(stream)
 
   def get_expected_cost(self, order_id) -> Any:
-    print("Getting cost for order_id %s" % order_id)
     if order_id not in self.costs_dict or not self.costs_dict[order_id]:
+      print("Getting cost for order_id %s" % order_id)
       from_email = self.load_order_total(order_id)
       from_email = from_email if from_email else {order_id: 0.0}
       self.costs_dict.update(from_email)
@@ -59,6 +59,10 @@ class ExpectedCosts:
 
   def load_order_total_bb(self, order_id: _T0) -> Dict[_T0, float]:
     data = self.get_relevant_raw_email_data(order_id)
+    if not data:
+      print("Could not find email for order ID %s" % order_id)
+      return {}
+
     raw_email = str(data[0][1])
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
     regex_tax = r'Tax[^\$]*\$([\d,]+\.[\d]{2})'
@@ -74,10 +78,11 @@ class ExpectedCosts:
 
   def load_order_total_amazon(self, order_id: _T0) -> Dict[_T0, float]:
     data = self.get_relevant_raw_email_data(order_id)
-    raw_email = str(data[0][1])
-    if not raw_email:
+    if not data:
+      print("Could not find email for order ID %s" % order_id)
       return {}
 
+    raw_email = str(data[0][1])
     regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
     regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
     regex_order = r'(\d{3}-\d{7}-\d{7})'
@@ -118,6 +123,8 @@ class ExpectedCosts:
       return None
 
     email_ids = search_result[0].decode('utf-8').split()
+    if not email_ids:
+      return None
 
     result, data = mail.uid("FETCH", email_ids[0], "(RFC822)")
     return data
