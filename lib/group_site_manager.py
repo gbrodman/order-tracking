@@ -68,10 +68,12 @@ class GroupSiteManager:
       time.sleep(4)
 
       # go to the first page (page selection can get a bit messed up with the multiple sites)
-      first_page_button = driver.find_element_by_xpath(
+      # use a list to avoid throwing an exception (don't fail if there's only one page)
+      first_page_buttons = driver.find_elements_by_xpath(
           "//button[@ng-click='$pagination.first()']")
-      first_page_button.click()
-      time.sleep(4)
+      if first_page_buttons:
+        first_page_buttons[0].click()
+        time.sleep(4)
 
       while True:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
@@ -85,10 +87,10 @@ class GroupSiteManager:
             print("%s: $%d" % (tracking, float(cost)))
             tracking_to_cost_map[tracking] = float(cost)
 
-        next_page_button = driver.find_element_by_xpath(
+        next_page_buttons = driver.find_elements_by_xpath(
             "//button[@ng-click='$pagination.next()']")
-        if next_page_button.get_property("disabled") == False:
-          next_page_button.click()
+        if next_page_buttons and next_page_buttons[0].get_property("disabled") == False:
+          next_page_buttons[0].click()
           time.sleep(3)
         else:
           break
