@@ -56,8 +56,9 @@ class Cluster:
   def to_row(self) -> list:
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
-        self.tracked_cost, self.last_ship_date, "'" + ",".join(self.purchase_orders),
-        self.group, self.to_email, self.adjustment, self.manual_override,
+        self.tracked_cost, self.last_ship_date,
+        "'" + ",".join(self.purchase_orders), self.group, self.to_email,
+        self.adjustment, self.manual_override,
         '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
         self.notes
     ]
@@ -169,8 +170,8 @@ def find_by_purchase_orders(cluster, all_clusters) -> Any:
 
 
 def from_row(header, row) -> Cluster:
-  orders = set(
-      row[header.index('Orders')].split(',')) if 'Orders' in header else set()
+  orders = set(str(
+      row[header.index('Orders')]).split(',')) if 'Orders' in header else set()
   trackings = set(str(row[header.index('Trackings')]).split(
       ',')) if 'Trackings' in header else set()
   expected_cost = float(
