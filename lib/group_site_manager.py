@@ -141,7 +141,13 @@ class GroupSiteManager:
     driver = self._login_melul(group)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
-      driver.find_element_by_xpath("//textarea").send_keys('\n'.join(numbers))
+      textareas = driver.find_elements_by_xpath("//textarea")
+      if not textareas:
+        print("Could not find order management for group %s" % group)
+        return
+      
+      textarea = textareas[0]
+      textarea.send_keys('\n'.join(numbers))
       driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
       time.sleep(1)
     finally:
