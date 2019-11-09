@@ -27,6 +27,8 @@ USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 USA_PO_URL = "https://usabuying.group/purchase-orders"
 
+YRCW_URL = "https://app.xchaintechnology.com/"
+
 MAX_UPLOAD_ATTEMPTS = 10
 
 TODAY = datetime.date.today().strftime("%Y%m%d")
@@ -127,6 +129,8 @@ class GroupSiteManager:
           return self._upload_melul(numbers, group)
         elif group == "usa":
           return self._upload_usa(numbers)
+        elif group == "yrcw":
+          return self._upload_yrcw(numbers)
         else:
           raise Exception("Unknown group: " + group)
       except Exception as e:
@@ -137,6 +141,20 @@ class GroupSiteManager:
     driver.get(url)
     time.sleep(3)
 
+  def _upload_yrcw(self, numbers) -> None:
+    driver = self._login_yrcw()
+    try:
+      self._load_page(driver, YRCW_URL + "dashboard")
+      driver.find_element_by_xpath(
+          "//button[@data-target='#modalAddTrackingNumbers']").click()
+      time.sleep(0.5)
+      driver.find_element_by_tag_name("textarea").send_keys(",".join(numbers))
+      driver.find_element_by_xpath("//button[text() = 'Add']").click()
+      time.sleep(0.5)
+      driver.find_element_by_xpath("//button[text() = 'Submit All']").click()
+    finally:
+      driver.close()
+
   def _upload_melul(self, numbers, group) -> None:
     driver = self._login_melul(group)
     try:
@@ -145,7 +163,7 @@ class GroupSiteManager:
       if not textareas:
         print("Could not find order management for group %s" % group)
         return
-      
+
       textarea = textareas[0]
       textarea.send_keys('\n'.join(numbers))
       driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
@@ -290,6 +308,18 @@ class GroupSiteManager:
         element.click()
       except:
         pass
+    time.sleep(2)
+    return driver
+
+  def _login_yrcw(self) -> Any:
+    driver = self.driver_creator.new()
+    self._load_page(driver, YRCW_URL)
+    group_config = self.config['groups']['yrcw']
+    driver.find_element_by_xpath("//input[@type='email']").send_keys(
+        group_config['username'])
+    driver.find_element_by_xpath("//input[@type='password']").send_keys(
+        group_config['password'])
+    driver.find_element_by_xpath("//button[@type='submit']").click()
     time.sleep(2)
     return driver
 

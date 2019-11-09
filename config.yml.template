@@ -8,8 +8,10 @@ email:
 
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site
-# username + password here. For USA, we will always use usabuying.group.
-# This only works for PM/MYS/USA for now.
+# username + password here. For USA, we will always use usabuying.group
+# and for YRCW we will use app.xchaintechnology.com/.
+#
+# This only works for PM/MYS/USA/YRCW for now.
 groups:
   mysbuyinggroup:
     # "keys" are unique strings that will appear in emails for a particular
@@ -29,6 +31,11 @@ groups:
     keys:
       - 325 Markus
     username: MY_USA_BUYER_ID
+    password:
+  yrcw:
+    keys:
+      - 2207 Concord
+    username: MY_YRCW_EMAIL
     password:
   bfmr:
     keys:
