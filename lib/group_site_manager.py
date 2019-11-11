@@ -152,6 +152,7 @@ class GroupSiteManager:
       driver.find_element_by_xpath("//button[text() = 'Add']").click()
       time.sleep(0.5)
       driver.find_element_by_xpath("//button[text() = 'Submit All']").click()
+      time.sleep(2)
     finally:
       driver.close()
 
