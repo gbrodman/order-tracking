@@ -26,8 +26,7 @@ class EmailSender:
           tracking.tracking_number + " / " + ", ".join(tracking.order_ids) +
           " / " + tracking.to_email for tracking in trackings
       ]
-      content += group
-      content += '\n'
+      content += f"{group} ({len(numbers)}):\n"
       content += '\n'.join(numbers)
       content += '\n\n'
 
