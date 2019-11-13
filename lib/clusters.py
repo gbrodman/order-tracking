@@ -24,7 +24,8 @@ class Cluster:
                 adjustment=0.0,
                 to_email='',
                 notes='',
-                manual_override=False) -> None:
+                manual_override=False,
+                non_reimbursed_trackings=set()) -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -36,6 +37,7 @@ class Cluster:
     self.to_email = to_email
     self.notes = notes
     self.manual_override = manual_override
+    self.non_reimbursed_trackings = non_reimbursed_trackings
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
@@ -49,17 +51,18 @@ class Cluster:
   def get_header(self) -> List[str]:
     return [
         "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
-        "Last Ship Date", "POs", "Group", "To Email", "Manual Cost Adjustment",
-        "Manual Override", "Total Diff", "Notes"
+        "Non-Reimbursed Trackings", "Last Ship Date", "POs", "Group",
+        "To Email", "Manual Cost Adjustment", "Manual Override", "Total Diff",
+        "Notes"
     ]
 
   def to_row(self) -> list:
     return [
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
-        self.tracked_cost, self.last_ship_date,
-        "'" + ",".join(self.purchase_orders), self.group, self.to_email,
-        self.adjustment, self.manual_override,
-        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
+        self.tracked_cost, ",".join(self.non_reimbursed_trackings),
+        self.last_ship_date, "'" + ",".join(self.purchase_orders), self.group,
+        self.to_email, self.adjustment, self.manual_override,
+        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("J", ROW()))',
         self.notes
     ]
 
@@ -76,6 +79,7 @@ class Cluster:
     elif other.notes:
       self.notes = other.notes
     self.manual_override = self.manual_override and other.manual_override
+    self.non_reimbursed_trackings.update(other.non_reimbursed_trackings)
 
 
 def dedupe_clusters(clusters) -> list:
@@ -179,6 +183,10 @@ def from_row(header, row) -> Cluster:
   tracked_cost_str = row[header.index(
       "Amount Reimbursed")] if "Amount Reimbursed" in header else ''
   tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
+  non_reimbursed_str = str(row[header.index("Non-Reimbursed Trackings")]
+                          ) if "Non-Reimbursed Trackings" in header else ""
+  non_reimbursed_trackings = set(
+      non_reimbursed_str.split(',')) if non_reimbursed_str else set()
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
@@ -194,5 +202,5 @@ def from_row(header, row) -> Cluster:
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, adjustment, to_email, notes,
-                    manual_override)
+                    manual_override, non_reimbursed_trackings)
   return cluster

@@ -72,15 +72,15 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
       "sheetId": int(tab_id),
       "startRowIndex": 1,
       "endRowIndex": num_objects + 1,
-      "startColumnIndex": 9,
-      "endColumnIndex": 10
+      "startColumnIndex": 10,
+      "endColumnIndex": 11
   }
   total_diff_range = {
       "sheetId": int(tab_id),
       "startRowIndex": 1,
       "endRowIndex": num_objects + 1,
-      "startColumnIndex": 10,
-      "endColumnIndex": 11
+      "startColumnIndex": 11,
+      "endColumnIndex": 12
   }
   requests = [{
       "setDataValidation": {
@@ -102,7 +102,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                           "CUSTOM_FORMULA",
                       "values": [{
                           'userEnteredValue':
-                              '=OR((I2:I)+(D2:D)=C2:C, J2:J= TRUE)'
+                              '=OR((J2:J)+(D2:D)=C2:C, K2:K= TRUE)'
                       }]
                   },
                   "format": {
@@ -124,7 +124,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                   "condition": {
                       "type": "CUSTOM_FORMULA",
                       "values": [{
-                          'userEnteredValue': '=(I2:I)+(D2:D)>C2:C'
+                          'userEnteredValue': '=(J2:J)+(D2:D)>C2:C'
                       }]
                   },
                   "format": {
@@ -146,7 +146,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                   "condition": {
                       "type": "CUSTOM_FORMULA",
                       "values": [{
-                          'userEnteredValue': '=(I2:I)+(D2:D)<C2:C'
+                          'userEnteredValue': '=(J2:J)+(D2:D)<C2:C'
                       }]
                   },
                   "format": {

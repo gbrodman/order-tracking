@@ -41,11 +41,15 @@ def fill_tracked_costs(all_clusters, config, driver_creator):
   tracked_costs = get_tracked_costs(config, driver_creator)
   fill_tracking_costs_and_upload(config, tracked_costs)
   for cluster in all_clusters:
-    tracked_cost = sum([
-        tracked_costs.get(tracking_number, 0.0)
-        for tracking_number in cluster.trackings
-    ])
-    cluster.tracked_cost = tracked_cost
+    non_reimbursed_trackings = set(cluster.trackings)
+    cluster_sum = 0.0
+    for tracking_number in cluster.trackings:
+      this_cost = tracked_costs.get(tracking_number, 0.0)
+      cluster_sum += this_cost
+      if this_cost:
+        non_reimbursed_trackings.remove(tracking_number)
+    cluster.tracked_cost = cluster_sum
+    cluster.non_reimbursed_trackings = non_reimbursed_trackings
 
 
 def fill_purchase_orders(all_clusters, config, driver_creator):
@@ -58,6 +62,7 @@ def fill_purchase_orders(all_clusters, config, driver_creator):
     for tracking in cluster.trackings:
       if tracking in tracking_to_purchase_order:
         cluster.purchase_orders.add(tracking_to_purchase_order[tracking])
+        cluster.non_reimbursed_trackings.remove(tracking)
 
 
 def fill_costs_by_po(all_clusters, config, driver_creator):
