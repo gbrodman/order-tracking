@@ -30,8 +30,9 @@ def get_group(header, row) -> Any:
 def from_amazon_row(header, row) -> Tracking:
   tracking = str(row[header.index('Carrier Tracking #')]).upper()
   orders = {row[header.index('Order ID')].upper()}
-  price = float(row[header.index('Shipment Subtotal')].replace(',', '').replace(
-      '$', '').replace('N/A', '0.0'))
+  price = float(
+      str(row[header.index('Shipment Subtotal')]).replace(',', '').replace(
+          '$', '').replace('N/A', '0.0'))
   to_email = row[header.index("Account User Email")]
   url = ''
   original_ship_date = str(row[header.index("Shipment Date")])
@@ -43,8 +44,8 @@ def from_amazon_row(header, row) -> Tracking:
     ship_date = "n/a"
   group = get_group(header, row)
   tracked_cost = 0.0
-  items = row[header.index("Title")] + " Qty:" + row[header.index(
-      "Item Quantity")]
+  items = row[header.index("Title")] + " Qty:" + str(
+      row[header.index("Item Quantity")])
   merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
                   tracked_cost, items, merchant)
