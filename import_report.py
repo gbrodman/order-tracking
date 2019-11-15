@@ -43,6 +43,8 @@ def from_amazon_row(header, row) -> Tracking:
   except:
     ship_date = "n/a"
   group = get_group(header, row)
+  if group is None:
+    return None
   tracked_cost = 0.0
   items = row[header.index("Title")] + " Qty:" + str(
       row[header.index("Item Quantity")])
@@ -88,7 +90,7 @@ def main(argv):
                                                        sheet_id, tab_name)
   all_trackings = [
       tracking for tracking in all_trackings
-      if tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
+      if tracking and tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   all_trackings = dedupe_trackings(all_trackings)
   tracking_output = TrackingOutput()
