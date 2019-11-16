@@ -86,6 +86,8 @@ def dedupe_clusters(clusters) -> list:
   result = []
   seen_tracking_ids = set()
   for cluster in clusters:
+    if not cluster.group:
+      continue
     if not cluster.trackings.intersection(seen_tracking_ids):
       seen_tracking_ids.update(cluster.trackings)
       result.append(cluster)
