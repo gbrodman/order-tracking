@@ -365,7 +365,7 @@ class GroupSiteManager:
       tds = tds[:-2]
 
       for i in range(len(tds) // 5):
-        tracking = tds[i * 5].getText()
+        tracking = tds[i * 5].getText().upper()
         total_text = tds[i * 5 + 4].getText()
         total = float(total_text.replace(',', '').replace('$', ''))
         print("%s: $%d" % (tracking, total))
