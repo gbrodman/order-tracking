@@ -41,6 +41,8 @@ This is the script for reconciliation. It does the following:
 
 ## Instructions
 
+**If you are on Windows, use [this guide](https://docs.google.com/document/d/1wivg69Urc9boScOUvW4sdP6zJrayikNyzKcJgS2kjyw/edit#heading=h.k3xoxdnm2imr) instead of these instructions, as Windows is a bit difficult and this guide is clear.**
+
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
 - `pip3 install -r requirements.txt`
