@@ -45,7 +45,7 @@ This is the script for reconciliation. It does the following:
 
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
-- `pip3 install -r requirements.txt`
+- `pip install -r requirements.txt`
 - Copy config.yml.template to config.yml
 - Set up the configuration (see the "Configuration" section below for more info)
 - Run `python3 get_tracking_numbers.py` followed by `python3 reconcile.py`
