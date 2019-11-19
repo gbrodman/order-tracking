@@ -89,8 +89,8 @@ def main(argv):
   all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row,
                                                        sheet_id, tab_name)
   all_trackings = [
-      tracking for tracking in all_trackings
-      if tracking and tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
+      tracking for tracking in all_trackings if tracking and
+      tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   all_trackings = dedupe_trackings(all_trackings)
   tracking_output = TrackingOutput()

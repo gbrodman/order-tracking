@@ -1,5 +1,4 @@
 import collections
-import datetime
 import imaplib
 import quopri
 import re
@@ -31,9 +30,6 @@ YRCW_URL = "https://app.xchaintechnology.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
-TODAY = datetime.date.today().strftime("%Y%m%d")
-START = "20000101"
-
 
 class GroupSiteManager:
 
@@ -53,12 +49,39 @@ class GroupSiteManager:
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_tracked_costs_by_group(self, group) -> Dict[Any, float]:
+  def get_tracking_pos_costs_maps_with_retry(self, group):
+    last_exc = None
+    for i in range(5):
+      try:
+        return self.get_tracking_pos_costs_maps(group)
+      except Exception as e:
+        print("Received exception when getting costs: " + str(e))
+        print("Retrying up to five times")
+        last_exc = e
+    raise Exception("Exceeded retry limit", last_exc)
+
+  # returns (tracking -> po, po -> cost) dicts
+  def get_tracking_pos_costs_maps(self, group):
     print("Loading group %s" % group)
+    if group == 'bfmr':
+      return self._get_bfmr_costs()
+    elif group in self.melul_portal_groups:
+      return self._melul_get_tracking_pos_costs_maps(group)
+    elif group == "usa":
+      return self._get_usa_tracking_pos_costs_maps()
+    return (dict(), dict())
+
+  def _get_usa_tracking_pos_costs_maps(self):
+    po_to_cost = self._get_usa_po_to_price()
+    tracking_to_po = self._get_usa_tracking_to_purchase_order()
+    return (tracking_to_po, po_to_cost)
+
+  def _melul_get_tracking_pos_costs_maps(self, group):
     driver = self._login_melul(group)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
-      tracking_to_cost_map = {}
+      tracking_to_po_map = {}
+      po_to_cost_map = {}
 
       # Clear the search field since it can cache results
       search_button = driver.find_element_by_class_name('pf-search-button')
@@ -81,13 +104,21 @@ class GroupSiteManager:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
         rows = table.find_elements_by_tag_name('tr')
         for row in rows:
+          po = group + str(row.find_elements_by_tag_name('td')[5].text)
           cost = row.find_elements_by_tag_name('td')[13].text.replace(
               '$', '').replace(',', '')
-          tracking = row.find_elements_by_tag_name('td')[14].text.replace(
-              '-', '')
-          if tracking and cost:
-            print("%s: $%d" % (tracking, float(cost)))
-            tracking_to_cost_map[tracking] = float(cost)
+          trackings = row.find_elements_by_tag_name('td')[14].text.replace(
+              '-', '').split(",")
+
+          print("PO: %s, Tracking(s): %s, Cost: %f" %
+                (po, ",".join(trackings), float(cost)))
+
+          if trackings:
+            for tracking in trackings:
+              if tracking:
+                tracking_to_po_map[tracking] = po
+          if cost and po:
+            po_to_cost_map[po] = float(cost)
 
         next_page_buttons = driver.find_elements_by_xpath(
             "//button[@ng-click='$pagination.next()']")
@@ -98,29 +129,9 @@ class GroupSiteManager:
         else:
           break
 
-      return tracking_to_cost_map
+      return (tracking_to_po_map, po_to_cost_map)
     finally:
       driver.close()
-
-  def get_tracked_costs_by_group_with_retry(self, group):
-    for i in range(5):
-      try:
-        return self.get_tracked_costs_by_group(group)
-      except Exception as e:
-        print("Received exception when getting costs: " + str(e))
-        print("Retrying up to five times")
-    raise Exception("Exceeded retry limit")
-
-  def get_tracked_costs(self, group) -> Dict[Any, float]:
-    if group == 'bfmr':
-      return self._get_bfmr_costs()
-    elif group not in self.melul_portal_groups:
-      return {}
-
-    costs = self.get_tracked_costs_by_group_with_retry(group)
-    if group == "mysbuyinggroup" and "mys2018" in self.config['groups']:
-      costs.update(self.get_tracked_costs_by_group_with_retry("mys2018"))
-    return costs
 
   def _upload_to_group(self, numbers, group) -> None:
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
@@ -184,29 +195,7 @@ class GroupSiteManager:
     time.sleep(1)
     return driver
 
-  def get_po_to_price(self, group) -> Dict[Any, float]:
-    for i in range(5):
-      try:
-        return self._get_po_to_price_internal(group)
-      except Exception as e:
-        print("Received exception when getting PO to price map: " + str(e))
-        print("Retrying up to five times")
-    raise Exception("Exceeded retry limit")
-
-  def get_tracking_to_purchase_order(self, group) -> dict:
-    for i in range(5):
-      try:
-        return self._get_tracking_to_purchase_order_internal(group)
-      except Exception as e:
-        print("Received exception when getting tracking:PO map: " + str(e))
-        print("Retrying up to five times")
-    raise Exception("Exceeded retry limit")
-
-  def _get_po_to_price_internal(self, group) -> Dict[Any, float]:
-    if group != 'usa':
-      return {}
-
-    print("Getting tracked prices for USA POs")
+  def _get_usa_po_to_price(self) -> Dict[Any, float]:
     result = {}
     driver = self._login_usa()
     try:
@@ -218,7 +207,7 @@ class GroupSiteManager:
           entries = row.find_elements_by_tag_name('td')
           po = entries[1].text
           cost = float(entries[5].text.replace('$', '').replace(',', ''))
-          print("%s: $%d" % (po, float(cost)))
+          print("%s: $%f" % (po, float(cost)))
           result[po] = cost
 
         next_page_button = driver.find_elements_by_xpath(
@@ -234,10 +223,7 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _get_tracking_to_purchase_order_internal(self, group) -> dict:
-    if group != 'usa':
-      return {}
-
+  def _get_usa_tracking_to_purchase_order(self) -> dict:
     result = {}
     driver = self._login_usa()
     try:
@@ -249,18 +235,8 @@ class GroupSiteManager:
       date_filter_btn.click()
       time.sleep(1)
 
-      filter_custom = date_filter_div.find_element_by_id("filter-custom")
+      filter_custom = date_filter_div.find_element_by_id("filter-none")
       filter_custom.click()
-      time.sleep(1)
-
-      modal = driver.find_element_by_class_name("modal-dialog")
-      inputs = modal.find_elements_by_class_name("form-control")
-      inputs[0].send_keys(START)
-      inputs[1].send_keys(TODAY)
-      modal.find_element_by_class_name("modal-title").click()
-      time.sleep(1)
-
-      modal.find_element_by_class_name('btn-primary').click()
       time.sleep(1)
 
       status_dropdown = driver.find_element_by_name("filterPurchaseid")
@@ -346,6 +322,8 @@ class GroupSiteManager:
                                 'SUBJECT "BuyForMeRetail - Payment Sent"',
                                 'SINCE "01-Aug-2019"')
     email_ids = response[0].decode('utf-8').split()
+    # some hacks, "po" will just also be the tracking
+    tracking_map = dict()
     result = collections.defaultdict(float)
     for email_id in email_ids:
       fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
@@ -368,7 +346,8 @@ class GroupSiteManager:
         tracking = tds[i * 5].getText().upper()
         total_text = tds[i * 5 + 4].getText()
         total = float(total_text.replace(',', '').replace('$', ''))
-        print("%s: $%d" % (tracking, total))
+        print("%s: $%f" % (tracking, total))
         result[tracking] += total
+        tracking_map[tracking] = tracking
 
-    return result
+    return (tracking_map, result)

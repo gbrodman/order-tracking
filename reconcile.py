@@ -14,64 +14,37 @@ from lib.tracking_uploader import TrackingUploader
 CONFIG_FILE = "config.yml"
 
 
-def get_tracked_costs(config, driver_creator):
+def get_tracking_pos_costs_maps(config, driver_creator):
   print("Loading tracked costs. This will take several minutes.")
   group_site_manager = GroupSiteManager(config, driver_creator)
-  tracked_costs = {}
+  tracking_to_po_map = {}
+  po_to_cost_map = {}
+
   for group in config['groups'].keys():
-    tracked_costs.update(group_site_manager.get_tracked_costs(group))
+    group_tracking_to_po, group_po_to_cost = group_site_manager.get_tracking_pos_costs_maps_with_retry(
+        group)
+    tracking_to_po_map.update(group_tracking_to_po)
+    po_to_cost_map.update(group_po_to_cost)
 
-  return tracked_costs
-
-
-# Take the reimbursed costs we found and write them into the Tracking objects
-def fill_tracking_costs_and_upload(config, tracked_costs):
-  tracking_output = TrackingOutput()
-  existing_trackings = tracking_output.get_existing_trackings(config)
-  for tracking in existing_trackings:
-    if tracking.tracking_number in tracked_costs:
-      tracking.tracked_cost = tracked_costs[tracking.tracking_number]
-  tracking_output.save_trackings(config, existing_trackings)
-  # also upload it
-  tracking_uploader = TrackingUploader(config)
-  tracking_uploader.upload_all_trackings(existing_trackings)
+  return (tracking_to_po_map, po_to_cost_map)
 
 
-def fill_tracked_costs(all_clusters, config, driver_creator):
-  tracked_costs = get_tracked_costs(config, driver_creator)
-  fill_tracking_costs_and_upload(config, tracked_costs)
-  for cluster in all_clusters:
-    non_reimbursed_trackings = set(cluster.trackings)
-    cluster_sum = 0.0
-    for tracking_number in cluster.trackings:
-      this_cost = tracked_costs.get(tracking_number, 0.0)
-      cluster_sum += this_cost
-      if this_cost:
-        non_reimbursed_trackings.remove(tracking_number)
-    cluster.tracked_cost = cluster_sum
-    cluster.non_reimbursed_trackings = non_reimbursed_trackings
-
-
-def fill_purchase_orders(all_clusters, config, driver_creator):
+def fill_purchase_orders(all_clusters, tracking_to_po):
   print("Filling purchase orders")
-  group_site_manager = GroupSiteManager(config, driver_creator)
-  tracking_to_purchase_order = group_site_manager.get_tracking_to_purchase_order(
-      'usa')
 
   for cluster in all_clusters:
+    cluster.non_reimbursed_trackings = set(cluster.trackings)
     for tracking in cluster.trackings:
-      if tracking in tracking_to_purchase_order:
-        cluster.purchase_orders.add(tracking_to_purchase_order[tracking])
+      if tracking in tracking_to_po:
+        cluster.purchase_orders.add(tracking_to_po[tracking])
         cluster.non_reimbursed_trackings.remove(tracking)
 
 
-def fill_costs_by_po(all_clusters, config, driver_creator):
-  group_site_manager = GroupSiteManager(config, driver_creator)
-  po_to_price = group_site_manager.get_po_to_price('usa')
+def fill_costs_by_po(all_clusters, po_to_cost):
   for cluster in all_clusters:
     if cluster.purchase_orders:
       cluster.tracked_cost = sum(
-          [po_to_price.get(po, 0.0) for po in cluster.purchase_orders])
+          [po_to_cost.get(po, 0.0) for po in cluster.purchase_orders])
 
 
 def fill_expected_costs(all_clusters, config):
@@ -107,10 +80,12 @@ def main(argv):
   all_clusters = clusters.get_existing_clusters(config)
   driver_creator = DriverCreator(argv)
 
-  fill_tracked_costs(all_clusters, config, driver_creator)
-  fill_purchase_orders(all_clusters, config, driver_creator)
+  tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
+      config, driver_creator)
+
+  fill_purchase_orders(all_clusters, tracking_to_po)
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
-  fill_costs_by_po(all_clusters, config, driver_creator)
+  fill_costs_by_po(all_clusters, po_to_cost)
 
   reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.download_upload_clusters(all_clusters)
