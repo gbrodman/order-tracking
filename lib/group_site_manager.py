@@ -116,7 +116,7 @@ class GroupSiteManager:
           if trackings:
             for tracking in trackings:
               if tracking:
-                tracking_to_po_map[tracking] = po
+                tracking_to_po_map[tracking.strip()] = po
           if cost and po:
             po_to_cost_map[po] = float(cost)
 
