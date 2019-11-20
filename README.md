@@ -43,12 +43,21 @@ This is the script for reconciliation. It does the following:
 
 **If you are on Windows, use [this guide](https://docs.google.com/document/d/1wivg69Urc9boScOUvW4sdP6zJrayikNyzKcJgS2kjyw/edit#heading=h.k3xoxdnm2imr) instead of these instructions, as Windows is a bit difficult and this guide is clear.**
 
+### If you are on a Mac (OSX):
+Open up a terminal and run the following commands from the project's main directory to set up your Python environment:
+- `brew install pyenv`
+- `pyenv install 3.7.4`
+- `pyenv global 3.7.4`
+- `echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.zshrc`
+- `source ~/.bash_profile`
+- `pip install -r requirements.txt`
+
+### In all operating systems:
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
 - Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
-- `pip install -r requirements.txt`
 - Copy config.yml.template to config.yml
 - Set up the configuration (see the "Configuration" section below for more info)
-- Run `python3 get_tracking_numbers.py` followed by `python3 reconcile.py`
+- Run `python get_tracking_numbers.py` followed by `python reconcile.py`
 
 ## Configuration
 
