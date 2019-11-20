@@ -104,13 +104,13 @@ class GroupSiteManager:
         table = driver.find_element_by_xpath("//tbody[@class='md-body']")
         rows = table.find_elements_by_tag_name('tr')
         for row in rows:
-          po = group + str(row.find_elements_by_tag_name('td')[5].text)
+          po = str(row.find_elements_by_tag_name('td')[5].text)
           cost = row.find_elements_by_tag_name('td')[13].text.replace(
               '$', '').replace(',', '')
           trackings = row.find_elements_by_tag_name('td')[14].text.replace(
               '-', '').split(",")
 
-          print("PO: %s, Tracking(s): %s, Cost: %f" %
+          print("PO: %s, Tracking(s): %s, Cost: $%.2f" %
                 (po, ",".join(trackings), float(cost)))
 
           if trackings:
@@ -207,7 +207,7 @@ class GroupSiteManager:
           entries = row.find_elements_by_tag_name('td')
           po = entries[1].text
           cost = float(entries[5].text.replace('$', '').replace(',', ''))
-          print("%s: $%f" % (po, float(cost)))
+          print("%s: $%.2f" % (po, float(cost)))
           result[po] = cost
 
         next_page_button = driver.find_elements_by_xpath(
@@ -346,7 +346,7 @@ class GroupSiteManager:
         tracking = tds[i * 5].getText().upper()
         total_text = tds[i * 5 + 4].getText()
         total = float(total_text.replace(',', '').replace('$', ''))
-        print("%s: $%f" % (tracking, total))
+        print("%s: $%.2f" % (tracking, total))
         result[tracking] += total
         tracking_map[tracking] = tracking
 

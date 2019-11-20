@@ -52,8 +52,7 @@ class Cluster:
     return [
         "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
         "Non-Reimbursed Trackings", "Last Ship Date", "POs", "Group",
-        "To Email", "Manual Cost Adjustment", "Manual Override", "Total Diff",
-        "Notes"
+        "Manual Cost Adjustment", "Manual Override", "Total Diff", "Notes"
     ]
 
   def to_row(self) -> list:
@@ -61,8 +60,8 @@ class Cluster:
         ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
         self.tracked_cost, ",".join(self.non_reimbursed_trackings),
         self.last_ship_date, "'" + ",".join(self.purchase_orders), self.group,
-        self.to_email, self.adjustment, self.manual_override,
-        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("J", ROW()))',
+        self.adjustment, self.manual_override,
+        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
         self.notes
     ]
 
@@ -169,7 +168,8 @@ def find_by_purchase_orders(cluster, all_clusters) -> Any:
     return None
 
   for candidate in all_clusters:
-    if candidate.purchase_orders.intersection(cluster.purchase_orders):
+    if candidate.group == cluster.group and candidate.purchase_orders.intersection(
+        cluster.purchase_orders):
       return candidate
 
   return None
