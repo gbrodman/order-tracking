@@ -49,7 +49,7 @@ Open up a terminal and run the following commands from the project's main direct
 - `brew install pyenv`
 - `pyenv install 3.7.4`
 - `pyenv global 3.7.4`
-- `echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.zshrc`
+- `echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile`
 - `source ~/.bash_profile`
 - `pip install -r requirements.txt`
 
