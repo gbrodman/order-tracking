@@ -44,7 +44,8 @@ This is the script for reconciliation. It does the following:
 **If you are on Windows, use [this guide](https://docs.google.com/document/d/1wivg69Urc9boScOUvW4sdP6zJrayikNyzKcJgS2kjyw/edit#heading=h.k3xoxdnm2imr) instead of these instructions, as Windows is a bit difficult and this guide is clear.**
 
 ### If you are on a Mac (OSX):
-Open up a terminal and run the following commands from the project's main directory to set up your Python environment:
+Open up a terminal and run the following commands from the project's main directory to set up your Python environment. The first command installs brew, then we use brew to install pyenv which manages the Python installation.
+- `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 - `brew install pyenv`
 - `pyenv install 3.7.4`
 - `pyenv global 3.7.4`
