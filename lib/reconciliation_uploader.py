@@ -112,6 +112,18 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
       "endColumnIndex": 11
   }
   requests = [
+      # freeze the header in place
+      {
+          "updateSheetProperties": {
+              "properties": {
+                  "sheetId": int(tab_id),
+                  "gridProperties": {
+                      "frozenRowCount": 1
+                  }
+              },
+              "fields": "gridProperties.frozenRowCount"
+          }
+      },
       {
           "setDataValidation": {
               "range": checkbox_range,
@@ -233,12 +245,12 @@ class ReconciliationUploader:
         clusters.from_row, base_sheet_id, "Reconciliation")
 
     for cluster in all_clusters:
-      candidate_downloads = self.find_candidate_downloads(cluster, downloaded_clusters)
+      candidate_downloads = self.find_candidate_downloads(
+          cluster, downloaded_clusters)
       pos = set()
       for candidate in candidate_downloads:
         pos.update(candidate.purchase_orders)
       cluster.purchase_orders = pos
-
 
   def download_upload_clusters(self, all_clusters) -> None:
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
