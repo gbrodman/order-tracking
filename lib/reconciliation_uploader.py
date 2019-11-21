@@ -83,6 +83,13 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
   clear_formatting(service, base_sheet_id, tab_id, ranges)
   clear_protected_ranges(service, base_sheet_id, ranges)
 
+  header_protected_range = {
+      "sheetId": int(tab_id),
+      "startRowIndex": 0,
+      "endRowIndex": 1,
+      "startColumnIndex": 0,
+      "endColumnIndex": 50,
+  }
   po_protected_range = {
       "sheetId": int(tab_id),
       "startRowIndex": 1,
@@ -112,6 +119,15 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                   "condition": {
                       'type': 'BOOLEAN'
                   }
+              }
+          }
+      },
+      {
+          "addProtectedRange": {
+              "protectedRange": {
+                  "range": header_protected_range,
+                  "description": "Do not edit the header titles!",
+                  "warningOnly": True
               }
           }
       },
