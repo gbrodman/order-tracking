@@ -43,8 +43,20 @@ def has_formatting(service, base_sheet_id, ranges):
   return "conditionalFormats" in str(response)
 
 
-def clear_formatting(service, base_sheet_id, tab_id, tab_title):
-  while has_formatting(service, base_sheet_id, [tab_title]):
+def clear_protected_ranges(service, base_sheet_id, ranges):
+  response = service.spreadsheets().get(
+      spreadsheetId=base_sheet_id, ranges=ranges).execute()
+  sheet = response['sheets'][0]
+  if "protectedRanges" in sheet:
+    ids = [pr['protectedRangeId'] for pr in sheet['protectedRanges']]
+    for id in ids:
+      body = {"requests": [{"deleteProtectedRange": {"protectedRangeId": id}}]}
+      service.spreadsheets().batchUpdate(
+          spreadsheetId=base_sheet_id, body=body).execute()
+
+
+def clear_formatting(service, base_sheet_id, tab_id, ranges):
+  while has_formatting(service, base_sheet_id, ranges):
     body = {
         "requests": [{
             "deleteConditionalFormatRule": {
@@ -66,8 +78,18 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
       if sheet['properties']['title'] == tab_title
   ][0]
   tab_id = tab['properties']['sheetId']
-  clear_formatting(service, base_sheet_id, tab_id, "Reconciliation")
 
+  ranges = [tab_title]
+  clear_formatting(service, base_sheet_id, tab_id, ranges)
+  clear_protected_ranges(service, base_sheet_id, ranges)
+
+  po_protected_range = {
+      "sheetId": int(tab_id),
+      "startRowIndex": 1,
+      "endRowIndex": num_objects + 1,
+      "startColumnIndex": 6,
+      "endColumnIndex": 7,
+  }
   checkbox_range = {
       "sheetId": int(tab_id),
       "startRowIndex": 1,
@@ -82,84 +104,103 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
       "startColumnIndex": 10,
       "endColumnIndex": 11
   }
-  requests = [{
-      "setDataValidation": {
-          "range": checkbox_range,
-          "rule": {
-              "condition": {
-                  'type': 'BOOLEAN'
+  requests = [
+      {
+          "setDataValidation": {
+              "range": checkbox_range,
+              "rule": {
+                  "condition": {
+                      'type': 'BOOLEAN'
+                  }
               }
           }
-      }
-  }, {
-      "addConditionalFormatRule": {
-          "index": 0,
-          "rule": {
-              "ranges": [total_diff_range],
-              "booleanRule": {
-                  "condition": {
-                      "type":
-                          "CUSTOM_FORMULA",
-                      "values": [{
-                          'userEnteredValue':
-                              '=OR((I2:I)+(D2:D)=C2:C, J2:J=TRUE)'
-                      }]
-                  },
-                  "format": {
-                      'backgroundColor': {
-                          'red': 0.7176471,
-                          'green': 0.88235295,
-                          'blue': 0.8039216
+      },
+      {
+          "addProtectedRange": {
+              "protectedRange": {
+                  "range": po_protected_range,
+                  "description": "Be careful when editing purchase orders!",
+                  "warningOnly": True
+              }
+          }
+      },
+      {
+          # Green if the box is checked or the prices are equal
+          "addConditionalFormatRule": {
+              "index": 0,
+              "rule": {
+                  "ranges": [total_diff_range],
+                  "booleanRule": {
+                      "condition": {
+                          "type":
+                              "CUSTOM_FORMULA",
+                          "values": [{
+                              'userEnteredValue':
+                                  '=OR((I2:I)+(D2:D)=C2:C, J2:J=TRUE)'
+                          }]
+                      },
+                      "format": {
+                          'backgroundColor': {
+                              'red': 0.7176471,
+                              'green': 0.88235295,
+                              'blue': 0.8039216
+                          }
+                      }
+                  }
+              }
+          }
+      },
+      {
+          # Yellow if overcompensated
+          "addConditionalFormatRule": {
+              "index": 1,
+              "rule": {
+                  "ranges": [total_diff_range],
+                  "booleanRule": {
+                      "condition": {
+                          "type":
+                              "CUSTOM_FORMULA",
+                          "values": [{
+                              'userEnteredValue': '=(I2:I)+(D2:D)>C2:C'
+                          }]
+                      },
+                      "format": {
+                          'backgroundColor': {
+                              'red': 0.9882353,
+                              'green': 0.9098039,
+                              'blue': 0.69803923
+                          }
+                      }
+                  }
+              }
+          }
+      },
+      {
+          # Red if undercompensated
+          "addConditionalFormatRule": {
+              "index": 2,
+              "rule": {
+                  "ranges": [total_diff_range],
+                  "booleanRule": {
+                      "condition": {
+                          "type":
+                              "CUSTOM_FORMULA",
+                          "values": [{
+                              'userEnteredValue': '=(I2:I)+(D2:D)<C2:C'
+                          }]
+                      },
+                      "format": {
+                          'backgroundColor': {
+                              'red': 0.95686275,
+                              'green': 0.78039217,
+                              'blue': 0.7647059
+                          }
                       }
                   }
               }
           }
       }
-  }, {
-      "addConditionalFormatRule": {
-          "index": 1,
-          "rule": {
-              "ranges": [total_diff_range],
-              "booleanRule": {
-                  "condition": {
-                      "type": "CUSTOM_FORMULA",
-                      "values": [{
-                          'userEnteredValue': '=(I2:I)+(D2:D)>C2:C'
-                      }]
-                  },
-                  "format": {
-                      'backgroundColor': {
-                          'red': 0.9882353,
-                          'green': 0.9098039,
-                          'blue': 0.69803923
-                      }
-                  }
-              }
-          }
-      }
-  }, {
-      "addConditionalFormatRule": {
-          "index": 2,
-          "rule": {
-              "ranges": [total_diff_range],
-              "booleanRule": {
-                  "condition": {
-                      "type": "CUSTOM_FORMULA",
-                      "values": [{
-                          'userEnteredValue': '=(I2:I)+(D2:D)<C2:C'
-                      }]
-                  },
-                  "format": {
-                      'backgroundColor': {
-                          'red': 0.95686275,
-                          'green': 0.78039217,
-                          'blue': 0.7647059
-                      }
-                  }
-              }
-          }
-      }
-  }]
+  ]
   return {"requests": requests}
 
 
