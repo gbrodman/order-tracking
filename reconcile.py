@@ -77,9 +77,11 @@ def main(argv):
 
   clusterify(config)
 
+  reconciliation_uploader = ReconciliationUploader(config)
   all_clusters = clusters.get_existing_clusters(config)
-  driver_creator = DriverCreator(argv)
+  reconciliation_uploader.override_pos(all_clusters)
 
+  driver_creator = DriverCreator(argv)
   tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
       config, driver_creator)
 
@@ -87,7 +89,6 @@ def main(argv):
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
   fill_costs_by_po(all_clusters, po_to_cost)
 
-  reconciliation_uploader = ReconciliationUploader(config)
   reconciliation_uploader.download_upload_clusters(all_clusters)
   clusters.write_clusters(config, all_clusters)
 
