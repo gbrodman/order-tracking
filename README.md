@@ -47,17 +47,19 @@ This is the script for reconciliation. It does the following:
 Open up a terminal and run the following commands. These install Homebrew (a package manager), then they use Homebrew to install Git+Python, download the project, then set up the Python environment.
 
 
-- `cd ~`
-- `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
-- `brew install pyenv`
-- `brew install git`
-- `git clone https://github.com/gbrodman/order-tracking.git`
-- `cd order-tracking`
-- `pyenv install 3.7.4`
-- `pyenv global 3.7.4`
-- `echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile`
-- `source ~/.bash_profile`
-- `pip install -r requirements.txt`
+```
+cd ~
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install pyenv
+brew install git
+git clone https://github.com/gbrodman/order-tracking.git
+cd order-tracking
+pyenv install 3.7.4
+pyenv global 3.7.4
+echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
+source ~/.bash_profile
+pip install -r requirements.txt
+```
 
 ### In all operating systems:
 - Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
