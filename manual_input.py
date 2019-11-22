@@ -105,7 +105,7 @@ def run_add(config):
     print("Submission cancelled.")
 
 
-def main(argv):
+def main():
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
   action = get_required_from_options(
@@ -117,4 +117,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  main([])
+  main()

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import get_tracking_numbers
 import import_report
 import manual_input
@@ -26,19 +25,19 @@ def get_choice():
       print("Please enter an integer 1-4 or 0 to exit.")
 
 
-def main(argv):
+def main():
   choice = get_choice()
   if choice == 0:
     quit()
   elif choice == 1:
-    get_tracking_numbers.main(argv)
+    get_tracking_numbers.main()
   elif choice == 2:
-    reconcile.main(argv)
+    reconcile.main()
   elif choice == 3:
-    manual_input.main(argv)
+    manual_input.main()
   elif choice == 4:
-    import_report.main(argv)
+    import_report.main()
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

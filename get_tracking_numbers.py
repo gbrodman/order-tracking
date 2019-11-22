@@ -22,8 +22,8 @@ def send_error_email(email_sender, subject):
   email_sender.send_email_content(subject, "\n".join(lines))
 
 
-def main(argv):
-  driver_creator = DriverCreator(argv)
+def main():
+  driver_creator = DriverCreator()
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
@@ -100,4 +100,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

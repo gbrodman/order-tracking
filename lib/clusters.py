@@ -180,7 +180,8 @@ def from_row(header, row) -> Cluster:
       row[header.index('Orders')]).split(',')) if 'Orders' in header else set()
   trackings = set(str(row[header.index('Trackings')]).split(
       ',')) if 'Trackings' in header else set()
-  expected_cost_str = row[header.index('Amount Billed')] if 'Amount Billed' in header else ''
+  expected_cost_str = row[header.index(
+      'Amount Billed')] if 'Amount Billed' in header else ''
   expected_cost = float(expected_cost_str) if expected_cost_str else 0.0
   tracked_cost_str = row[header.index(
       "Amount Reimbursed")] if "Amount Reimbursed" in header else ''

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import lib.donations
 from lib import clusters
 import yaml
@@ -14,13 +15,19 @@ from lib.tracking_uploader import TrackingUploader
 CONFIG_FILE = "config.yml"
 
 
-def get_tracking_pos_costs_maps(config, driver_creator):
+def get_tracking_pos_costs_maps(config, driver_creator, args):
   print("Loading tracked costs. This will take several minutes.")
   group_site_manager = GroupSiteManager(config, driver_creator)
+
+  if args.groups:
+    print("Only reconciling groups %s" % ",".join(args.groups))
+    groups = args.groups
+  else:
+    groups = config['groups'].keys()
+
   tracking_to_po_map = {}
   po_to_cost_map = {}
-
-  for group in config['groups'].keys():
+  for group in groups:
     group_tracking_to_po, group_po_to_cost = group_site_manager.get_tracking_pos_costs_maps_with_retry(
         group)
     tracking_to_po_map.update(group_tracking_to_po)
@@ -40,9 +47,10 @@ def fill_purchase_orders(all_clusters, tracking_to_po):
         cluster.non_reimbursed_trackings.remove(tracking)
 
 
-def fill_costs_by_po(all_clusters, po_to_cost):
+def fill_costs_by_po(all_clusters, po_to_cost, args):
   for cluster in all_clusters:
-    if cluster.purchase_orders:
+    if cluster.purchase_orders and (not args.groups or
+                                    cluster.group in args.groups):
       cluster.tracked_cost = sum(
           [po_to_cost.get(po, 0.0) for po in cluster.purchase_orders])
 
@@ -71,7 +79,11 @@ def clusterify(config):
   clusters.write_clusters(config, all_clusters)
 
 
-def main(argv):
+def main():
+  parser = argparse.ArgumentParser(description='Reconciliation script')
+  parser.add_argument("--groups", nargs="*")
+  args = parser.parse_args()
+
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
 
@@ -81,17 +93,17 @@ def main(argv):
   all_clusters = clusters.get_existing_clusters(config)
   reconciliation_uploader.override_pos(all_clusters)
 
-  driver_creator = DriverCreator(argv)
+  driver_creator = DriverCreator()
   tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
-      config, driver_creator)
+      config, driver_creator, args)
 
   fill_purchase_orders(all_clusters, tracking_to_po)
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
-  fill_costs_by_po(all_clusters, po_to_cost)
+  fill_costs_by_po(all_clusters, po_to_cost, args)
 
   reconciliation_uploader.download_upload_clusters(all_clusters)
   clusters.write_clusters(config, all_clusters)
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

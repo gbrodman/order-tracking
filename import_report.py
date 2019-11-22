@@ -82,7 +82,7 @@ def get_required(prompt):
   return result
 
 
-def main(argv):
+def main():
   sheet_id = get_required("Enter Google Sheet ID: ")
   tab_name = get_required("Enter the name of the tab within the sheet: ")
   objects_to_sheet = ObjectsToSheet()
@@ -103,4 +103,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

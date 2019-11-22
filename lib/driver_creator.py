@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import urllib.request
@@ -8,24 +9,17 @@ from typing import Any
 
 class DriverCreator:
 
-  def __init__(self, args) -> None:
-    args = [str(arg).upper() for arg in args]
-    if "--FIREFOX" in args:
-      self.type = "FIREFOX"
-    else:
-      self.type = "CHROME"
-
-    if "--NO-HEADLESS" in args:
-      self.headless = False
-    else:
-      self.headless = True
+  def __init__(self) -> None:
+    parser = argparse.ArgumentParser(description='Driver creator')
+    parser.add_argument("--no-headless", action="store_true")
+    parser.add_argument("--firefox", action="store_true")
+    self.args, _ = parser.parse_known_args()
 
   def new(self) -> Any:
-    if self.type == "CHROME":
-      return self._new_chrome_driver()
-    elif self.type == "FIREFOX":
+    if self.args.firefox:
       return self._new_firefox_driver()
-    raise Exception("Unknown type " + self.type)
+    else:
+      return self._new_chrome_driver()
 
   def fix_perms(self, path):
     for root, dirs, files in os.walk(path):
@@ -63,7 +57,7 @@ class DriverCreator:
 
   def _new_chrome_driver(self) -> Any:
     options = webdriver.chrome.options.Options()
-    options.headless = self.headless
+    options.headless = not self.args.no_headless
     options.add_argument("--log-level=3")
 
     # no idea why, but it's a million times slower in headless mode in Windows without these lines
