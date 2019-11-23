@@ -36,10 +36,13 @@ def get_tracking_pos_costs_maps(config, driver_creator, args):
   return (tracking_to_po_map, po_to_cost_map)
 
 
-def fill_purchase_orders(all_clusters, tracking_to_po):
+def fill_purchase_orders(all_clusters, tracking_to_po, args):
   print("Filling purchase orders")
 
   for cluster in all_clusters:
+    if args.groups and cluster.group not in args.groups:
+      continue
+
     cluster.non_reimbursed_trackings = set(cluster.trackings)
     for tracking in cluster.trackings:
       if tracking in tracking_to_po:
@@ -97,7 +100,7 @@ def main():
   tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
       config, driver_creator, args)
 
-  fill_purchase_orders(all_clusters, tracking_to_po)
+  fill_purchase_orders(all_clusters, tracking_to_po, args)
   all_clusters = clusters.merge_by_purchase_orders(all_clusters)
   fill_costs_by_po(all_clusters, po_to_cost, args)
 
