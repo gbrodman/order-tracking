@@ -12,6 +12,15 @@ def total_diff(cluster) -> Any:
   return cluster.tracked_cost + cluster.adjustment - cluster.expected_cost
 
 
+def compare_ship_dates(cluster_one, cluster_two):
+  if cluster_one.last_ship_date < cluster_two.last_ship_date:
+    return -1
+  elif cluster_one.last_ship_date == cluster_two.last_ship_date:
+    return 0
+  else:
+    return 1
+
+
 def compare(cluster_one, cluster_two) -> int:
   diff_one = total_diff(cluster_one)
   diff_two = total_diff(cluster_two)
@@ -19,12 +28,7 @@ def compare(cluster_one, cluster_two) -> int:
   # If both negative, return the ship date diff. If only one is
   # negative, that one should come first. If both are nonnegative, use the group
   if diff_one < 0 and diff_two < 0:
-    if cluster_one.last_ship_date < cluster_two.last_ship_date:
-      return -1
-    elif cluster_one.last_ship_date == cluster_two.last_ship_date:
-      return 0
-    else:
-      return 1
+    return compare_ship_dates(cluster_one, cluster_two)
   elif diff_one < 0:
     return -1
   elif diff_two < 0:
@@ -32,7 +36,7 @@ def compare(cluster_one, cluster_two) -> int:
   elif cluster_one.group < cluster_two.group:
     return -1
   elif cluster_one.group == cluster_two.group:
-    return 0
+    return compare_ship_dates(cluster_one, cluster_two)
   else:
     return 1
 
@@ -272,8 +276,11 @@ class ReconciliationUploader:
           cluster, downloaded_clusters)
       cluster.adjustment = sum(
           [candidate.adjustment for candidate in candidate_downloads])
-      cluster.notes = ", ".join(
-          [candidate.notes for candidate in candidate_downloads if candidate.notes])
+      cluster.notes = ", ".join([
+          candidate.notes
+          for candidate in candidate_downloads
+          if candidate.notes
+      ])
       if candidate_downloads:
         cluster.manual_override = all(
             [candidate.manual_override for candidate in candidate_downloads])
