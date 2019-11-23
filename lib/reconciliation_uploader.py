@@ -273,7 +273,7 @@ class ReconciliationUploader:
       cluster.adjustment = sum(
           [candidate.adjustment for candidate in candidate_downloads])
       cluster.notes = ", ".join(
-          [candidate.notes for candidate in candidate_downloads])
+          [candidate.notes for candidate in candidate_downloads if candidate.notes])
       if candidate_downloads:
         cluster.manual_override = all(
             [candidate.manual_override for candidate in candidate_downloads])
