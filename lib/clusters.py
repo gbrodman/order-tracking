@@ -57,9 +57,9 @@ class Cluster:
 
   def to_row(self) -> list:
     return [
-        ",".join(self.orders), ",".join(self.trackings), self.expected_cost,
-        self.tracked_cost, ",".join(self.non_reimbursed_trackings),
-        self.last_ship_date, "'" + ",".join(self.purchase_orders), self.group,
+        ", ".join(self.orders), ", ".join(self.trackings), self.expected_cost,
+        self.tracked_cost, ", ".join(self.non_reimbursed_trackings),
+        self.last_ship_date, "'" + ", ".join(self.purchase_orders), self.group,
         self.adjustment, self.manual_override,
         '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
         self.notes
