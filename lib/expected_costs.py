@@ -83,8 +83,8 @@ class ExpectedCosts:
       return {}
 
     raw_email = str(data[0][1])
-    regex_pretax = r'Total Before Tax: \$([\d,]+\.\d{2})'
-    regex_est_tax = r'Estimated Tax: \$([\d,]+\.\d{2})'
+    regex_pretax = r'Total Before Tax:\s*\$([\d,]+\.\d{2})'
+    regex_est_tax = r'Estimated Tax:\s*\$([\d,]+\.\d{2})'
     regex_order = r'(\d{3}-\d{7}-\d{7})'
 
     orders_with_duplicates = re.findall(regex_order, raw_email)
