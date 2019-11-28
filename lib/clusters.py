@@ -193,7 +193,7 @@ def from_row(header, row) -> Cluster:
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
-  pos = set(pos_string.split(',')) if pos_string else set()
+  pos = set([s.strip() for s in pos_string.split(',')]) if pos_string else set()
   group = row[header.index('Group')] if 'Group' in header else ''
   adj_string = row[header.index(
       "Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
