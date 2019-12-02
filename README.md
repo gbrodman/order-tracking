@@ -132,4 +132,4 @@ TODO
 
 ## Donations
 
-This software is completely free, licensed under the Apache 2.0 license. However, if you feel like you wish to donate some money to me, feel free to send any amount of money through Paypal to https://paypal.me/GustavBrodman
+This software is completely free, licensed under the GNU Affero General Public License. However, if you feel like you wish to donate some money to me, feel free to send any amount of money through Paypal to https://paypal.me/GustavBrodman
