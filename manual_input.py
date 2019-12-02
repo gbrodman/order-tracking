@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# This is an interactive script for manually entering order information, e.g.
+# because a tracking email link isn't working. Just run it from the command-line
+# and it'll walk you through the data input process. The most important
+# information to enter is the tracking number, order number(s), and cost.
 
 import datetime
 import lib.donations
@@ -39,7 +44,7 @@ def get_required(prompt):
 def get_orders_to_costs():
   result = {}
   while True:
-    order_id = get_optional("Enter order #, or blank if no ordrers are left: ")
+    order_id = get_optional("Enter order #, or blank if no orders are left: ")
     if not order_id:
       break
     price = float(get_required("Enter order cost, e.g. 206.76: "))
