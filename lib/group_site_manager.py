@@ -62,12 +62,14 @@ class GroupSiteManager:
 
   # returns (tracking -> po, po -> cost) dicts
   def get_tracking_pos_costs_maps(self, group):
-    print("Loading group %s" % group)
     if group == 'bfmr':
+      print("Loading group bfmr")
       return self._get_bfmr_costs()
     elif group in self.melul_portal_groups:
+      print("Loading group %s" % group)
       return self._melul_get_tracking_pos_costs_maps(group)
     elif group == "usa":
+      print("Loading group usa")
       return self._get_usa_tracking_pos_costs_maps()
     return (dict(), dict())
 
@@ -313,7 +315,6 @@ class GroupSiteManager:
       driver.close()
 
   def _get_bfmr_costs(self):
-    print("Getting costs from BFMR emails")
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
     mail.login(self.config['email']['username'],
                self.config['email']['password'])
