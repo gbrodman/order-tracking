@@ -50,18 +50,19 @@ class Cluster:
 
   def get_header(self) -> List[str]:
     return [
-        "Orders", "Trackings", "Amount Billed", "Amount Reimbursed",
+        "Orders", "Trackings", "To Email", "Amount Billed", "Amount Reimbursed",
         "Non-Reimbursed Trackings", "Last Ship Date", "POs", "Group",
         "Manual Cost Adjustment", "Manual Override", "Total Diff", "Notes"
     ]
 
   def to_row(self) -> list:
     return [
-        ", ".join(self.orders), ", ".join(self.trackings), self.expected_cost,
-        self.tracked_cost, ", ".join(self.non_reimbursed_trackings),
-        self.last_ship_date, "'" + ", ".join(self.purchase_orders), self.group,
-        self.adjustment, self.manual_override,
-        '=INDIRECT(CONCAT("C", ROW())) - INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("I", ROW()))',
+        ", ".join(self.orders), ", ".join(self.trackings), self.to_email,
+        self.expected_cost, self.tracked_cost,
+        ", ".join(self.non_reimbursed_trackings), self.last_ship_date,
+        "'" + ", ".join(self.purchase_orders), self.group, self.adjustment,
+        self.manual_override,
+        '=INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("E", ROW())) - INDIRECT(CONCAT("J", ROW()))',
         self.notes
     ]
 

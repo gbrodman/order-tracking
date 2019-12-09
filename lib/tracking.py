@@ -70,7 +70,8 @@ class Tracking:
 
 def from_row(header, row) -> Tracking:
   tracking = row[header.index('Tracking Number')]
-  orders = set([s.strip() for s in str(row[header.index('Order Number(s)')]).split(',')])
+  orders = set(
+      [s.strip() for s in str(row[header.index('Order Number(s)')]).split(',')])
   price_str = str(row[header.index('Price')]).replace(',', '').replace(
       '$', '') if 'Price' in header else ''
   price = float(price_str) if price_str else 0.0
