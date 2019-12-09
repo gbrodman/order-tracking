@@ -85,7 +85,7 @@ def clusterify(config):
 def main():
   parser = argparse.ArgumentParser(description='Reconciliation script')
   parser.add_argument("--groups", nargs="*")
-  args = parser.parse_args()
+  args, _ = parser.parse_known_args()
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
