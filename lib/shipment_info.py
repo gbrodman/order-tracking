@@ -34,6 +34,14 @@ class ShipmentInfo:
   def __init__(self, config) -> None:
     self.config = config
     self.shipments_dict = self.load_dict()
+    self.mail = self.load_mail()
+    
+  def load_mail(self):
+    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
+    mail.login(self.config['email']['username'],
+               self.config['email']['password'])
+    mail.select('"[Gmail]/All Mail"')
+    return mail
 
   def flush(self) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
@@ -129,12 +137,7 @@ class ShipmentInfo:
     return dict(zip(orders, order_infos))
 
   def get_relevant_raw_email_data(self, order_id) -> Union[str, Optional[str]]:
-    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
-    mail.login(self.config['email']['username'],
-               self.config['email']['password'])
-    mail.select('"[Gmail]/All Mail"')
-
-    status, search_result = mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
+    status, search_result = self.mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
       return None, None
@@ -143,7 +146,7 @@ class ShipmentInfo:
     if not email_ids:
       return None, None
 
-    result, data = mail.uid("FETCH", email_ids[0], "(RFC822)")
+    result, data = self.mail.uid("FETCH", email_ids[0], "(RFC822)")
     return email_ids[0], data
 
   def get_personal_amazon_totals(self, email_id, data, orders) -> Dict[str, OrderInfo]:
