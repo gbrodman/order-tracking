@@ -61,15 +61,18 @@ def fill_costs_by_po(all_clusters, po_to_cost, args):
 
 def fill_shipment_info(all_clusters, config):
   shipment_info = ShipmentInfo(config)
-  for cluster in tqdm(all_clusters, desc='Fetching order costs', unit='clus'):
-    cluster.expected_cost = 0.0
-    cluster.email_ids = set()
-    for order_id in cluster.orders:
-      order_info = shipment_info.get_order_info(order_id)
-      # Only add the email ID if it's present; don't add Nones!
-      if order_info.email_id:
-        cluster.email_ids.add(order_info.email_id)
-      cluster.expected_cost += order_info.cost
+  total_orders = sum([len(cluster.orders) for cluster in all_clusters])
+  with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
+    for cluster in all_clusters:
+      cluster.expected_cost = 0.0
+      cluster.email_ids = set()
+      for order_id in cluster.orders:
+        order_info = shipment_info.get_order_info(order_id)
+        # Only add the email ID if it's present; don't add Nones!
+        if order_info.email_id:
+          cluster.email_ids.add(order_info.email_id)
+        cluster.expected_cost += order_info.cost
+        pbar.update()
 
 
 def clusterify(config):
