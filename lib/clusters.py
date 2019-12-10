@@ -178,7 +178,7 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
       if common_pos:
         print(f'Merged orders {cluster.orders} and {candidate.orders} by common POs {common_pos}')
         return candidate
-      common_emails = candidate.email_ids.intersection(cluster.email_ids))
+      common_emails = candidate.email_ids.intersection(cluster.email_ids)
       if common_emails:
         print(f'Merged orders {cluster.orders} and {candidate.orders} by common email IDs {common_emails}')
         return candidate
