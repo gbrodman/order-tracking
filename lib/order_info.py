@@ -8,8 +8,8 @@ from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, Union
 
 OUTPUT_FOLDER = "output"
-SHIPMENTS_FILENAME = "shipments.pickle"
-SHIPMENTS_FILE = OUTPUT_FOLDER + "/" + SHIPMENTS_FILENAME
+ORDERS_FILENAME = "orders.pickle"
+ORDERS_FILE = OUTPUT_FOLDER + "/" + ORDERS_FILENAME
 
 
 class OrderInfo:
@@ -26,16 +26,16 @@ class OrderInfo:
   def __str__(self) -> str:
     return f'email_id: {self.email_id}, cost: {self.cost}'
 
-class ShipmentInfo:
+class OrderInfoRetriever:
   """
   A class that parses and stores the order numbers and email IDs for shipments.
   """
 
   def __init__(self, config) -> None:
     self.config = config
-    self.shipments_dict = self.load_dict()
+    self.orders_dict = self.load_dict()
     self.mail = self.load_mail()
-    
+
   def load_mail(self):
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
     mail.login(self.config['email']['username'],
@@ -47,34 +47,34 @@ class ShipmentInfo:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
-    with open(SHIPMENTS_FILE, 'wb') as stream:
-      pickle.dump(self.shipments_dict, stream)
+    with open(ORDERS_FILE, 'wb') as stream:
+      pickle.dump(self.orders_dict, stream)
 
     objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, SHIPMENTS_FILENAME, SHIPMENTS_FILE)
+    objects_to_drive.save(self.config, ORDERS_FILENAME, ORDERS_FILE)
 
   def load_dict(self) -> Any:
     objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, SHIPMENTS_FILENAME)
+    from_drive = objects_to_drive.load(self.config, ORDERS_FILENAME)
     if from_drive:
       return from_drive
 
-    if not os.path.exists(SHIPMENTS_FILE):
+    if not os.path.exists(ORDERS_FILE):
       return {}
 
-    with open(SHIPMENTS_FILE, 'rb') as stream:
+    with open(ORDERS_FILE, 'rb') as stream:
       return pickle.load(stream)
 
   def get_order_info(self, order_id) -> OrderInfo:
     # Fetch the order from email if it's new or if we attempted to fetch it
     # previously but weren't able to find a cost (i.e. cost is still 0).
-    if order_id not in self.shipments_dict or self.shipments_dict[order_id].cost == 0:
+    if order_id not in self.orders_dict or self.orders_dict[order_id].cost == 0:
       from_email = self.load_order_total(order_id)
       if not from_email:
         from_email = {order_id: OrderInfo(None, 0.0)}
-      self.shipments_dict.update(from_email)
+      self.orders_dict.update(from_email)
       self.flush()
-    return self.shipments_dict[order_id]
+    return self.orders_dict[order_id]
 
   def load_order_total(self, order_id: str) -> Dict[str, OrderInfo]:
     if order_id.startswith("BBY01"):

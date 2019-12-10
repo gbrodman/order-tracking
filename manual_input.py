@@ -8,7 +8,7 @@
 import datetime
 import lib.donations
 import yaml
-from lib.shipment_info import OrderInfo, ShipmentInfo
+from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
 
@@ -103,9 +103,9 @@ def run_add(config):
     output = TrackingOutput()
     output.save_trackings(config, [tracking])
     print("Wrote tracking")
-    shipment_info = ShipmentInfo(config)
-    shipment_info.shipments_dict.update(orders_to_costs)
-    shipment_info.flush()
+    order_info_retriever = OrderInfoRetriever(config)
+    order_info_retriever.orders_dict.update(orders_to_costs)
+    order_info_retriever.flush()
     print("Wrote billed amounts")
     print("This will be picked up on next reconciliation run.")
   elif submit == 'n':
