@@ -5,60 +5,73 @@ import re
 import quopri
 from bs4 import BeautifulSoup
 from lib.objects_to_drive import ObjectsToDrive
-from typing import Any, Dict, Optional, TypeVar
-
-_T0 = TypeVar('_T0')
+from typing import Any, Dict, Optional, Union
 
 OUTPUT_FOLDER = "output"
-COSTS_FILENAME = "expected_costs.pickle"
-COSTS_FILE = OUTPUT_FOLDER + "/" + COSTS_FILENAME
+SHIPMENTS_FILENAME = "shipments.pickle"
+SHIPMENTS_FILE = OUTPUT_FOLDER + "/" + SHIPMENTS_FILENAME
 
 
-class ExpectedCosts:
+class OrderInfo:
+  """
+  A value class that stores the information associated with a given order.
+
+  Note that an order email can contain multiple orders within it if the order
+  is broken up into multiple sub-orders at the time it is placed.
+  """
+  def __init__(self, email_id: str, cost: float) -> None:
+    self.email_id = email_id
+    self.cost = cost
+
+
+class ShipmentInfo:
+  """
+  A class that parses and stores the order numbers and email IDs for shipments.
+  """
 
   def __init__(self, config) -> None:
     self.config = config
-    self.costs_dict = self.load_dict()
+    self.shipments_dict = self.load_dict()
 
   def flush(self) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
-    with open(COSTS_FILE, 'wb') as stream:
-      pickle.dump(self.costs_dict, stream)
+    with open(SHIPMENTS_FILE, 'wb') as stream:
+      pickle.dump(self.shipments_dict, stream)
 
     objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, COSTS_FILENAME, COSTS_FILE)
+    objects_to_drive.save(self.config, SHIPMENTS_FILENAME, SHIPMENTS_FILE)
 
   def load_dict(self) -> Any:
     objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, COSTS_FILENAME)
+    from_drive = objects_to_drive.load(self.config, SHIPMENTS_FILENAME)
     if from_drive:
       return from_drive
 
-    if not os.path.exists(COSTS_FILE):
+    if not os.path.exists(SHIPMENTS_FILE):
       return {}
 
-    with open(COSTS_FILE, 'rb') as stream:
+    with open(SHIPMENTS_FILE, 'rb') as stream:
       return pickle.load(stream)
 
-  def get_expected_cost(self, order_id) -> Any:
-    if order_id not in self.costs_dict or not self.costs_dict[order_id]:
-      print("Getting cost for order_id %s" % order_id)
+  def get_order_info(self, order_id) -> OrderInfo:
+    if order_id not in self.shipments_dict or not self.shipments_dict[order_id]:
       from_email = self.load_order_total(order_id)
-      from_email = from_email if from_email else {order_id: 0.0}
-      self.costs_dict.update(from_email)
+      if not from_email:
+        from_email = {order_id: OrderInfo(None, 0.0)}
+      self.shipments_dict.update(from_email)
       self.flush()
-    return self.costs_dict[order_id]
+    return self.shipments_dict[order_id]
 
-  def load_order_total(self, order_id: _T0) -> dict:
+  def load_order_total(self, order_id: str) -> Dict[str, OrderInfo]:
     if order_id.startswith("BBY01"):
       return self.load_order_total_bb(order_id)
     else:
       return self.load_order_total_amazon(order_id)
 
-  def load_order_total_bb(self, order_id: _T0) -> Dict[_T0, float]:
-    data = self.get_relevant_raw_email_data(order_id)
+  def load_order_total_bb(self, order_id: str) -> Dict[str, OrderInfo]:
+    email_id, data = self.get_relevant_raw_email_data(order_id)
     if not data:
       print("Could not find email for order ID %s" % order_id)
       return {}
@@ -74,10 +87,10 @@ class ExpectedCosts:
     if not tax_match:
       return {}
     tax = float(tax_match.group(1).replace(',', ''))
-    return {order_id: subtotal + tax}
+    return {order_id: OrderInfo(email_id, subtotal + tax)}
 
-  def load_order_total_amazon(self, order_id: _T0) -> Dict[_T0, float]:
-    data = self.get_relevant_raw_email_data(order_id)
+  def load_order_total_amazon(self, order_id: str) -> Dict[str, OrderInfo]:
+    email_id, data = self.get_relevant_raw_email_data(order_id)
     if not data:
       print("Could not find email for order ID %s" % order_id)
       return {}
@@ -101,17 +114,17 @@ class ExpectedCosts:
 
     # personal emails might not have the regexes, need to do something different
     if not pretax_totals:
-      return self.get_personal_amazon_totals(data, orders)
+      return self.get_personal_amazon_totals(email_id, data, orders)
 
     taxes = [
         float(cost.replace(',', ''))
         for cost in re.findall(regex_est_tax, raw_email)
     ]
 
-    order_totals = [t[0] + t[1] for t in zip(pretax_totals, taxes)]
-    return dict(zip(orders, order_totals))
+    order_infos = [OrderInfo(email_id, t[0] + t[1]) for t in zip(pretax_totals, taxes)]
+    return dict(zip(orders, order_infos))
 
-  def get_relevant_raw_email_data(self, order_id) -> Optional[str]:
+  def get_relevant_raw_email_data(self, order_id) -> Union[str, Optional[str]]:
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
     mail.login(self.config['email']['username'],
                self.config['email']['password'])
@@ -120,16 +133,16 @@ class ExpectedCosts:
     status, search_result = mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
-      return None
+      return None, None
 
     email_ids = search_result[0].decode('utf-8').split()
     if not email_ids:
-      return None
+      return None, None
 
     result, data = mail.uid("FETCH", email_ids[0], "(RFC822)")
-    return data
+    return email_ids[0], data
 
-  def get_personal_amazon_totals(self, data, orders):
+  def get_personal_amazon_totals(self, email_id, data, orders) -> Dict[str, OrderInfo]:
     soup = BeautifulSoup(
         quopri.decodestring(data[0][1]), features="html.parser")
     prices = [
@@ -142,5 +155,5 @@ class ExpectedCosts:
     # prices alternate between pretax / tax
     for i in range(len(prices) // 2):
       total = prices[i * 2] + prices[i * 2 + 1]
-      result[orders[i]] = total
+      result[orders[i]] = OrderInfo(email_id, total)
     return result

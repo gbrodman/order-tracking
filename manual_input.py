@@ -8,7 +8,7 @@
 import datetime
 import lib.donations
 import yaml
-from lib.expected_costs import ExpectedCosts
+from lib.shipment_info import OrderInfo, ShipmentInfo
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
 
@@ -48,7 +48,9 @@ def get_orders_to_costs():
     if not order_id:
       break
     price = float(get_required("Enter order cost, e.g. 206.76: "))
-    result[order_id] = price
+    # We don't (yet?) support manual entry of the email_id because it's a little
+    # bit of hassle to find through the Web UI.
+    result[order_id] = OrderInfo(None, price)
   return result
 
 
@@ -101,9 +103,9 @@ def run_add(config):
     output = TrackingOutput()
     output.save_trackings(config, [tracking])
     print("Wrote tracking")
-    ec = ExpectedCosts(config)
-    ec.costs_dict.update(orders_to_costs)
-    ec.flush()
+    shipment_info = ShipmentInfo(config)
+    shipment_info.shipments_dict.update(orders_to_costs)
+    shipment_info.flush()
     print("Wrote billed amounts")
     print("This will be picked up on next reconciliation run.")
   elif submit == 'n':
