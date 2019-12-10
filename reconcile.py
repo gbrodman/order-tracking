@@ -63,6 +63,7 @@ def fill_shipment_info(all_clusters, config):
   shipment_info = ShipmentInfo(config)
   for cluster in tqdm(all_clusters, desc='Fetching order costs', unit='clus'):
     cluster.expected_cost = 0.0
+    cluster.email_ids = set()
     for order_id in cluster.orders:
       order_info = shipment_info.get_order_info(order_id)
       # Only add the email ID if it's present; don't add Nones!
