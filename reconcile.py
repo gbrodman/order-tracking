@@ -65,7 +65,9 @@ def fill_shipment_info(all_clusters, config):
     cluster.expected_cost = 0.0
     for order_id in cluster.orders:
       order_info = shipment_info.get_order_info(order_id)
-      cluster.email_ids.add(order_info.email_id)
+      # Only add the email ID if it's present; don't add Nones!
+      if order_info.email_id:
+        cluster.email_ids.add(order_info.email_id)
       cluster.expected_cost += order_info.cost
 
 

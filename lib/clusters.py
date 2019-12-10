@@ -173,6 +173,7 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
     return None
 
   for candidate in all_clusters:
+    # This might be intersecting on null POs or email IDs
     if candidate.group == cluster.group and (
         candidate.purchase_orders.intersection(cluster.purchase_orders) or
         candidate.email_ids.intersection(cluster.email_ids)):

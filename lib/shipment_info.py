@@ -23,6 +23,8 @@ class OrderInfo:
     self.email_id = email_id
     self.cost = cost
 
+  def __str__(self) -> str:
+    return f'email_id: {self.email_id}, cost: {self.cost}'
 
 class ShipmentInfo:
   """
@@ -56,7 +58,9 @@ class ShipmentInfo:
       return pickle.load(stream)
 
   def get_order_info(self, order_id) -> OrderInfo:
-    if order_id not in self.shipments_dict or not self.shipments_dict[order_id]:
+    # Fetch the order from email if it's new or if we attempted to fetch it
+    # previously but weren't able to find a cost (i.e. cost is still 0).
+    if order_id not in self.shipments_dict or self.shipments_dict[order_id].cost == 0:
       from_email = self.load_order_total(order_id)
       if not from_email:
         from_email = {order_id: OrderInfo(None, 0.0)}
