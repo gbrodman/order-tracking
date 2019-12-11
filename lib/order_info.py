@@ -24,7 +24,10 @@ class OrderInfo:
     self.cost = cost
 
   def __str__(self) -> str:
-    return f'email_id: {self.email_id}, cost: {self.cost}'
+    return f'{{email_id: {self.email_id}, cost: {self.cost}}}'
+
+  __repr__ = __str__
+
 
 class OrderInfoRetriever:
   """
