@@ -11,7 +11,7 @@ CLUSTERS_FILE = OUTPUT_FOLDER + "/" + CLUSTERS_FILENAME
 class Cluster:
 
   def __init__(self, group) -> None:
-    self._initiate(set(), set(), group, 0, 0, '0', set(), 0.0)
+    self._initiate(set(), set(), group, 0, 0, '0', set(), set(), 0.0)
 
   def _initiate(self,
                 orders,
@@ -21,6 +21,7 @@ class Cluster:
                 tracked_cost,
                 last_ship_date='0',
                 purchase_orders=set(),
+                email_ids=set(),
                 adjustment=0.0,
                 to_email='',
                 notes='',
@@ -33,6 +34,7 @@ class Cluster:
     self.tracked_cost = tracked_cost
     self.last_ship_date = last_ship_date
     self.purchase_orders = purchase_orders
+    self.email_ids = email_ids
     self.adjustment = adjustment
     self.to_email = to_email
     self.notes = notes
@@ -43,10 +45,10 @@ class Cluster:
     self._initiate(**state)
 
   def __str__(self) -> str:
-    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s, adjustment: %s" % (
+    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s, email_ids: %s, adjustment: %s" % (
         str(self.orders), str(self.trackings), self.group,
         str(self.expected_cost), str(self.tracked_cost), self.last_ship_date,
-        str(self.purchase_orders), str(self.adjustment))
+        str(self.purchase_orders), str(self.email_ids), str(self.adjustment))
 
   def get_header(self) -> List[str]:
     return [
@@ -73,6 +75,7 @@ class Cluster:
     self.tracked_cost += other.tracked_cost
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
     self.purchase_orders.update(other.purchase_orders)
+    self.email_ids.update(other.email_ids)
     self.adjustment += other.adjustment
     if self.notes and other.notes:
       self.notes += ", " + other.notes
@@ -144,7 +147,8 @@ def update_clusters(all_clusters, trackings) -> None:
     cluster.to_email = tracking.to_email
 
 
-def merge_by_purchase_orders(clusters) -> list:
+def merge_orders(clusters) -> list:
+  """ Merges together orders that share a common purchase order or email ID. """
   while True:
     prev_length = len(clusters)
     clusters = run_merge_iteration(clusters)
@@ -156,7 +160,7 @@ def merge_by_purchase_orders(clusters) -> list:
 def run_merge_iteration(clusters) -> list:
   result = []
   for cluster in clusters:
-    to_merge = find_by_purchase_orders(cluster, result)
+    to_merge = find_by_shared_attr(cluster, result)
     if to_merge:
       to_merge.merge_with(cluster)
     else:
@@ -164,14 +168,20 @@ def run_merge_iteration(clusters) -> list:
   return result
 
 
-def find_by_purchase_orders(cluster, all_clusters) -> Any:
-  if not cluster.purchase_orders:
+def find_by_shared_attr(cluster, all_clusters) -> Any:
+  if not cluster.purchase_orders and not cluster.email_ids:
     return None
 
   for candidate in all_clusters:
-    if candidate.group == cluster.group and candidate.purchase_orders.intersection(
-        cluster.purchase_orders):
-      return candidate
+    if candidate.group == cluster.group:
+      common_pos = candidate.purchase_orders.intersection(cluster.purchase_orders)
+      if common_pos:
+        print(f'Merged orders {cluster.orders} and {candidate.orders} by common POs {common_pos}')
+        return candidate
+      common_emails = candidate.email_ids.intersection(cluster.email_ids)
+      if common_emails:
+        print(f'Merged orders {cluster.orders} and {candidate.orders} by common email IDs {common_emails}')
+        return candidate
 
   return None
 
@@ -195,6 +205,7 @@ def from_row(header, row) -> Cluster:
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
   pos = set([s.strip() for s in pos_string.split(',')]) if pos_string else set()
+  email_ids = set() # Set this if we want email IDs in the Sheet
   group = row[header.index('Group')] if 'Group' in header else ''
   adj_string = row[header.index(
       "Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
@@ -205,6 +216,6 @@ def from_row(header, row) -> Cluster:
   notes = str(row[header.index('Notes')]) if 'Notes' in header else ''
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
-                    last_ship_date, pos, adjustment, to_email, notes,
+                    last_ship_date, pos, email_ids, adjustment, to_email, notes,
                     manual_override, non_reimbursed_trackings)
   return cluster

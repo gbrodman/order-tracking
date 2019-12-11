@@ -7,3 +7,4 @@ google-auth-oauthlib==0.4.0
 pytype==2019.9.6
 PyYAML==5.1.1
 selenium==3.141.0
+tqdm==4.40.0

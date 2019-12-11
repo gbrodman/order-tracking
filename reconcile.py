@@ -3,9 +3,10 @@
 import argparse
 import lib.donations
 from lib import clusters
-import yaml
 import sys
-from lib.expected_costs import ExpectedCosts
+from tqdm import tqdm
+import yaml
+from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
 from lib.reconciliation_uploader import ReconciliationUploader
@@ -58,14 +59,20 @@ def fill_costs_by_po(all_clusters, po_to_cost, args):
           [po_to_cost.get(po, 0.0) for po in cluster.purchase_orders])
 
 
-def fill_expected_costs(all_clusters, config):
-  expected_costs = ExpectedCosts(config)
-  for cluster in all_clusters:
-    total_expected_cost = sum([
-        expected_costs.get_expected_cost(order_id)
-        for order_id in cluster.orders
-    ])
-    cluster.expected_cost = total_expected_cost
+def fill_order_info(all_clusters, config):
+  order_info_retriever = OrderInfoRetriever(config)
+  total_orders = sum([len(cluster.orders) for cluster in all_clusters])
+  with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
+    for cluster in all_clusters:
+      cluster.expected_cost = 0.0
+      cluster.email_ids = set()
+      for order_id in cluster.orders:
+        order_info = order_info_retriever.get_order_info(order_id)
+        # Only add the email ID if it's present; don't add Nones!
+        if order_info.email_id:
+          cluster.email_ids.add(order_info.email_id)
+        cluster.expected_cost += order_info.cost
+        pbar.update()
 
 
 def clusterify(config):
@@ -77,8 +84,8 @@ def clusterify(config):
   all_clusters = clusters.get_existing_clusters(config)
   clusters.update_clusters(all_clusters, trackings)
 
-  print("Filling out expected costs and writing result to disk")
-  fill_expected_costs(all_clusters, config)
+  print("Filling out order info and writing results to disk")
+  fill_order_info(all_clusters, config)
   clusters.write_clusters(config, all_clusters)
 
 
@@ -101,7 +108,7 @@ def main():
       config, driver_creator, args)
 
   fill_purchase_orders(all_clusters, tracking_to_po, args)
-  all_clusters = clusters.merge_by_purchase_orders(all_clusters)
+  all_clusters = clusters.merge_orders(all_clusters)
   fill_costs_by_po(all_clusters, po_to_cost, args)
 
   reconciliation_uploader.download_upload_clusters(all_clusters)
