@@ -62,7 +62,8 @@ def fill_costs_by_po(all_clusters, po_to_cost, args):
 def fill_order_info(all_clusters, config):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
-  with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
+  with tqdm(
+      desc='Fetching order costs', unit='order', total=total_orders) as pbar:
     for cluster in all_clusters:
       cluster.expected_cost = 0.0
       cluster.email_ids = set()

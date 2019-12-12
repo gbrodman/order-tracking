@@ -19,6 +19,7 @@ class OrderInfo:
   Note that an order email can contain multiple orders within it if the order
   is broken up into multiple sub-orders at the time it is placed.
   """
+
   def __init__(self, email_id: str, cost: float) -> None:
     self.email_id = email_id
     self.cost = cost
@@ -136,11 +137,14 @@ class OrderInfoRetriever:
         for cost in re.findall(regex_est_tax, raw_email)
     ]
 
-    order_infos = [OrderInfo(email_id, t[0] + t[1]) for t in zip(pretax_totals, taxes)]
+    order_infos = [
+        OrderInfo(email_id, t[0] + t[1]) for t in zip(pretax_totals, taxes)
+    ]
     return dict(zip(orders, order_infos))
 
   def get_relevant_raw_email_data(self, order_id) -> Union[str, Optional[str]]:
-    status, search_result = self.mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
+    status, search_result = self.mail.uid('SEARCH', None,
+                                          'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
       return None, None
@@ -152,7 +156,8 @@ class OrderInfoRetriever:
     result, data = self.mail.uid("FETCH", email_ids[0], "(RFC822)")
     return email_ids[0], data
 
-  def get_personal_amazon_totals(self, email_id, data, orders) -> Dict[str, OrderInfo]:
+  def get_personal_amazon_totals(self, email_id, data,
+                                 orders) -> Dict[str, OrderInfo]:
     soup = BeautifulSoup(
         quopri.decodestring(data[0][1]), features="html.parser")
     prices = [

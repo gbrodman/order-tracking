@@ -174,13 +174,18 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
 
   for candidate in all_clusters:
     if candidate.group == cluster.group:
-      common_pos = candidate.purchase_orders.intersection(cluster.purchase_orders)
+      common_pos = candidate.purchase_orders.intersection(
+          cluster.purchase_orders)
       if common_pos:
-        print(f'Merged orders {cluster.orders} and {candidate.orders} by common POs {common_pos}')
+        print(
+            f'Merged orders {cluster.orders} and {candidate.orders} by common POs {common_pos}'
+        )
         return candidate
       common_emails = candidate.email_ids.intersection(cluster.email_ids)
       if common_emails:
-        print(f'Merged orders {cluster.orders} and {candidate.orders} by common email IDs {common_emails}')
+        print(
+            f'Merged orders {cluster.orders} and {candidate.orders} by common email IDs {common_emails}'
+        )
         return candidate
 
   return None
@@ -205,7 +210,7 @@ def from_row(header, row) -> Cluster:
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
   pos = set([s.strip() for s in pos_string.split(',')]) if pos_string else set()
-  email_ids = set() # Set this if we want email IDs in the Sheet
+  email_ids = set()  # Set this if we want email IDs in the Sheet
   group = row[header.index('Group')] if 'Group' in header else ''
   adj_string = row[header.index(
       "Manual Cost Adjustment")] if "Manual Cost Adjustment" in header else ''
