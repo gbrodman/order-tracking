@@ -1,3 +1,4 @@
+from lib.create_url import create_url
 from lib.stock import items
 from lib.stock import emails
 from lib.stock.item_price_retriever import ItemPriceRetriever
@@ -8,11 +9,21 @@ import yaml
 CONFIG_FILE = "config.yml"
 
 
-def create_email_content(new_items):
+def create_email_content(new_items, all_items):
   content = "We found the following newly in-stock items (or reduced prices):\n\n"
   for item in new_items:
-    content += f"ASIN: {item.asin}, Description: {item.desc}, Price: {item.price}"
+    content += f"{item.desc}, Price: {item.price}, URL: {create_url([item.asin])}"
     content += "\n"
+
+  new_asins = [item.asin for item in new_items]
+  in_stock_asins = [item.asin for item in all_items if item.price]
+
+  content += "\nURL for all new items:\n"
+  content += create_url(new_asins)
+  content += "\n\n"
+
+  content += "URL for all in-stock items:\n"
+  content += create_url(in_stock_asins)
   return content
 
 
@@ -30,7 +41,7 @@ if __name__ == "__main__":
   prices_map = retriever.get_prices([item.asin for item in item_list])
   new_items = []
   for item in item_list:
-    new_price = prices_map[item.asin]
+    new_price = prices_map.get(item.asin, None)
     prev_price = item.price
     item.price = new_price
     if new_price and (not prev_price or new_price < prev_price):
@@ -43,7 +54,7 @@ if __name__ == "__main__":
   email_sender = EmailSender(config['email'])
 
   if new_items:
-    content = create_email_content(new_items)
+    content = create_email_content(new_items, item_list)
     for email_obj in email_list:
       to = email_obj.email_address
       email_sender.send_email_content("Newly in-stock Amazon items", content,

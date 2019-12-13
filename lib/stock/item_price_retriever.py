@@ -1,4 +1,5 @@
 from .. import driver_creator
+from .. import create_url
 
 import random
 import time
@@ -16,18 +17,19 @@ class ItemPriceRetriever:
     try:
       driver.implicitly_wait(1)
       result = {}
-      for asin in asins:
-        time.sleep(random.randint(1, 2))
-        driver.get(CART_URL_FORMAT % asin)
-        time.sleep(2)
-        price_tds = driver.find_elements_by_xpath(
-            "//td[contains(@class, 'price') and contains(@class, 'item-row')]")
-        if price_tds:
-          result[asin] = float(price_tds[0].text.replace("$",
-                                                         '').replace(",", ''))
-        else:
-          # Nope
-          result[asin] = None
+      driver.get(create_url.create_url(asins))
+      time.sleep(2)
+      table = driver.find_elements_by_tag_name("table")[0]
+      rows = table.find_elements_by_tag_name("tr")[1:]
+      price_tds = table.find_elements_by_xpath("//td[contains(@class, 'price') and contains(@class, 'item-row')]")
+      for i in range(len(rows)):
+        if len(price_tds) <= i:
+          break
+        row = rows[i]
+        asin = row.find_elements_by_tag_name('a')[0].get_attribute(
+            'href').split('/')[-1]
+        price_str = price_tds[i].text.replace("$", '').replace(",", '')
+        result[asin] = float(price_str)
       return result
     finally:
       driver.close()
