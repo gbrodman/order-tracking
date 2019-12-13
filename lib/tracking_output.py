@@ -50,7 +50,7 @@ class TrackingOutput:
   def merge_trackings(self, old_trackings: List[Tracking], trackings: List[Tracking], overwrite: bool) -> List[Tracking]:
     new_tracking_dict = {t.tracking_number: t for t in old_trackings}
     for tracking in trackings:
-      if not new_tracking_dict[tracking.tracking_number] or overwrite:
+      if tracking.tracking_number not in new_tracking_dict or overwrite:
         new_tracking_dict[tracking.tracking_number] = tracking
     return list(new_tracking_dict.values())
 
