@@ -33,8 +33,8 @@ class EmailSender:
     content += "These are tracking numbers we found based on unread emails. Some may have been found in the past."
     return content
 
-  def send_email_content(self, subject, content, recipient=None) -> None:
-    recipient = recipient if recipient else self.email_config['username']
+  def send_email_content(self, subject, content, recipients=[]) -> None:
+    recipients = recipients if recipients else [self.email_config['username']]
     s = smtplib.SMTP(self.email_config['smtpUrl'],
                      self.email_config['smtpPort'])
     s.starttls()
@@ -42,7 +42,7 @@ class EmailSender:
 
     message = MIMEText(content)
     message['From'] = self.email_config['username']
-    message['To'] = recipient
+    message['To'] = ", ".join(recipients)
     message['Subject'] = subject
-    s.sendmail(self.email_config['username'], recipient, message.as_string())
+    s.sendmail(self.email_config['username'], recipients, message.as_string())
     s.quit()

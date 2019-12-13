@@ -9,7 +9,7 @@ import yaml
 CONFIG_FILE = "config.yml"
 
 
-def create_email_content(new_items, all_items):
+def create_email_content(new_items, all_items, sheet_id):
   content = "We found the following newly in-stock items (or reduced prices):\n\n"
   for item in new_items:
     content += f"{item.desc}, Price: {item.price}, URL: {create_url([item.asin])}"
@@ -18,12 +18,15 @@ def create_email_content(new_items, all_items):
   new_asins = [item.asin for item in new_items]
   in_stock_asins = [item.asin for item in all_items if item.price]
 
-  content += "\nURL for all new items:\n"
+  content += "\nAll new items:\n"
   content += create_url(new_asins)
   content += "\n\n"
 
-  content += "URL for all in-stock items:\n"
+  content += "All in-stock items:\n"
   content += create_url(in_stock_asins)
+
+  content += "\n\nConfiguration Google Sheet:\n"
+  content += f"https://docs.google.com/spreadsheets/d/{sheet_id}"
   return content
 
 
@@ -53,9 +56,7 @@ if __name__ == "__main__":
                                                     "Emails")
   email_sender = EmailSender(config['email'])
 
-  if new_items:
-    content = create_email_content(new_items, item_list)
-    for email_obj in email_list:
-      to = email_obj.email_address
-      email_sender.send_email_content("🚨 Newly in-stock Amazon items 🚨", content,
-                                      to)
+  if new_items and email_list:
+    content = create_email_content(new_items, item_list, sheet_id)
+    recipients = [email_obj.email_address for email_obj in email_list]
+    email_sender.send_email_content("🚨 Newly in-stock Amazon items 🚨", content, recipients)
