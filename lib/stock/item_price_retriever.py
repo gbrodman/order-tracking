@@ -13,6 +13,7 @@ class ItemPriceRetriever:
     self.dc = driver_creator.DriverCreator()
 
   def get_prices(self, asins):
+    print(f"Getting price for asins {asins}")
     driver = self.dc.new()
     try:
       driver.implicitly_wait(1)
@@ -30,6 +31,7 @@ class ItemPriceRetriever:
             'href').split('/')[-1]
         price_str = price_tds[i].text.replace("$", '').replace(",", '')
         result[asin] = float(price_str)
+      print(f"Found prices: {result}")
       return result
     finally:
       driver.close()
