@@ -82,9 +82,9 @@ def main():
         raise
 
     print("Writing results to file")
-    tracking_output = TrackingOutput()
+    tracking_output = TrackingOutput(config)
     try:
-      tracking_output.save_trackings(config, trackings)
+      tracking_output.save_trackings(trackings)
     except:
       send_error_email(email_sender, "Error writing output file")
       raise

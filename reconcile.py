@@ -77,9 +77,9 @@ def fill_order_info(all_clusters, config):
 
 
 def clusterify(config):
-  tracking_output = TrackingOutput()
+  tracking_output = TrackingOutput(config)
   print("Getting all tracking objects")
-  trackings = tracking_output.get_existing_trackings(config)
+  trackings = tracking_output.get_existing_trackings()
 
   print("Converting to Cluster objects")
   all_clusters = clusters.get_existing_clusters(config)
