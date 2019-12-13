@@ -93,13 +93,13 @@ def main():
       tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   all_trackings = dedupe_trackings(all_trackings)
-  tracking_output = TrackingOutput()
+  tracking_output = TrackingOutput(config)
   print("Number of trackings beforehand: %d" %
-        len(tracking_output.get_existing_trackings(config)))
+        len(tracking_output.get_existing_trackings()))
   print("Number from sheet: %d" % len(all_trackings))
-  tracking_output.save_trackings(config, all_trackings)
+  tracking_output.save_trackings(all_trackings)
   print("Number of trackings after: %d" %
-        len(tracking_output.get_existing_trackings(config)))
+        len(tracking_output.get_existing_trackings()))
 
 
 if __name__ == "__main__":

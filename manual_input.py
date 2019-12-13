@@ -7,6 +7,7 @@
 
 import datetime
 import lib.donations
+from typing import Dict
 import yaml
 from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.tracking import Tracking
@@ -41,7 +42,7 @@ def get_required(prompt):
   return result
 
 
-def get_orders_to_costs():
+def input_orders() -> Dict[str, OrderInfo]:
   result = {}
   while True:
     order_id = get_optional("Enter order #, or blank if no orders are left: ")
@@ -57,8 +58,8 @@ def get_orders_to_costs():
 def run_delete(config):
   print("Manual deletion of Tracking object")
   tracking_number = get_required("Tracking number: ")
-  tracking_output = TrackingOutput()
-  existing_trackings = tracking_output.get_existing_trackings(config)
+  tracking_output = TrackingOutput(config)
+  existing_trackings = tracking_output.get_existing_trackings()
 
   found_list = [
       tracking for tracking in existing_trackings
@@ -71,7 +72,7 @@ def run_delete(config):
         "Are you sure you want to delete this tracking?", ['y', 'n'])
     if submit == 'y':
       existing_trackings.remove(to_delete)
-      tracking_output._write_merged(config, existing_trackings)
+      tracking_output._write_merged(existing_trackings)
     else:
       print("Deletion stopped.")
   else:
@@ -82,17 +83,30 @@ def run_add(config):
   print("Manual input of Tracking object.")
   print("Optional fields will display a default in brackets if one exists.")
   print("")
+  tracking_output = TrackingOutput(config)
   tracking_number = get_required("Tracking number: ")
-  orders_to_costs = get_orders_to_costs()
-  ship_date = get_optional_with_default(
-      "Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
-  group = get_required("Group, e.g. mysbuyinggroup: ")
-  email = get_optional("Optional email address: ")
-  order_url = get_optional("Optional order URL: ")
-  merchant = get_optional("Optional merchant: ")
-  description = get_optional("Optional item descriptions: ")
-  tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '',
-                      email, order_url, ship_date, 0.0, description, merchant)
+  tracking = tracking_output.get_tracking(tracking_number)
+  if tracking:
+    print("This tracking number already exists:")
+    print(tracking)
+    print("Adding new order(s) to the existing tracking number.")
+  orders_to_costs = input_orders()
+  if tracking:
+    order_ids_set = set(tracking.order_ids)
+    order_ids_set.update(orders_to_costs.keys())
+    tracking.order_ids = list(order_ids_set)
+    tracking.price = '' # Zero out price for reconcile to fix later.
+  else:
+    ship_date = get_optional_with_default(
+        "Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
+    group = get_required("Group, e.g. mysbuyinggroup: ")
+    email = get_optional("Optional email address: ")
+    order_url = get_optional("Optional order URL: ")
+    merchant = get_optional("Optional merchant: ")
+    description = get_optional("Optional item descriptions: ")
+    tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '',
+                        email, order_url, ship_date, 0.0, description, merchant)
+
   print("Resulting tracking object: ")
   print(tracking)
   print("Order to cost map: ")
@@ -100,8 +114,7 @@ def run_add(config):
   submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ",
                                      ['y', 'n'])
   if submit == 'y':
-    output = TrackingOutput()
-    output.save_trackings(config, [tracking])
+    tracking_output.save_trackings([tracking], overwrite=True)
     print("Wrote tracking")
     order_info_retriever = OrderInfoRetriever(config)
     order_info_retriever.orders_dict.update(orders_to_costs)
