@@ -41,9 +41,10 @@ class EmailTrackingRetriever(ABC):
     print(f"Found {len(self.all_email_ids)} {seen_adj} {self.get_merchant()} "
           "shipping emails in the dates we searched.")
     trackings = {}
+    mail = self.get_all_mail_folder()
     try:
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
-        tracking = self.get_tracking(email_id)
+        tracking = self.get_tracking(email_id, mail)
         if tracking:
           trackings[tracking.tracking_number] = tracking
     except:
@@ -103,9 +104,7 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  def get_tracking(self, email_id) -> Tracking:
-    mail = self.get_all_mail_folder()
-
+  def get_tracking(self, email_id, mail) -> Tracking:
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     raw_email = str(data[0][1]).replace("=3D",
                                         "=").replace('=\\r\\n', '').replace(
