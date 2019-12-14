@@ -2,6 +2,7 @@ import datetime
 import email
 import imaplib
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 from lib.tracking import Tracking
 import lib.tracking
 from typing import Any, Callable, Optional, TypeVar
@@ -41,7 +42,7 @@ class EmailTrackingRetriever(ABC):
           "shipping emails in the dates we searched.")
     trackings = {}
     try:
-      for email_id in self.all_email_ids:
+      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         tracking = self.get_tracking(email_id)
         if tracking:
           trackings[tracking.tracking_number] = tracking
@@ -116,20 +117,17 @@ class EmailTrackingRetriever(ABC):
     order_ids = self.get_order_ids_from_email(raw_email)
     group = self.get_buying_group(raw_email)
     tracking_number = self.get_tracking_number_from_email(raw_email)
-    print("Tracking: %s, Order(s): %s, Group: %s" %
-          (tracking_number, ",".join(order_ids), group))
+    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
     if tracking_number == None:
       self.failed_email_ids.append(email_id)
-      print("Could not find tracking number from email with order(s) %s" %
-            order_ids)
+      tqdm.write(f"Could not find tracking number from email with order(s) {order_ids}")
       self.mark_as_unread(email_id)
       return None
 
     items = self.get_items_from_email(data)
     if group == None:
       self.failed_email_ids.append(email_id)
-      print("Could not find buying group for email with order(s) %s" %
-            order_ids)
+      tqdm.write(f"Could not find buying group for email with order(s) {order_ids}")
       self.mark_as_unread(email_id)
       return None
 
