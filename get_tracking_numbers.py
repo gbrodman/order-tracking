@@ -90,7 +90,7 @@ def main():
       print("Uploading tracking numbers...")
       group_site_manager = GroupSiteManager(config, driver_creator)
       try:
-        group_site_manager.upload(new_trackings)
+        group_site_manager.upload(trackings.values())
       except:
         send_error_email(email_sender, "Error uploading tracking numbers")
         raise
