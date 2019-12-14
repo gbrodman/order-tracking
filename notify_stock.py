@@ -59,4 +59,5 @@ if __name__ == "__main__":
   if new_items and email_list:
     content = create_email_content(new_items, item_list, sheet_id)
     recipients = [email_obj.email_address for email_obj in email_list]
-    email_sender.send_email_content("🚨 Newly in-stock Amazon items 🚨", content, recipients)
+    email_sender.send_email_content("🚨 Newly in-stock Amazon items 🚨", content,
+                                    recipients)

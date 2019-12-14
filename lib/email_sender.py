@@ -30,7 +30,7 @@ class EmailSender:
       content += '\n'.join(numbers)
       content += '\n\n'
 
-    content += "These are tracking numbers we found based on unread emails. Some may have been found in the past."
+    content += "These are the new tracking numbers that we have found. See the Google Sheet for all tracking numbers."
     return content
 
   def send_email_content(self, subject, content, recipients=[]) -> None:

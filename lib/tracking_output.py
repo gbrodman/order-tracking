@@ -15,12 +15,10 @@ class TrackingOutput:
   def __init__(self, config) -> None:
     self.config = config
 
-
   def save_trackings(self, trackings, overwrite=False) -> None:
     old_trackings = self.get_existing_trackings()
     merged_trackings = self.merge_trackings(old_trackings, trackings, overwrite)
     self._write_merged(merged_trackings)
-
 
   def get_tracking(self, tracking_number) -> Optional[Tracking]:
     """Returns the tracking object with the given tracking number if it exists."""
@@ -29,7 +27,6 @@ class TrackingOutput:
       if tracking.tracking_number == tracking_number:
         return tracking
     return None
-
 
   def _write_merged(self, merged_trackings) -> None:
     groups_dict = collections.defaultdict(list)
@@ -47,13 +44,14 @@ class TrackingOutput:
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
-  def merge_trackings(self, old_trackings: List[Tracking], trackings: List[Tracking], overwrite: bool) -> List[Tracking]:
+  def merge_trackings(self, old_trackings: List[Tracking],
+                      trackings: List[Tracking],
+                      overwrite: bool) -> List[Tracking]:
     new_tracking_dict = {t.tracking_number: t for t in old_trackings}
     for tracking in trackings:
       if tracking.tracking_number not in new_tracking_dict or overwrite:
         new_tracking_dict[tracking.tracking_number] = tracking
     return list(new_tracking_dict.values())
-
 
   def get_existing_trackings(self) -> List[Tracking]:
     objects_to_drive = ObjectsToDrive()
@@ -71,7 +69,6 @@ class TrackingOutput:
       trackings_dict = pickle.load(tracking_file_stream)
     return self._convert_to_list(trackings_dict)
 
-
   def _convert_to_list(self, trackings_dict):
     result = []
     for trackings in trackings_dict.values():
@@ -79,7 +76,6 @@ class TrackingOutput:
     for tracking in result:
       tracking.tracking_number = tracking.tracking_number.upper()
     return result
-
 
   def clear(self) -> None:
     # self.write_merged([])

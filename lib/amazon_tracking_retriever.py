@@ -2,6 +2,7 @@ import quopri
 import re
 import time
 from bs4 import BeautifulSoup
+from tenacity import retry, stop_after_attempt, wait_exponential
 from lib.email_tracking_retriever import EmailTrackingRetriever
 from lib.tracking import Tracking
 
@@ -80,8 +81,11 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     finally:
       driver.close()
 
+  @retry(
+      stop=stop_after_attempt(7),
+      wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, url):
     driver = self.driver_creator.new()
     driver.get(url)
-    time.sleep(3)  # wait for page load because the timeouts can be buggy
+    time.sleep(1)  # wait for page load because the timeouts can be buggy
     return driver
