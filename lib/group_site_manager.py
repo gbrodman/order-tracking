@@ -194,10 +194,13 @@ class GroupSiteManager:
         form.find_element_by_xpath(
             "//span[text() = 'Add Tracking number']").click()
 
-      # Submit twice. If there are dupes, it removes them after the first time and submits only the new ones the second time
       form.find_element_by_xpath("//button[text() = 'Submit']").click()
       time.sleep(1)
-      form.find_element_by_xpath("//button[text() = 'Submit']").click()
+
+      # If there are some dupes, we need to submit twice to confirm that any non-dupes were submitted
+      modal = driver.find_element_by_class_name("modal-body")
+      if "Some tracking numbers already noted" in modal.text:
+        form.find_element_by_xpath("//button[text() = 'Submit']").click()
     finally:
       driver.close()
 
