@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import lib.donations
 import sys
 import traceback
@@ -23,6 +24,10 @@ def send_error_email(email_sender, subject):
 
 
 def main():
+  parser = argparse.ArgumentParser(description='Get tracking #s script')
+  parser.add_argument("--seen", action="store_true")
+  args, _ = parser.parse_known_args()
+
   driver_creator = DriverCreator()
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
@@ -31,7 +36,7 @@ def main():
   email_sender = EmailSender(email_config)
 
   print("Retrieving Amazon tracking numbers from email...")
-  amazon_tracking_retriever = AmazonTrackingRetriever(config, driver_creator)
+  amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
   try:
     trackings = amazon_tracking_retriever.get_trackings()
   except:
@@ -44,7 +49,7 @@ def main():
         % len(amazon_tracking_retriever.failed_email_ids))
 
   print("Retrieving Best Buy tracking numbers from email...")
-  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, driver_creator)
+  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
   try:
     bb_trackings = bestbuy_tracking_retriever.get_trackings()
     trackings.extend(bb_trackings)

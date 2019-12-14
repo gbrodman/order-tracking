@@ -11,9 +11,10 @@ _FuncT = TypeVar('_FuncT', bound=Callable)
 
 class EmailTrackingRetriever(ABC):
 
-  def __init__(self, config, driver_creator) -> None:
+  def __init__(self, config, args, driver_creator) -> None:
     self.config = config
     self.email_config = config['email']
+    self.args = args
     self.driver_creator = driver_creator
     self.failed_email_ids = []
     self.all_email_ids = []
@@ -29,16 +30,19 @@ class EmailTrackingRetriever(ABC):
 
   def get_trackings(self) -> list:
     self.all_email_ids = self.get_email_ids()
-    print("Found %d unread shipping emails in the dates we searched" %
-          len(self.all_email_ids))
+    seen_adj = "read" if self.args.seen else "unread"
+    print(f"Found {len(self.all_email_ids)} {seen_adj} shipping emails in the dates we searched")
+    trackings = []
     try:
-      trackings = [
-          self.get_tracking(email_id) for email_id in self.all_email_ids
-      ]
-      trackings = [tracking for tracking in trackings if tracking]
+      for email_id in self.all_email_ids:
+        tracking = self.get_tracking(email_id)
+        if tracking:
+          trackings.append(tracking)
     except:
-      print("Error when parsing emails. Marking emails as unread.")
-      self.back_out_of_all()
+      print("Error when parsing emails.")
+      if not self.args.seen:
+        print("Marking emails as unread.")
+        self.back_out_of_all()
       raise
     return trackings
 
@@ -138,10 +142,11 @@ class EmailTrackingRetriever(ABC):
     subject_searches = self.get_subject_searches()
 
     result = set()
+    seen_filter = '(SEEN)' if self.args.seen else '(UNSEEN)'
     for search_terms in subject_searches:
       search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
-      status, response = mail.uid('SEARCH', None, '(UNSEEN)',
-                                  '(SINCE "%s")' % date_to_search,
+      status, response = mail.uid('SEARCH', None, seen_filter,
+                                  f'(SINCE "{date_to_search}")',
                                   *search_terms)
       email_ids = response[0].decode('utf-8')
       result.update(email_ids.split())
