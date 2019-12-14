@@ -43,7 +43,8 @@ class EmailTrackingRetriever(ABC):
     trackings = {}
     mail = self.get_all_mail_folder()
     try:
-      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
+      for email_id in tqdm(
+          self.all_email_ids, desc="Fetching trackings", unit="email"):
         tracking = self.get_tracking(email_id, mail)
         if tracking:
           trackings[tracking.tracking_number] = tracking
@@ -116,17 +117,21 @@ class EmailTrackingRetriever(ABC):
     order_ids = self.get_order_ids_from_email(raw_email)
     group = self.get_buying_group(raw_email)
     tracking_number = self.get_tracking_number_from_email(raw_email)
-    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
+    tqdm.write(
+        f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
     if tracking_number == None:
       self.failed_email_ids.append(email_id)
-      tqdm.write(f"Could not find tracking number from email with order(s) {order_ids}")
+      tqdm.write(
+          f"Could not find tracking number from email with order(s) {order_ids}"
+      )
       self.mark_as_unread(email_id)
       return None
 
     items = self.get_items_from_email(data)
     if group == None:
       self.failed_email_ids.append(email_id)
-      tqdm.write(f"Could not find buying group for email with order(s) {order_ids}")
+      tqdm.write(
+          f"Could not find buying group for email with order(s) {order_ids}")
       self.mark_as_unread(email_id)
       return None
 
@@ -150,8 +155,7 @@ class EmailTrackingRetriever(ABC):
     for search_terms in subject_searches:
       search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
       status, response = mail.uid('SEARCH', None, seen_filter,
-                                  f'(SINCE "{date_to_search}")',
-                                  *search_terms)
+                                  f'(SINCE "{date_to_search}")', *search_terms)
       email_ids = response[0].decode('utf-8')
       result.update(email_ids.split())
 

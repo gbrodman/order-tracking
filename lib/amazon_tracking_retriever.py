@@ -81,7 +81,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     finally:
       driver.close()
 
-  @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
+  @retry(
+      stop=stop_after_attempt(7),
+      wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, url):
     driver = self.driver_creator.new()
     driver.get(url)

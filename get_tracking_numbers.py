@@ -45,7 +45,8 @@ def main():
   email_sender = EmailSender(email_config)
 
   print("Retrieving Amazon tracking numbers from email...")
-  amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
+  amazon_tracking_retriever = AmazonTrackingRetriever(config, args,
+                                                      driver_creator)
   try:
     trackings = amazon_tracking_retriever.get_trackings()
   except:
@@ -54,11 +55,13 @@ def main():
 
   action_taken = "" if args.seen else " and marked them as unread"
   if amazon_tracking_retriever.failed_email_ids:
-    print(f"Found {len(amazon_tracking_retriever.failed_email_ids)} Amazon emails "
-          f"without buying group labels{action_taken}. Continuing...")
+    print(
+        f"Found {len(amazon_tracking_retriever.failed_email_ids)} Amazon emails "
+        f"without buying group labels{action_taken}. Continuing...")
 
   print("Retrieving Best Buy tracking numbers from email...")
-  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
+  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args,
+                                                        driver_creator)
   try:
     trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:
@@ -66,12 +69,14 @@ def main():
     raise
 
   if bestbuy_tracking_retriever.failed_email_ids:
-    print(f"Found {len(bestbuy_tracking_retriever.failed_email_ids)} Best Buy emails "
-          f"without buying group labels{action_taken}. Continuing...")
+    print(
+        f"Found {len(bestbuy_tracking_retriever.failed_email_ids)} Best Buy emails "
+        f"without buying group labels{action_taken}. Continuing...")
 
   try:
     tracking_output = TrackingOutput(config)
-    existing_tracking_nos = set([t.tracking_number for t in tracking_output.get_existing_trackings()])
+    existing_tracking_nos = set(
+        [t.tracking_number for t in tracking_output.get_existing_trackings()])
     new_tracking_nos = set(trackings.keys()).difference(existing_tracking_nos)
     print(f"Found {len(new_tracking_nos)} new tracking numbers "
           f"(out of {len(trackings)} total) from emails.")

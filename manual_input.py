@@ -95,7 +95,7 @@ def run_add(config):
     order_ids_set = set(tracking.order_ids)
     order_ids_set.update(orders_to_costs.keys())
     tracking.order_ids = list(order_ids_set)
-    tracking.price = '' # Zero out price for reconcile to fix later.
+    tracking.price = ''  # Zero out price for reconcile to fix later.
   else:
     ship_date = get_optional_with_default(
         "Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)

@@ -22,7 +22,8 @@ class ItemPriceRetriever:
       time.sleep(2)
       table = driver.find_elements_by_tag_name("table")[0]
       rows = table.find_elements_by_tag_name("tr")[1:]
-      price_tds = table.find_elements_by_xpath("//td[contains(@class, 'price') and contains(@class, 'item-row')]")
+      price_tds = table.find_elements_by_xpath(
+          "//td[contains(@class, 'price') and contains(@class, 'item-row')]")
       for i in range(len(rows)):
         if len(price_tds) <= i:
           break
