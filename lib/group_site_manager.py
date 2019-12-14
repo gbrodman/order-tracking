@@ -6,6 +6,7 @@ import time
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from typing import Any, Dict
 
 LOGIN_EMAIL_FIELD = "fldEmail"
@@ -162,7 +163,8 @@ class GroupSiteManager:
     try:
       # load the login page first
       self._load_page(driver, "https://buyformeretail.com/login")
-      driver.find_element_by_id("loginEmail").send_keys(group_config['username'])
+      driver.find_element_by_id("loginEmail").send_keys(
+          group_config['username'])
       driver.find_element_by_id("loginPassword").send_keys(
           group_config['password'])
       driver.find_element_by_xpath("//button[@type='submit']").click()
@@ -170,9 +172,14 @@ class GroupSiteManager:
       time.sleep(2)
 
       # hope there's a button to submit tracking numbers -- it doesn't matter which one
-      submit_button = driver.find_element_by_xpath(
-          "//button[text() = \"Submit tracking #'s\"]")
-      submit_button.click()
+      try:
+        submit_button = driver.find_element_by_xpath(
+            "//button[text() = \"Submit tracking #'s\"]")
+        submit_button.click()
+      except NoSuchElementException:
+        raise Exception(
+            "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
+        )
 
       time.sleep(2)
 
