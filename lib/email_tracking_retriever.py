@@ -19,30 +19,37 @@ class EmailTrackingRetriever(ABC):
     self.failed_email_ids = []
     self.all_email_ids = []
 
-  # If we receive an exception, we should reset all the emails to be unread
   def back_out_of_all(self) -> None:
-    for email_id in self.all_email_ids:
-      self.mark_as_unread(email_id)
+    """
+    Called when an exception is received. If running in the (default) unseen
+    mode, then all processed emails are set to unread again.
+    """
+
+    if not self.args.seen:
+      for email_id in self.all_email_ids:
+        self.mark_as_unread(email_id)
 
   def mark_as_unread(self, email_id) -> None:
-    mail = self.get_all_mail_folder()
-    mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
+    if not self.args.seen:
+      mail = self.get_all_mail_folder()
+      mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
   def get_trackings(self) -> list:
     self.all_email_ids = self.get_email_ids()
     seen_adj = "read" if self.args.seen else "unread"
-    print(f"Found {len(self.all_email_ids)} {seen_adj} shipping emails in the dates we searched")
-    trackings = []
+    print(f"Found {len(self.all_email_ids)} {seen_adj} {self.get_merchant()} "
+          "shipping emails in the dates we searched.")
+    trackings = {}
     try:
       for email_id in self.all_email_ids:
         tracking = self.get_tracking(email_id)
         if tracking:
-          trackings.append(tracking)
+          trackings[tracking.tracking_number] = tracking
     except:
       print("Error when parsing emails.")
       if not self.args.seen:
         print("Marking emails as unread.")
-        self.back_out_of_all()
+      self.back_out_of_all()
       raise
     return trackings
 
@@ -95,7 +102,7 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  def get_tracking(self, email_id) -> Any:
+  def get_tracking(self, email_id) -> Tracking:
     mail = self.get_all_mail_folder()
 
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
@@ -154,7 +161,9 @@ class EmailTrackingRetriever(ABC):
     return result
 
   def get_date_to_search(self) -> str:
-    if "lookbackDays" in self.config:
+    if self.args.days:
+      lookback_days = int(self.args.days)
+    elif "lookbackDays" in self.config:
       lookback_days = int(self.config['lookbackDays'])
     else:
       lookback_days = 45

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+#
+# Run this script to pick up new tracking numbers from unread shipping
+# notification emails.
+#
+# Optional parameters:
+#   --seen    Re-process already read emails.
+#   --days N  Set the lookback period to N days instead of using the configured
+#             value.
 
 import argparse
 import lib.donations
@@ -26,6 +34,7 @@ def send_error_email(email_sender, subject):
 def main():
   parser = argparse.ArgumentParser(description='Get tracking #s script')
   parser.add_argument("--seen", action="store_true")
+  parser.add_argument("--days")
   args, _ = parser.parse_known_args()
 
   driver_creator = DriverCreator()
@@ -43,37 +52,40 @@ def main():
     send_error_email(email_sender, "Error retrieving Amazon emails")
     raise
 
+  action_taken = "" if args.seen else " and marked them as unread"
   if amazon_tracking_retriever.failed_email_ids:
-    print(
-        "Found %d Amazon emails without buying group labels and marked them as unread. Continuing..."
-        % len(amazon_tracking_retriever.failed_email_ids))
+    print(f"Found {len(amazon_tracking_retriever.failed_email_ids)} Amazon emails "
+          f"without buying group labels{action_taken}. Continuing...")
 
   print("Retrieving Best Buy tracking numbers from email...")
   bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
   try:
-    bb_trackings = bestbuy_tracking_retriever.get_trackings()
-    trackings.extend(bb_trackings)
+    trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:
     send_error_email(email_sender, "Error retrieving BB emails")
     raise
 
   if bestbuy_tracking_retriever.failed_email_ids:
-    print(
-        "Found %d BB emails without buying group labels and marked them as unread. Continuing..."
-        % len(bestbuy_tracking_retriever.failed_email_ids))
+    print(f"Found {len(bestbuy_tracking_retriever.failed_email_ids)} Best Buy emails "
+          f"without buying group labels{action_taken}. Continuing...")
 
   try:
-    print("Found %d total tracking numbers" % len(trackings))
+    tracking_output = TrackingOutput(config)
+    existing_tracking_nos = set([t.tracking_number for t in tracking_output.get_existing_trackings()])
+    new_tracking_nos = set(trackings.keys()).difference(existing_tracking_nos)
+    print(f"Found {len(new_tracking_nos)} new tracking numbers "
+          f"(out of {len(trackings)} total) from emails.")
+    new_trackings = [trackings[n] for n in new_tracking_nos]
 
     # We only need to process and upload new tracking numbers if there are any;
     # otherwise skip straight to processing existing locally stored data.
-    if trackings:
-      email_sender.send_email(trackings)
+    if new_trackings:
+      email_sender.send_email(new_trackings)
 
       print("Uploading tracking numbers...")
       group_site_manager = GroupSiteManager(config, driver_creator)
       try:
-        group_site_manager.upload(trackings)
+        group_site_manager.upload(new_trackings)
       except:
         send_error_email(email_sender, "Error uploading tracking numbers")
         raise
@@ -81,26 +93,26 @@ def main():
       print("Adding results to Google Sheets")
       tracking_uploader = TrackingUploader(config)
       try:
-        tracking_uploader.upload_trackings(trackings)
+        tracking_uploader.upload_trackings(new_trackings)
       except:
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise
 
     print("Writing results to file")
-    tracking_output = TrackingOutput(config)
     try:
-      tracking_output.save_trackings(trackings)
+      tracking_output.save_trackings(new_trackings)
     except:
       send_error_email(email_sender, "Error writing output file")
       raise
     print("Done")
   except:
-    print(
-        "Exception thrown after looking at the emails. Marking all relevant emails as unread to reset."
-    )
+    print("Exception thrown after looking at the emails.")
+    if not args.seen:
+      print("Marking all relevant emails as unread to reset.")
     amazon_tracking_retriever.back_out_of_all()
     bestbuy_tracking_retriever.back_out_of_all()
-    print("Marked all as unread")
+    if not args.seen:
+      print("Marked all as unread.")
     raise
 
 
