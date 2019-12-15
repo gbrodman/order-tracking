@@ -6,6 +6,7 @@ import time
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from typing import Any, Dict
 
 LOGIN_EMAIL_FIELD = "fldEmail"
@@ -144,6 +145,8 @@ class GroupSiteManager:
           return self._upload_usa(numbers)
         elif group == "yrcw":
           return self._upload_yrcw(numbers)
+        elif group == "bfmr":
+          return self._upload_bfmr(numbers)
         else:
           raise Exception("Unknown group: " + group)
       except Exception as e:
@@ -153,6 +156,53 @@ class GroupSiteManager:
   def _load_page(self, driver, url) -> None:
     driver.get(url)
     time.sleep(3)
+
+  def _upload_bfmr(self, numbers) -> None:
+    group_config = self.config['groups']['bfmr']
+    driver = self.driver_creator.new()
+    try:
+      # load the login page first
+      self._load_page(driver, "https://buyformeretail.com/login")
+      driver.find_element_by_id("loginEmail").send_keys(
+          group_config['username'])
+      driver.find_element_by_id("loginPassword").send_keys(
+          group_config['password'])
+      driver.find_element_by_xpath("//button[@type='submit']").click()
+
+      time.sleep(2)
+
+      # hope there's a button to submit tracking numbers -- it doesn't matter which one
+      try:
+        submit_button = driver.find_element_by_xpath(
+            "//button[text() = \"Submit tracking #'s\"]")
+        submit_button.click()
+      except NoSuchElementException:
+        raise Exception(
+            "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
+        )
+
+      time.sleep(2)
+
+      modal = driver.find_element_by_class_name("modal-body")
+      form = modal.find_element_by_tag_name("form")
+
+      # put in the tracking, click the add-new-number button
+      for i in range(len(numbers)):
+        number = numbers[i]
+        input_elem = form.find_elements_by_xpath("//input[@appvalidinput]")[i]
+        input_elem.send_keys(number)
+        form.find_element_by_xpath(
+            "//span[text() = 'Add Tracking number']").click()
+
+      form.find_element_by_xpath("//button[text() = 'Submit']").click()
+      time.sleep(1)
+
+      # If there are some dupes, we need to submit twice to confirm that any non-dupes were submitted
+      modal = driver.find_element_by_class_name("modal-body")
+      if "Some tracking numbers already noted" in modal.text:
+        form.find_element_by_xpath("//button[text() = 'Submit']").click()
+    finally:
+      driver.close()
 
   def _upload_yrcw(self, numbers) -> None:
     driver = self._login_yrcw()

@@ -82,19 +82,21 @@ def main():
           f"(out of {len(trackings)} total) from emails.")
     new_trackings = [trackings[n] for n in new_tracking_nos]
 
-    # We only need to process and upload new tracking numbers if there are any;
+    # We only need to process new tracking numbers if there are any;
     # otherwise skip straight to processing existing locally stored data.
     if new_trackings:
       email_sender.send_email(new_trackings)
 
-      print("Uploading tracking numbers...")
-      group_site_manager = GroupSiteManager(config, driver_creator)
-      try:
-        group_site_manager.upload(new_trackings)
-      except:
-        send_error_email(email_sender, "Error uploading tracking numbers")
-        raise
+    print("Uploading tracking numbers...")
+    group_site_manager = GroupSiteManager(config, driver_creator)
+    try:
+      group_site_manager.upload(trackings.values())
+    except:
+      send_error_email(email_sender, "Error uploading tracking numbers")
+      raise
 
+    # Also only add new trackings to the sheet
+    if new_trackings:
       print("Adding results to Google Sheets")
       tracking_uploader = TrackingUploader(config)
       try:
