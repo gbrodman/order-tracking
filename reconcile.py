@@ -68,11 +68,15 @@ def fill_order_info(all_clusters, config):
       cluster.expected_cost = 0.0
       cluster.email_ids = set()
       for order_id in cluster.orders:
-        order_info = order_info_retriever.get_order_info(order_id)
-        # Only add the email ID if it's present; don't add Nones!
-        if order_info.email_id:
-          cluster.email_ids.add(order_info.email_id)
-        cluster.expected_cost += order_info.cost
+        try:
+          order_info = order_info_retriever.get_order_info(order_id)
+          # Only add the email ID if it's present; don't add Nones!
+          if order_info.email_id:
+            cluster.email_ids.add(order_info.email_id)
+          cluster.expected_cost += order_info.cost
+        except Exception as e:
+          tqdm.write(f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping...")
+          tqdm.write(str(e))
         pbar.update()
 
 
