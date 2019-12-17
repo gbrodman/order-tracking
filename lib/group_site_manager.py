@@ -7,6 +7,7 @@ import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from tqdm import tqdm
 from typing import Any, Dict
 
 LOGIN_EMAIL_FIELD = "fldEmail"
@@ -247,29 +248,33 @@ class GroupSiteManager:
     time.sleep(1)
     return driver
 
+  def _usa_set_pagination_100(self, driver) -> None:
+    driver.find_element_by_class_name('react-bs-table-pagination').find_element_by_tag_name('button').click()
+    driver.find_element_by_css_selector("a[data-page='100']").click()
+
   def _get_usa_po_to_price(self) -> Dict[Any, float]:
     result = {}
     driver = self._login_usa()
     try:
-      self._load_page(driver, USA_PO_URL)
-      while True:
-        table = driver.find_element_by_class_name("react-bs-container-body")
-        rows = table.find_elements_by_tag_name('tr')
-        for row in rows:
-          entries = row.find_elements_by_tag_name('td')
-          po = entries[1].text
-          cost = float(entries[5].text.replace('$', '').replace(',', ''))
-          print("%s: $%.2f" % (po, float(cost)))
-          result[po] = cost
-
-        next_page_button = driver.find_elements_by_xpath(
-            "//li[contains(@title, 'next page')]")
-        if next_page_button:
-          link = next_page_button[0].find_element_by_tag_name('a')
-          link.click()
-          time.sleep(3)
-        else:
-          break
+      with tqdm(desc='Fetching POs', unit='page') as pbar:
+        self._load_page(driver, USA_PO_URL)
+        self._usa_set_pagination_100(driver)
+        while True:
+          time.sleep(2)
+          table = driver.find_element_by_class_name("react-bs-container-body")
+          rows = table.find_elements_by_tag_name('tr')
+          for row in rows:
+            entries = row.find_elements_by_tag_name('td')
+            po = entries[1].text
+            cost = float(entries[5].text.replace('$', '').replace(',', ''))
+            result[po] = cost
+          pbar.update()
+          next_page_button = driver.find_elements_by_xpath(
+              "//li[contains(@title, 'next page')]")
+          if next_page_button:
+            next_page_button[0].find_element_by_tag_name('a').click()
+          else:
+            break
 
       return result
     finally:
@@ -279,46 +284,46 @@ class GroupSiteManager:
     result = {}
     driver = self._login_usa()
     try:
-      # Tell the USA tracking search to find received tracking numbers from the beginning of time
-      self._load_page(driver, USA_TRACKING_URL)
-      date_filter_div = driver.find_element_by_class_name(
-          "reports-dates-filter-cnt")
-      date_filter_btn = date_filter_div.find_element_by_tag_name("button")
-      date_filter_btn.click()
-      time.sleep(1)
+      with tqdm(desc='Fetching trackings', unit='page') as pbar:
+        # Tell the USA tracking search to find received tracking numbers from the beginning of time
+        self._load_page(driver, USA_TRACKING_URL)
+        date_filter_div = driver.find_element_by_class_name(
+            "reports-dates-filter-cnt")
+        date_filter_btn = date_filter_div.find_element_by_tag_name("button")
+        date_filter_btn.click()
+        time.sleep(1)
 
-      date_filter_div.find_element_by_xpath(
-          '//a[contains(text(), "None")]').click()
-      time.sleep(1)
+        date_filter_div.find_element_by_xpath(
+            '//a[contains(text(), "None")]').click()
+        time.sleep(1)
 
-      status_dropdown = driver.find_element_by_name("filterPurchaseid")
-      status_dropdown.click()
-      time.sleep(1)
+        status_dropdown = driver.find_element_by_name("filterPurchaseid")
+        status_dropdown.click()
+        time.sleep(1)
 
-      status_dropdown.find_element_by_xpath("//*[text()='Received']").click()
-      time.sleep(1)
+        status_dropdown.find_element_by_xpath("//*[text()='Received']").click()
+        time.sleep(1)
 
-      driver.find_element_by_xpath("//i[contains(@class, 'fa-search')]").click()
-      time.sleep(3)
+        driver.find_element_by_xpath("//i[contains(@class, 'fa-search')]").click()
+        time.sleep(1)
+        self._usa_set_pagination_100(driver)
 
-      while True:
-        table = driver.find_element_by_class_name("react-bs-container-body")
-        rows = table.find_elements_by_tag_name('tr')
-        for row in rows:
-          entries = row.find_elements_by_tag_name('td')
-          tracking = entries[2].text
-          purchase_order = entries[3].text.split(' ')[0]
-          result[tracking] = purchase_order
-          print("%s: %s" % (tracking, purchase_order))
-
-        next_page_button = driver.find_elements_by_xpath(
-            "//li[contains(@title, 'next page')]")
-        if next_page_button:
-          link = next_page_button[0].find_element_by_tag_name('a')
-          link.click()
-          time.sleep(4)
-        else:
-          break
+        while True:
+          time.sleep(2)
+          table = driver.find_element_by_class_name("react-bs-container-body")
+          rows = table.find_elements_by_tag_name('tr')
+          for row in rows:
+            entries = row.find_elements_by_tag_name('td')
+            tracking = entries[2].text
+            purchase_order = entries[3].text.split(' ')[0]
+            result[tracking] = purchase_order
+          pbar.update()
+          next_page_button = driver.find_elements_by_xpath(
+              "//li[contains(@title, 'next page')]")
+          if next_page_button:
+            next_page_button[0].find_element_by_tag_name('a').click()
+          else:
+            break
 
       return result
     finally:
