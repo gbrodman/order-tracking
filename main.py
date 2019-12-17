@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import generate_url
 import get_tracking_numbers
 import import_report
 import manual_input
@@ -14,15 +15,16 @@ def get_choice():
     print("2: Reconcile shipments with results from BG portals")
     print("3: Manually import or delete tracking numbers and order details")
     print("4: Import an Amazon Business spreadsheet from a Google Sheet")
+    print("5: Generate an Amazon cart URL")
     print("")
-    value = input("Enter your choice [1-4] or 0 to exit: ")
+    value = input("Enter your choice [1-5] or 0 to exit: ")
     try:
       int_value = int(value)
-      if int_value < 0 or int_value > 4:
+      if int_value < 0 or int_value > 5:
         raise Exception
       return int_value
     except:
-      print("Please enter an integer 1-4 or 0 to exit.")
+      print("Please enter an integer 1-5 or 0 to exit.")
 
 
 def main():
@@ -37,6 +39,8 @@ def main():
     manual_input.main()
   elif choice == 4:
     import_report.main()
+  elif choice == 5:
+    generate_url.main()
 
 
 if __name__ == "__main__":

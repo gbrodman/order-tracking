@@ -1,9 +1,10 @@
 import argparse
 from lib import create_url
 
-if __name__ == "__main__":
+
+def main():
   parser = argparse.ArgumentParser(description='Create an add-to-cart URL')
-  parser.add_argument("--no_smile", action="store_true")
+  parser.add_argument("--no-smile", action="store_true")
   args, _ = parser.parse_known_args()
 
   asins = []
@@ -14,4 +15,8 @@ if __name__ == "__main__":
     asins.append(asin)
 
   if asins:
-    print(create_url.create_url(asins))
+    print(create_url.create_url(asins, smile=not args.no_smile))
+
+
+if __name__ == "__main__":
+  main()
