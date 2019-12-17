@@ -359,7 +359,8 @@ class GroupSiteManager:
       driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
       driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
       time.sleep(1)
-      driver.find_element_by_xpath("//*[contains(text(), 'Submit')]").click()
+      driver.find_element_by_xpath(
+          "//button[contains(text(), 'Submit')]").click()
       time.sleep(3)
     finally:
       driver.close()
