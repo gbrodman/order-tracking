@@ -2,7 +2,9 @@ import collections
 import imaplib
 import quopri
 import re
+import sys
 import time
+import traceback
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -58,6 +60,10 @@ class GroupSiteManager:
         return self.get_tracking_pos_costs_maps(group)
       except Exception as e:
         print("Received exception when getting costs: " + str(e))
+        type, value, trace = sys.exc_info()
+        formatted_trace = traceback.format_tb(trace)
+        for line in formatted_trace:
+          print(line)
         print("Retrying up to five times")
         last_exc = e
     raise Exception("Exceeded retry limit", last_exc)
@@ -249,7 +255,8 @@ class GroupSiteManager:
     return driver
 
   def _usa_set_pagination_100(self, driver) -> None:
-    driver.find_element_by_class_name('react-bs-table-pagination').find_element_by_tag_name('button').click()
+    driver.find_element_by_class_name(
+        'react-bs-table-pagination').find_element_by_tag_name('button').click()
     driver.find_element_by_css_selector("a[data-page='100']").click()
 
   def _get_usa_po_to_price(self) -> Dict[Any, float]:
@@ -258,6 +265,7 @@ class GroupSiteManager:
     try:
       with tqdm(desc='Fetching POs', unit='page') as pbar:
         self._load_page(driver, USA_PO_URL)
+        time.sleep(1)
         self._usa_set_pagination_100(driver)
         while True:
           time.sleep(2)
@@ -295,7 +303,7 @@ class GroupSiteManager:
 
         date_filter_div.find_element_by_xpath(
             '//a[contains(text(), "None")]').click()
-        time.sleep(1)
+        time.sleep(2)
 
         status_dropdown = driver.find_element_by_name("filterPurchaseid")
         status_dropdown.click()
@@ -304,12 +312,13 @@ class GroupSiteManager:
         status_dropdown.find_element_by_xpath("//*[text()='Received']").click()
         time.sleep(1)
 
-        driver.find_element_by_xpath("//i[contains(@class, 'fa-search')]").click()
+        driver.find_element_by_xpath(
+            "//i[contains(@class, 'fa-search')]").click()
         time.sleep(1)
         self._usa_set_pagination_100(driver)
 
         while True:
-          time.sleep(2)
+          time.sleep(4)
           table = driver.find_element_by_class_name("react-bs-container-body")
           rows = table.find_elements_by_tag_name('tr')
           for row in rows:
