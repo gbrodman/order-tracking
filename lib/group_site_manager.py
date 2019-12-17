@@ -287,8 +287,8 @@ class GroupSiteManager:
       date_filter_btn.click()
       time.sleep(1)
 
-      filter_custom = date_filter_div.find_element_by_id("filter-none")
-      filter_custom.click()
+      date_filter_div.find_element_by_xpath(
+          '//a[contains(text(), "None")]').click()
       time.sleep(1)
 
       status_dropdown = driver.find_element_by_name("filterPurchaseid")
