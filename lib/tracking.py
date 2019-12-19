@@ -64,7 +64,6 @@ class Tracking:
     elif len(self.tracking_number) == 22:  # USPS
       return "https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=%s" % self.tracking_number
     else:
-      print("Unknown tracking number type: %s" % self.tracking_number)
       return None
 
 
