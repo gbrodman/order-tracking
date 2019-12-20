@@ -2,6 +2,7 @@ import collections
 import imaplib
 import quopri
 import re
+import requests
 import sys
 import time
 import traceback
@@ -29,6 +30,9 @@ RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 USA_PO_URL = "https://usabuying.group/purchase-orders"
+
+USA_API_LOGIN_URL = "https://api.usabuying.group/index.php/buyers/login"
+USA_API_TRACKINGS_URL = "https://api.usabuying.group/index.php/buyers/trackings"
 
 YRCW_URL = "https://app.xchaintechnology.com/"
 
@@ -80,6 +84,21 @@ class GroupSiteManager:
       print("Loading group usa")
       return self._get_usa_tracking_pos_costs_maps()
     return (dict(), dict())
+
+  def _get_usa_login_headers(self):
+    group_config = self.config['groups']['usa']
+    creds = {
+        "credentials": group_config['username'],
+        "password": group_config['password']
+    }
+    response = requests.post(url=USA_API_LOGIN_URL, data=creds)
+    token = response.json()['data']['token']
+    return {"Authorization": f"Bearer {token}"}
+
+  def _upload_usa(self, numbers) -> None:
+    headers = self._get_usa_login_headers()
+    data = {"trackings": ",".join(numbers)}
+    requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
 
   def _get_usa_tracking_pos_costs_maps(self):
     po_to_cost = self._get_usa_po_to_price()
@@ -365,19 +384,6 @@ class GroupSiteManager:
     driver.find_element_by_xpath("//button[@type='submit']").click()
     time.sleep(2)
     return driver
-
-  def _upload_usa(self, numbers) -> None:
-    driver = self._login_usa()
-    try:
-      self._load_page(driver, USA_TRACKING_URL)
-      driver.find_element_by_xpath("//*[contains(text(), ' Add')]").click()
-      driver.find_element_by_xpath("//textarea").send_keys("\n".join(numbers))
-      time.sleep(1)
-      driver.find_element_by_xpath(
-          "//button[contains(text(), 'Submit')]").click()
-      time.sleep(3)
-    finally:
-      driver.close()
 
   def _get_bfmr_costs(self):
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
