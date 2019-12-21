@@ -82,7 +82,9 @@ class Cluster:
     elif other.notes:
       self.notes = other.notes
     # Always clear manual overriding status on a cluster merge.
-    self.manual_override = False
+    if (self.manual_override or other.manual_override):
+      print(f"Newly merged cluster {self.orders} manual override unset.")
+      self.manual_override = False
     self.non_reimbursed_trackings.update(other.non_reimbursed_trackings)
 
 
@@ -142,10 +144,21 @@ def update_clusters(all_clusters, trackings) -> None:
       cluster = Cluster(tracking.group)
       all_clusters.append(cluster)
 
+    # If we are adding a new tracking or order ID, unset the manual override
+    # status of the cluster.
+    override_overridden = False
+    if (len(set(tracking.order_ids).difference(set(cluster.orders))) > 0 or
+        tracking.tracking_number not in cluster.trackings):
+      if cluster.manual_override:
+        override_overridden = True
+      cluster.manual_override = False
     cluster.orders.update(tracking.order_ids)
     cluster.trackings.add(tracking.tracking_number)
     cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
     cluster.to_email = tracking.to_email
+    if override_overridden:
+      print(f"Cluster {cluster.orders} manual override unset because of newly "
+             "added trackings or orders.")
 
 
 def merge_orders(clusters) -> list:
