@@ -158,7 +158,7 @@ def update_clusters(all_clusters, trackings) -> None:
     cluster.to_email = tracking.to_email
     if override_overridden:
       print(f"Cluster {cluster.orders} manual override unset because of newly "
-             "added trackings or orders.")
+            "added trackings or orders.")
 
 
 def merge_orders(clusters) -> list:

@@ -397,7 +397,8 @@ class GroupSiteManager:
     tracking_map = dict()
     result = collections.defaultdict(float)
 
-    for email_id in tqdm(email_ids, desc='Fetching BFMR check-ins', unit='email'):
+    for email_id in tqdm(
+        email_ids, desc='Fetching BFMR check-ins', unit='email'):
       fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
       soup = BeautifulSoup(
           quopri.decodestring(data[0][1]), features="html.parser")
