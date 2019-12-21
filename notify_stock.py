@@ -47,7 +47,8 @@ if __name__ == "__main__":
     new_price = prices_map.get(item.asin, None)
     prev_price = item.price
     item.price = new_price
-    if new_price and (not prev_price or new_price < prev_price):
+    if new_price and (not prev_price or new_price < prev_price) and (
+        not item.notify_if_below or new_price < item.notify_if_below):
       new_items.append(item)
 
   objects_to_sheet.upload_to_sheet(item_list, sheet_id, "Items")
