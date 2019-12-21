@@ -81,7 +81,8 @@ class Cluster:
       self.notes += ", " + other.notes
     elif other.notes:
       self.notes = other.notes
-    self.manual_override = self.manual_override and other.manual_override
+    # Always clear manual overriding status on a cluster merge.
+    self.manual_override = False
     self.non_reimbursed_trackings.update(other.non_reimbursed_trackings)
 
 
