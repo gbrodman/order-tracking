@@ -129,7 +129,7 @@ class GroupSiteManager:
         first_page_buttons[0].click()
         time.sleep(4)
 
-      with tqdm(desc=f"Fetching from {group}", unit='page') as pbar:
+      with tqdm(desc=f"Fetching {group} check-ins", unit='page') as pbar:
         while True:
           table = driver.find_element_by_xpath("//tbody[@class='md-body']")
           rows = table.find_elements_by_tag_name('tr')
@@ -281,7 +281,7 @@ class GroupSiteManager:
     result = {}
     driver = self._login_usa()
     try:
-      with tqdm(desc='Fetching POs', unit='page') as pbar:
+      with tqdm(desc='Fetching USA POs', unit='page') as pbar:
         self._load_page(driver, USA_PO_URL)
         time.sleep(1)
         self._usa_set_pagination_100(driver)
@@ -310,7 +310,7 @@ class GroupSiteManager:
     result = {}
     driver = self._login_usa()
     try:
-      with tqdm(desc='Fetching trackings', unit='page') as pbar:
+      with tqdm(desc='Fetching USA check-ins', unit='page') as pbar:
         # Tell the USA tracking search to find received tracking numbers from the beginning of time
         self._load_page(driver, USA_TRACKING_URL)
         date_filter_div = driver.find_element_by_class_name(
@@ -397,31 +397,28 @@ class GroupSiteManager:
     tracking_map = dict()
     result = collections.defaultdict(float)
 
-    with tqdm(
-        desc='Fetching from BFMR', unit='email', total=len(email_ids)) as pbar:
-      for email_id in email_ids:
-        fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
-        soup = BeautifulSoup(
-            quopri.decodestring(data[0][1]), features="html.parser")
-        body = soup.find('td', id='email_body')
-        if not body:
-          continue
-        tables = body.find_all('table')
-        if not tables or len(tables) < 2:
-          continue
-        table = tables[1]
-        trs = table.find_all('tr')
-        # busted-ass html doesn't close the <tr> tags until the end
-        tds = trs[1].find_all('td')
-        # shave out the "total amount" tds
-        tds = tds[:-2]
+    for email_id in tqdm(email_ids, desc='Fetching BFMR check-ins', unit='email'):
+      fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
+      soup = BeautifulSoup(
+          quopri.decodestring(data[0][1]), features="html.parser")
+      body = soup.find('td', id='email_body')
+      if not body:
+        continue
+      tables = body.find_all('table')
+      if not tables or len(tables) < 2:
+        continue
+      table = tables[1]
+      trs = table.find_all('tr')
+      # busted-ass html doesn't close the <tr> tags until the end
+      tds = trs[1].find_all('td')
+      # shave out the "total amount" tds
+      tds = tds[:-2]
 
-        for i in range(len(tds) // 5):
-          tracking = tds[i * 5].getText().upper()
-          total_text = tds[i * 5 + 4].getText()
-          total = float(total_text.replace(',', '').replace('$', ''))
-          result[tracking] += total
-          tracking_map[tracking] = tracking
-        pbar.update()
+      for i in range(len(tds) // 5):
+        tracking = tds[i * 5].getText().upper()
+        total_text = tds[i * 5 + 4].getText()
+        total = float(total_text.replace(',', '').replace('$', ''))
+        result[tracking] += total
+        tracking_map[tracking] = tracking
 
     return (tracking_map, result)
