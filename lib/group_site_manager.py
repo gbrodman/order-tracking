@@ -129,36 +129,35 @@ class GroupSiteManager:
         first_page_buttons[0].click()
         time.sleep(4)
 
-      while True:
-        table = driver.find_element_by_xpath("//tbody[@class='md-body']")
-        rows = table.find_elements_by_tag_name('tr')
-        for row in rows:
-          po = str(row.find_elements_by_tag_name('td')[5].text)
-          cost = row.find_elements_by_tag_name('td')[13].text.replace(
-              '$', '').replace(',', '')
-          trackings = row.find_elements_by_tag_name('td')[14].text.replace(
-              '-', '').split(",")
+      with tqdm(desc=f"Fetching from {group}", unit='page') as pbar:
+        while True:
+          table = driver.find_element_by_xpath("//tbody[@class='md-body']")
+          rows = table.find_elements_by_tag_name('tr')
+          for row in rows:
+            po = str(row.find_elements_by_tag_name('td')[5].text)
+            cost = row.find_elements_by_tag_name('td')[13].text.replace(
+                '$', '').replace(',', '')
+            trackings = row.find_elements_by_tag_name('td')[14].text.replace(
+                '-', '').split(",")
 
-          print("PO: %s, Tracking(s): %s, Cost: $%.2f" %
-                (po, ",".join(trackings), float(cost)))
+            if trackings:
+              for tracking in trackings:
+                if tracking:
+                  tracking_to_po_map[tracking.strip()] = po
+            if cost and po:
+              po_to_cost_map[po] = float(cost)
 
-          if trackings:
-            for tracking in trackings:
-              if tracking:
-                tracking_to_po_map[tracking.strip()] = po
-          if cost and po:
-            po_to_cost_map[po] = float(cost)
+          next_page_buttons = driver.find_elements_by_xpath(
+              "//button[@ng-click='$pagination.next()']")
+          if next_page_buttons and next_page_buttons[0].get_property(
+              "disabled") == False:
+            next_page_buttons[0].click()
+            time.sleep(3)
+            pbar.update()
+          else:
+            break
 
-        next_page_buttons = driver.find_elements_by_xpath(
-            "//button[@ng-click='$pagination.next()']")
-        if next_page_buttons and next_page_buttons[0].get_property(
-            "disabled") == False:
-          next_page_buttons[0].click()
-          time.sleep(3)
-        else:
-          break
-
-      return (tracking_to_po_map, po_to_cost_map)
+        return (tracking_to_po_map, po_to_cost_map)
     finally:
       driver.close()
 
@@ -397,29 +396,32 @@ class GroupSiteManager:
     # some hacks, "po" will just also be the tracking
     tracking_map = dict()
     result = collections.defaultdict(float)
-    for email_id in email_ids:
-      fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
-      soup = BeautifulSoup(
-          quopri.decodestring(data[0][1]), features="html.parser")
-      body = soup.find('td', id='email_body')
-      if not body:
-        continue
-      tables = body.find_all('table')
-      if not tables or len(tables) < 2:
-        continue
-      table = tables[1]
-      trs = table.find_all('tr')
-      # busted-ass html doesn't close the <tr> tags until the end
-      tds = trs[1].find_all('td')
-      # shave out the "total amount" tds
-      tds = tds[:-2]
 
-      for i in range(len(tds) // 5):
-        tracking = tds[i * 5].getText().upper()
-        total_text = tds[i * 5 + 4].getText()
-        total = float(total_text.replace(',', '').replace('$', ''))
-        print("%s: $%.2f" % (tracking, total))
-        result[tracking] += total
-        tracking_map[tracking] = tracking
+    with tqdm(
+        desc='Fetching from BFMR', unit='email', total=len(email_ids)) as pbar:
+      for email_id in email_ids:
+        fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
+        soup = BeautifulSoup(
+            quopri.decodestring(data[0][1]), features="html.parser")
+        body = soup.find('td', id='email_body')
+        if not body:
+          continue
+        tables = body.find_all('table')
+        if not tables or len(tables) < 2:
+          continue
+        table = tables[1]
+        trs = table.find_all('tr')
+        # busted-ass html doesn't close the <tr> tags until the end
+        tds = trs[1].find_all('td')
+        # shave out the "total amount" tds
+        tds = tds[:-2]
+
+        for i in range(len(tds) // 5):
+          tracking = tds[i * 5].getText().upper()
+          total_text = tds[i * 5 + 4].getText()
+          total = float(total_text.replace(',', '').replace('$', ''))
+          result[tracking] += total
+          tracking_map[tracking] = tracking
+        pbar.update()
 
     return (tracking_map, result)
