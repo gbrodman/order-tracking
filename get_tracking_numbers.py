@@ -95,12 +95,14 @@ def main():
       send_error_email(email_sender, "Error uploading tracking numbers")
       raise
 
+    reconcilable_trackings = [t for t in new_trackings if t.reconcile]
+
     # Also only add new trackings to the sheet
-    if new_trackings:
+    if reconcilable_trackings:
       print("Adding results to Google Sheets")
       tracking_uploader = TrackingUploader(config)
       try:
-        tracking_uploader.upload_trackings(new_trackings)
+        tracking_uploader.upload_trackings(reconcilable_trackings)
       except:
         send_error_email(email_sender, "Error uploading to Google Sheets")
         raise

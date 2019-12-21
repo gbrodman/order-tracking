@@ -86,6 +86,7 @@ class Cluster:
       print(f"Newly merged cluster {self.orders} manual override unset.")
       self.manual_override = False
     self.non_reimbursed_trackings.update(other.non_reimbursed_trackings)
+    self.reconcile = self.reconcile or other.reconcile
 
 
 def dedupe_clusters(clusters) -> list:
