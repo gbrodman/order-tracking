@@ -117,7 +117,7 @@ class EmailTrackingRetriever(ABC):
     url = self.get_order_url_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
-    (group, reconcile) = self.get_buying_group(raw_email)
+    group, reconcile = self.get_buying_group(raw_email)
     tracking_number = self.get_tracking_number_from_email(raw_email)
     tqdm.write(
         f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
