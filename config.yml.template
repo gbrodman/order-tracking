@@ -43,6 +43,10 @@ groups:
   home:
     keys:
       - 1234 Fake St
+    # Disable these shipments from being reconciled (i.e. because they aren't
+    # intended for buying groups). If you ship buying group packages to home,
+    # remove this line.
+    reconcile: False
 
 # Uncomment this if you wish to set the lookback that we use for email searching.
 # The default is 30 days in the past--if you change it to 2, it will only search

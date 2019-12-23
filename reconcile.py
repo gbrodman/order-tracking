@@ -86,10 +86,11 @@ def clusterify(config):
   tracking_output = TrackingOutput(config)
   print("Getting all tracking objects")
   trackings = tracking_output.get_existing_trackings()
+  reconcilable_trackings = [t for t in trackings if t.reconcile]
 
   print("Converting to Cluster objects")
   all_clusters = clusters.get_existing_clusters(config)
-  clusters.update_clusters(all_clusters, trackings)
+  clusters.update_clusters(all_clusters, reconcilable_trackings)
 
   print("Filling out order info and writing results to disk")
   fill_order_info(all_clusters, config)

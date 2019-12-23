@@ -14,7 +14,8 @@ class Tracking:
                ship_date='0',
                tracked_cost=0.0,
                items='',
-               merchant='') -> None:
+               merchant='',
+               reconcile: bool = True) -> None:
     self.tracking_number = tracking_number
     self.group = group
     self.order_ids = order_ids
@@ -25,14 +26,17 @@ class Tracking:
     self.tracked_cost = tracked_cost
     self.items = items
     self.merchant = merchant
+    self.reconcile = reconcile
 
   def __setstate__(self, state) -> None:
     self.__init__(**state)
 
   def __str__(self) -> str:
-    return "number: %s, group: %s, order(s): %s, price: %s, to_email: %s, url: %s, ship_date: %s, items: %s, merchant: %s" % (
-        self.tracking_number, self.group, self.order_ids, self.price,
-        self.to_email, self.url, self.ship_date, self.items, self.merchant)
+    return (f"number: {self.tracking_number}, group: {self.group}, "
+            f"order(s): {self.order_ids}, price: {self.price}, "
+            f"to_email: {self.to_email}, url: {self.url}, "
+            f"ship_date: {self.ship_date}, items: {self.items}, "
+            f"merchant: {self.merchant}, reconcile: {self.reconcile}")
 
   def to_row(self) -> list:
     hyperlink = self._create_hyperlink()
@@ -84,4 +88,4 @@ def from_row(header, row) -> Tracking:
   items = row[header.index("Items")] if 'Items' in header else ""
   merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
   return Tracking(tracking, group, orders, price, to_email, url, ship_date,
-                  tracked_cost, items)
+                  tracked_cost, items, reconcile=True)
