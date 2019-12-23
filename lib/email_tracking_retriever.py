@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from tqdm import tqdm
 from lib.tracking import Tracking
 import lib.tracking
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, Tuple, TypeVar
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
@@ -56,16 +56,18 @@ class EmailTrackingRetriever(ABC):
       raise
     return trackings
 
-  def get_buying_group(self, raw_email) -> Any:
+  def get_buying_group(self, raw_email) -> Tuple[str, bool]:
     raw_email = raw_email.upper()
     for group in self.config['groups'].keys():
-      group_keys = self.config['groups'][group]['keys']
+      group_conf = self.config['groups'][group]
+      reconcile = bool(group_conf['reconcile']) if 'reconcile' in group_conf else True
+      group_keys = group_conf['keys']
       if isinstance(group_keys, str):
         group_keys = [group_keys]
       for group_key in group_keys:
         if str(group_key).upper() in raw_email:
-          return group
-    return None
+          return group, reconcile
+    return None, True
 
   @abstractmethod
   def get_order_ids_from_email(self, raw_email) -> Any:
@@ -115,7 +117,7 @@ class EmailTrackingRetriever(ABC):
     url = self.get_order_url_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
-    group = self.get_buying_group(raw_email)
+    group, reconcile = self.get_buying_group(raw_email)
     tracking_number = self.get_tracking_number_from_email(raw_email)
     tqdm.write(
         f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
@@ -137,7 +139,7 @@ class EmailTrackingRetriever(ABC):
 
     merchant = self.get_merchant()
     return Tracking(tracking_number, group, order_ids, price, to_email, url,
-                    date, 0.0, items, merchant)
+                    date, 0.0, items, merchant, reconcile)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
