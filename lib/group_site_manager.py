@@ -332,7 +332,7 @@ class GroupSiteManager:
 
         driver.find_element_by_xpath(
             "//i[contains(@class, 'fa-search')]").click()
-        time.sleep(1)
+        time.sleep(4)
         self._usa_set_pagination_100(driver)
 
         while True:
