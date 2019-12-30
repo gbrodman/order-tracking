@@ -206,10 +206,16 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
 
 
 def from_row(header, row) -> Cluster:
-  orders = set(str(
-      row[header.index('Orders')]).split(',')) if 'Orders' in header else set()
-  trackings = set(str(row[header.index('Trackings')]).split(
-      ',')) if 'Trackings' in header else set()
+  if 'Orders' in header:
+    orders = set([o.strip() for o in str(row[header.index('Orders')]).split(',')])
+  else:
+    orders = set()
+
+  if 'Trackings' in header:
+    trackings = set([t.strip() for t in str(row[header.index('Trackings')]).split(',')])
+  else:
+    trackings = set()
+
   expected_cost_str = row[header.index(
       'Amount Billed')] if 'Amount Billed' in header else ''
   expected_cost = float(expected_cost_str) if expected_cost_str else 0.0
@@ -219,7 +225,7 @@ def from_row(header, row) -> Cluster:
   non_reimbursed_str = str(row[header.index("Non-Reimbursed Trackings")]
                           ) if "Non-Reimbursed Trackings" in header else ""
   non_reimbursed_trackings = set(
-      non_reimbursed_str.split(',')) if non_reimbursed_str else set()
+      [t.strip() for t in non_reimbursed_str.split(',')]) if non_reimbursed_str else set()
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''

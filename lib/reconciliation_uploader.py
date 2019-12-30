@@ -276,14 +276,20 @@ class ReconciliationUploader:
           cluster, downloaded_clusters)
       cluster.adjustment = sum(
           [candidate.adjustment for candidate in candidate_downloads])
-      cluster.notes = ", ".join([
+      cluster.notes = "; ".join([
           candidate.notes
           for candidate in candidate_downloads
-          if candidate.notes
+          if candidate.notes.strip()
       ])
-      if candidate_downloads:
-        cluster.manual_override = all(
-            [candidate.manual_override for candidate in candidate_downloads])
+      # Import the manual override boolean from the sheet's checkbox ONLY if:
+      # (a) no clusters have been merged in since the last sheet export and
+      # (b) there haven't been any new order IDs or tracking #s added to the
+      #     cluster since the last export.
+      if len(candidate_downloads) == 1:
+        sheet_cluster = candidate_downloads[0]
+        if (sheet_cluster.trackings == cluster.trackings and
+            sheet_cluster.orders == cluster.orders):
+          cluster.manual_override = sheet_cluster.manual_override
 
   def find_candidate_downloads(self, cluster, downloaded_clusters) -> list:
     result = []
