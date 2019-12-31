@@ -87,5 +87,14 @@ def from_row(header, row) -> Tracking:
   tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   items = row[header.index("Items")] if 'Items' in header else ""
   merchant = row[header.index("Merchant")] if 'Merchant' in header else ""
-  return Tracking(tracking, group, orders, price, to_email, url, ship_date,
-                  tracked_cost, items, reconcile=True)
+  return Tracking(
+      tracking,
+      group,
+      orders,
+      price,
+      to_email,
+      url,
+      ship_date,
+      tracked_cost,
+      items,
+      reconcile=True)
