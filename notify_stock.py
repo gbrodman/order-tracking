@@ -49,7 +49,7 @@ if __name__ == "__main__":
     try:
       item_list = objects_to_sheet.download_from_sheet(items.from_row, sheet_id,
                                                        "Items")
-  
+
       prices_map = retriever.get_prices([item.asin for item in item_list])
       new_items = []
       for item in item_list:
@@ -59,13 +59,13 @@ if __name__ == "__main__":
         if new_price and (not prev_price or new_price < prev_price) and (
             not item.notify_if_below or new_price < item.notify_if_below):
           new_items.append(item)
-  
+
       objects_to_sheet.upload_to_sheet(item_list, sheet_id, "Items")
-  
-      email_list = objects_to_sheet.download_from_sheet(emails.from_row, sheet_id,
-                                                        "Emails")
+
+      email_list = objects_to_sheet.download_from_sheet(emails.from_row,
+                                                        sheet_id, "Emails")
       email_sender = EmailSender(config['email'])
-  
+
       if new_items and email_list:
         content = create_email_content(new_items, item_list, sheet_id)
         recipients = [email_obj.email_address for email_obj in email_list]
