@@ -60,7 +60,14 @@ class EmailTrackingRetriever(ABC):
     raw_email = raw_email.upper()
     for group in self.config['groups'].keys():
       group_conf = self.config['groups'][group]
-      reconcile = bool(group_conf['reconcile']) if 'reconcile' in group_conf else True
+      if any([
+          str(except_elem).upper() in raw_email
+          for except_elem in group_conf.get('except', [])
+      ]):
+        continue
+
+      reconcile = bool(
+          group_conf['reconcile']) if 'reconcile' in group_conf else True
       group_keys = group_conf['keys']
       if isinstance(group_keys, str):
         group_keys = [group_keys]
