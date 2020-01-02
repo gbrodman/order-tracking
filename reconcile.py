@@ -16,10 +16,8 @@ from lib.tracking_uploader import TrackingUploader
 CONFIG_FILE = "config.yml"
 
 
-def get_tracking_pos_costs_maps(config, driver_creator, args):
+def get_tracking_pos_costs_maps(config, group_site_manager, args):
   print("Loading tracked costs. This will take several minutes.")
-  group_site_manager = GroupSiteManager(config, driver_creator)
-
   if args.groups:
     print("Only reconciling groups %s" % ",".join(args.groups))
     groups = args.groups
@@ -51,10 +49,12 @@ def fill_purchase_orders(all_clusters, tracking_to_po, args):
         cluster.non_reimbursed_trackings.remove(tracking)
 
 
-def fill_costs_by_po(all_clusters, po_to_cost, args):
+def fill_costs_by_po(all_clusters, po_to_cost, args, group_site_manager):
+  tracked_groups = group_site_manager.get_tracked_groups()
   for cluster in all_clusters:
-    if cluster.purchase_orders and (not args.groups or
-                                    cluster.group in args.groups):
+    if cluster.purchase_orders and (
+        not args.groups or
+        cluster.group in args.groups) and cluster.group in tracked_groups:
       cluster.tracked_cost = sum(
           [po_to_cost.get(po, 0.0) for po in cluster.purchase_orders])
 
@@ -112,12 +112,13 @@ def main():
   reconciliation_uploader.override_pos(all_clusters)
 
   driver_creator = DriverCreator()
+  group_site_manager = GroupSiteManager(config, driver_creator)
   tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
-      config, driver_creator, args)
+      config, group_site_manager, args)
 
   fill_purchase_orders(all_clusters, tracking_to_po, args)
   all_clusters = clusters.merge_orders(all_clusters)
-  fill_costs_by_po(all_clusters, po_to_cost, args)
+  fill_costs_by_po(all_clusters, po_to_cost, args, group_site_manager)
 
   reconciliation_uploader.download_upload_clusters(all_clusters)
   clusters.write_clusters(config, all_clusters)

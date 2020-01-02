@@ -207,12 +207,14 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
 
 def from_row(header, row) -> Cluster:
   if 'Orders' in header:
-    orders = set([o.strip() for o in str(row[header.index('Orders')]).split(',')])
+    orders = set(
+        [o.strip() for o in str(row[header.index('Orders')]).split(',')])
   else:
     orders = set()
 
   if 'Trackings' in header:
-    trackings = set([t.strip() for t in str(row[header.index('Trackings')]).split(',')])
+    trackings = set(
+        [t.strip() for t in str(row[header.index('Trackings')]).split(',')])
   else:
     trackings = set()
 
@@ -224,8 +226,9 @@ def from_row(header, row) -> Cluster:
   tracked_cost = float(tracked_cost_str) if tracked_cost_str else 0.0
   non_reimbursed_str = str(row[header.index("Non-Reimbursed Trackings")]
                           ) if "Non-Reimbursed Trackings" in header else ""
-  non_reimbursed_trackings = set(
-      [t.strip() for t in non_reimbursed_str.split(',')]) if non_reimbursed_str else set()
+  non_reimbursed_trackings = set([
+      t.strip() for t in non_reimbursed_str.split(',')
+  ]) if non_reimbursed_str else set()
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
