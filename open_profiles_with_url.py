@@ -27,9 +27,19 @@ def print_profile_list():
   with open(path) as json_file:
     data = json.load(json_file)
   profiles = data['profile']['info_cache']
-  for name, profile_data in profiles.items():
+
+  profile_names = profiles.keys()
+  profile_numbers = [
+      int(name.replace('Profile ', ''))
+      for name in profile_names
+      if name != 'Default'
+  ]
+
+  for number in sorted(profile_numbers):
+    name = f"Profile {number}"
+    profile_data = profiles[name]
     casual_name = profile_data['name']
-    print(f"{name}  |  {casual_name}")
+    print(f"{number}  |  {casual_name}")
 
 
 if __name__ == "__main__":
