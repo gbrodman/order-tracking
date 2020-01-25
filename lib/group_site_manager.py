@@ -1,3 +1,5 @@
+import aiohttp
+import asyncio
 import collections
 import imaplib
 import quopri
@@ -85,10 +87,44 @@ class GroupSiteManager:
       return self._get_bfmr_costs()
     elif group in self.melul_portal_groups:
       print("Loading group %s" % group)
-      return self._melul_get_tracking_pos_costs_maps(group)
+      tracking_po, po_cost, _ = self._melul_get_tracking_pos_costs_maps(group)
+      return tracking_po, po_cost
     elif group == "usa":
       print("Loading group usa")
       return self._get_usa_tracking_pos_costs_maps()
+    return (dict(), dict())
+
+  def get_new_tracking_pos_costs_maps_with_retry(self, group):
+    last_exc = None
+    for i in range(5):
+      try:
+        return self.get_new_tracking_pos_costs_maps(group)
+      except Exception as e:
+        print("Received exception when getting costs: " + str(e))
+        type, value, trace = sys.exc_info()
+        formatted_trace = traceback.format_tb(trace)
+        for line in formatted_trace:
+          print(line)
+        print("Retrying up to five times")
+        last_exc = e
+    raise Exception("Exceeded retry limit", last_exc)
+
+  # returns ((trackings) -> cost, po -> cost) maps
+  def get_new_tracking_pos_costs_maps(self, group):
+    if group == 'bfmr':
+      print("Loading BFMR emails")
+      _, costs_map = self._get_bfmr_costs()
+      trackings_map = {}
+      for tracking, cost in costs_map.items():
+        trackings_map[(tracking,)] = cost
+      return (trackings_map, costs_map)
+    elif group in self.melul_portal_groups:
+      _, po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(
+          group)
+      return trackings_cost, po_cost
+    elif group == "usa":
+      print("Loading group usa")
+      return asyncio.run(self._get_usa_tracking_pos_prices())
     return (dict(), dict())
 
   def _get_usa_login_headers(self):
@@ -101,6 +137,55 @@ class GroupSiteManager:
     token = response.json()['data']['token']
     return {"Authorization": f"Bearer {token}"}
 
+  def _get_usa_tracking_entries(self, headers):
+    result = []
+    start = 0
+    params = {
+        "date_from": "",
+        "date_until": "",
+        "tracking_number": "",
+        "receiving_status_id": "1",
+        "limit": "100",
+        "start": start
+    }
+    while True:
+      params['start'] = start
+      json_result = requests.get(
+          url=USA_API_TRACKINGS_URL, headers=headers, params=params).json()
+      total_items = json_result['totals']['items']
+      result.extend(json_result['data'])
+      start += 100
+      if start >= total_items:
+        break
+    return result
+
+  async def _retrieve_usa_tracking_price(self, tracking_number, session,
+                                         tracking_tuples_to_prices):
+    response = await session.request(
+        method="GET", url=f"{USA_API_TRACKINGS_URL}/{tracking_number}")
+    response.raise_for_status()
+    json = await response.json()
+    cost = float(json['data']['box']['total_price'])
+    tracking_tuples_to_prices[(tracking_number,)] = cost
+
+  async def _get_usa_tracking_pos_prices(self):
+    headers = self._get_usa_login_headers()
+    pos_to_prices = {}
+    all_entries = self._get_usa_tracking_entries(headers)
+    for entry in all_entries:
+      po_id = entry['purchase_id']
+      pos_to_prices[po_id] = float(entry['purchase']['amount'])
+    tracking_numbers = [entry['tracking_number'] for entry in all_entries]
+    async with aiohttp.ClientSession(headers=headers) as session:
+      tracking_tuples_to_prices = {}
+      tasks = []
+      for tracking_number in tracking_numbers:
+        tasks.append(
+            self._retrieve_usa_tracking_price(tracking_number, session,
+                                              tracking_tuples_to_prices))
+      await asyncio.gather(*tasks)
+      return tracking_tuples_to_prices, pos_to_prices
+
   def _upload_usa(self, numbers) -> None:
     headers = self._get_usa_login_headers()
     data = {"trackings": ",".join(numbers)}
@@ -111,12 +196,14 @@ class GroupSiteManager:
     tracking_to_po = self._get_usa_tracking_to_purchase_order()
     return (tracking_to_po, po_to_cost)
 
+  # hacks, return tracking->po, po->cost, (trackings)->cost
   def _melul_get_tracking_pos_costs_maps(self, group):
     driver = self._login_melul(group)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
       tracking_to_po_map = {}
       po_to_cost_map = {}
+      trackings_to_cost_map = {}
 
       # Clear the search field since it can cache results
       search_button = driver.find_element_by_class_name('pf-search-button')
@@ -147,9 +234,13 @@ class GroupSiteManager:
                 '-', '').split(",")
 
             if trackings:
+              trackings = [
+                  tracking.strip() for tracking in trackings if tracking
+              ]
+              if cost:
+                trackings_to_cost_map[tuple(trackings)] = float(cost)
               for tracking in trackings:
-                if tracking:
-                  tracking_to_po_map[tracking.strip()] = po
+                tracking_to_po_map[tracking] = po
             if cost and po:
               po_to_cost_map[po] = float(cost)
 
@@ -163,7 +254,7 @@ class GroupSiteManager:
           else:
             break
 
-        return (tracking_to_po_map, po_to_cost_map)
+        return (tracking_to_po_map, po_to_cost_map, trackings_to_cost_map)
     finally:
       driver.close()
 
