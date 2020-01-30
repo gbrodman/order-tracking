@@ -168,6 +168,7 @@ class GroupSiteManager:
       driver.close()
 
   def _upload_to_group(self, numbers, group) -> None:
+    last_ex = None
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
         if group in self.melul_portal_groups:
@@ -181,8 +182,9 @@ class GroupSiteManager:
         else:
           raise Exception("Unknown group: " + group)
       except Exception as e:
+        last_ex = e
         print("Received exception when uploading: " + str(e))
-    raise Exception("Exceeded retry limit")
+    raise Exception("Exceeded retry limit") from last_ex
 
   def _load_page(self, driver, url) -> None:
     driver.get(url)
