@@ -204,38 +204,51 @@ class GroupSiteManager:
 
       time.sleep(2)
 
-      # hope there's a button to submit tracking numbers -- it doesn't matter which one
-      try:
-        submit_button = driver.find_element_by_xpath(
-            "//button[text() = \"Submit tracking #'s\"]")
-        submit_button.click()
-      except NoSuchElementException:
-        raise Exception(
-            "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
-        )
+      for batch in self.chunks(numbers, 30):
+        self._upload_bfmr_batch(driver, batch)
 
-      time.sleep(2)
-
-      modal = driver.find_element_by_class_name("modal-body")
-      form = modal.find_element_by_tag_name("form")
-
-      # put in the tracking, click the add-new-number button
-      for i in range(len(numbers)):
-        number = numbers[i]
-        input_elem = form.find_elements_by_xpath("//input[@appvalidinput]")[i]
-        input_elem.send_keys(number)
-        form.find_element_by_xpath(
-            "//span[text() = 'Add Tracking number']").click()
-
-      form.find_element_by_xpath("//button[text() = 'Submit']").click()
-      time.sleep(1)
-
-      # If there are some dupes, we need to submit twice to confirm that any non-dupes were submitted
-      modal = driver.find_element_by_class_name("modal-body")
-      if "Some tracking numbers already noted" in modal.text:
-        form.find_element_by_xpath("//button[text() = 'Submit']").click()
     finally:
       driver.close()
+
+
+  def chunks(self, lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+  def _upload_bfmr_batch(self, driver, numbers) -> None:
+    # hope there's a button to submit tracking numbers -- it doesn't matter which one
+    try:
+      submit_button = driver.find_element_by_xpath(
+          "//button[text() = \"Submit tracking #'s\"]")
+      submit_button.click()
+    except NoSuchElementException:
+      raise Exception(
+          "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
+      )
+
+    time.sleep(2)
+
+    modal = driver.find_element_by_class_name("modal-body")
+    form = modal.find_element_by_tag_name("form")
+
+    textarea = form.find_element_by_class_name("textarea-control")
+    textarea.send_keys("\n".join(numbers))
+    form.find_element_by_xpath("//button[text() = 'Submit']").click()
+    time.sleep(1)
+
+    # If there are some dupes, we need to remove the dupes and submit again
+    modal = driver.find_element_by_class_name("modal-body")
+    if "Tracking number was already entered" in modal.text:
+      dupes_list = form.find_element_by_css_selector('ul.error-message > li.ng-star-inserted')
+      dupe_numbers = dupes_list.text.strip().split(", ")
+      new_numbers = [n for n in numbers if not n in dupe_numbers]
+      driver.find_element_by_class_name("modal-close").click()
+      if len(new_numbers) > 0:
+        # Re-run this batch with only new numbers, if there are any
+        self._upload_bfmr_batch(driver, new_numbers)
+
 
   def _upload_yrcw(self, numbers) -> None:
     driver = self._login_yrcw()
