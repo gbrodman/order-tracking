@@ -252,11 +252,14 @@ class ReconciliationUploader:
       candidate_downloads = self.find_candidate_downloads(
           cluster, downloaded_clusters)
       pos = set()
+      non_reimbursed_trackings = set()
       total_tracked_cost = 0.0
       for candidate in candidate_downloads:
         pos.update(candidate.purchase_orders)
+        non_reimbursed_trackings.update(candidate.non_reimbursed_trackings)
         total_tracked_cost += candidate.tracked_cost
       cluster.purchase_orders = pos
+      cluster.non_reimbursed_trackings = non_reimbursed_trackings
       cluster.tracked_cost = total_tracked_cost
 
   def override_pos(self, all_clusters):
