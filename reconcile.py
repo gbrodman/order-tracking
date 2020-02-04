@@ -143,7 +143,8 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost):
       clusters_by_tracking[tracking] = first_cluster
 
 
-def fill_costs_by_tracking(clusters_by_tracking, trackings_to_cost, args):
+def fill_costs_by_tracking(clusters_by_tracking, trackings_to_cost, po_to_cost,
+                           args):
   for cluster in clusters_by_tracking.values():
     if args.groups and cluster.group not in args.groups:
       continue
@@ -159,6 +160,13 @@ def fill_costs_by_tracking(clusters_by_tracking, trackings_to_cost, args):
       for tracking in trackings_tuple:
         cluster.non_reimbursed_trackings.remove(tracking)
 
+  # Next, manual PO fixes
+  for cluster in clusters_by_tracking.values():
+    pos = cluster.purchase_orders
+    if pos:
+      for po in pos:
+        cluster.tracked_cost += float(po_to_cost.get(po, 0.0))
+
 
 def reconcile_new(config, args):
   print("New reconciliation!")
@@ -167,11 +175,15 @@ def reconcile_new(config, args):
   tracking_output = TrackingOutput(config)
   trackings = tracking_output.get_existing_trackings()
   reconcilable_trackings = [t for t in trackings if t.reconcile]
+  # start from scratch
   all_clusters = []
   clusters.update_clusters(all_clusters, reconcilable_trackings)
 
   fill_order_info(all_clusters, config)
   all_clusters = clusters.merge_orders(all_clusters)
+
+  # add manual PO entries (and only manual ones)
+  reconciliation_uploader.override_pos_new(all_clusters)
 
   driver_creator = DriverCreator()
   group_site_manager = GroupSiteManager(config, driver_creator)
@@ -181,7 +193,8 @@ def reconcile_new(config, args):
   clusters_by_tracking = map_clusters_by_tracking(all_clusters)
   merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost)
 
-  fill_costs_by_tracking(clusters_by_tracking, trackings_to_cost, args)
+  fill_costs_by_tracking(clusters_by_tracking, trackings_to_cost, po_to_cost,
+                         args)
   reconciliation_uploader.download_upload_clusters_new(all_clusters)
 
 
