@@ -242,7 +242,7 @@ class ReconciliationUploader:
     self.config = config
     self.objects_to_sheet = ObjectsToSheet()
 
-  def override_pos_new(self, all_clusters):
+  def override_pos_and_costs(self, all_clusters):
     print("Filling manual PO adjustments")
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(
@@ -252,9 +252,12 @@ class ReconciliationUploader:
       candidate_downloads = self.find_candidate_downloads(
           cluster, downloaded_clusters)
       pos = set()
+      total_tracked_cost = 0.0
       for candidate in candidate_downloads:
         pos.update(candidate.purchase_orders)
+        total_tracked_cost += candidate.tracked_cost
       cluster.purchase_orders = pos
+      cluster.tracked_cost = total_tracked_cost
 
   def override_pos(self, all_clusters):
     print("Filling manual PO adjustments")
