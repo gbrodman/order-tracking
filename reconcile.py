@@ -208,8 +208,6 @@ def main():
 
   reconcile_new(config, args)
 
-  quit()
-
   clusterify(config)
 
   reconciliation_uploader = ReconciliationUploader(config)
