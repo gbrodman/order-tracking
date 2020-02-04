@@ -163,6 +163,7 @@ def update_clusters(all_clusters, trackings) -> None:
 
 def merge_orders(clusters) -> list:
   """ Merges together orders that share a common purchase order or email ID. """
+  print("Merging clusters by PO or email ID")
   while True:
     prev_length = len(clusters)
     clusters = run_merge_iteration(clusters)
@@ -197,9 +198,6 @@ def find_by_shared_attr(cluster, all_clusters) -> Any:
         return candidate
       common_emails = candidate.email_ids.intersection(cluster.email_ids)
       if common_emails:
-        print(
-            f'Merged orders {cluster.orders} and {candidate.orders} by common email IDs {common_emails}'
-        )
         return candidate
 
   return None
