@@ -242,6 +242,26 @@ class ReconciliationUploader:
     self.config = config
     self.objects_to_sheet = ObjectsToSheet()
 
+  def override_pos_and_costs(self, all_clusters):
+    print("Filling manual PO adjustments")
+    base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
+    downloaded_clusters = self.objects_to_sheet.download_from_sheet(
+        clusters.from_row, base_sheet_id, "Reconciliation v2")
+
+    for cluster in all_clusters:
+      candidate_downloads = self.find_candidate_downloads(
+          cluster, downloaded_clusters)
+      pos = set()
+      non_reimbursed_trackings = set()
+      total_tracked_cost = 0.0
+      for candidate in candidate_downloads:
+        pos.update(candidate.purchase_orders)
+        non_reimbursed_trackings.update(candidate.non_reimbursed_trackings)
+        total_tracked_cost += candidate.tracked_cost
+      cluster.purchase_orders = pos
+      cluster.non_reimbursed_trackings = non_reimbursed_trackings
+      cluster.tracked_cost = total_tracked_cost
+
   def override_pos(self, all_clusters):
     print("Filling manual PO adjustments")
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
@@ -256,9 +276,19 @@ class ReconciliationUploader:
         pos.update(candidate.purchase_orders)
       cluster.purchase_orders = pos
 
+  def download_upload_clusters_new(self, all_clusters) -> None:
+    base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
+    self.fill_adjustments(all_clusters, base_sheet_id, "Reconciliation v2")
+
+    all_clusters.sort(key=cmp_to_key(compare))
+    print("Uploading new reconciliation to sheet")
+    self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id,
+                                          "Reconciliation v2",
+                                          get_conditional_formatting_body)
+
   def download_upload_clusters(self, all_clusters) -> None:
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
-    self.fill_adjustments(all_clusters, base_sheet_id)
+    self.fill_adjustments(all_clusters, base_sheet_id, "Reconciliation")
 
     all_clusters.sort(key=cmp_to_key(compare))
     print("Uploading reconciliation to sheet")
@@ -266,10 +296,10 @@ class ReconciliationUploader:
                                           "Reconciliation",
                                           get_conditional_formatting_body)
 
-  def fill_adjustments(self, all_clusters, base_sheet_id) -> None:
+  def fill_adjustments(self, all_clusters, base_sheet_id, tab_title) -> None:
     print("Filling in cost adjustments if applicable")
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(
-        clusters.from_row, base_sheet_id, "Reconciliation")
+        clusters.from_row, base_sheet_id, tab_title)
 
     for cluster in all_clusters:
       candidate_downloads = self.find_candidate_downloads(

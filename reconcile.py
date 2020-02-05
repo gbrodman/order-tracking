@@ -97,6 +97,107 @@ def clusterify(config):
   clusters.write_clusters(config, all_clusters)
 
 
+def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
+  print("Loading tracked costs. This will take several minutes.")
+  if args.groups:
+    print("Only reconciling groups %s" % ",".join(args.groups))
+    groups = args.groups
+  else:
+    groups = config['groups'].keys()
+
+  trackings_to_costs_map = {}
+  po_to_cost_map = {}
+  for group in groups:
+    group_trackings_to_po, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
+        group)
+    trackings_to_costs_map.update(group_trackings_to_po)
+    po_to_cost_map.update(group_po_to_cost)
+
+  return (trackings_to_costs_map, po_to_cost_map)
+
+
+def map_clusters_by_tracking(all_clusters):
+  result = {}
+  for cluster in all_clusters:
+    for tracking in cluster.trackings:
+      result[tracking] = cluster
+  return result
+
+
+def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost):
+  for trackings_tuple, cost in trackings_to_cost.items():
+    if len(trackings_tuple) == 1:
+      continue
+
+    cluster_list = [
+        clusters_by_tracking[tracking] for tracking in trackings_tuple
+    ]
+    # Merge all candidate clusters into the first cluster (if they're not already part of it)
+    # then set all trackings to have the first cluster as their value
+    first_cluster = cluster_list[0]
+    for other_cluster in cluster_list[1:]:
+      if not (other_cluster.trackings.issubset(first_cluster.trackings) and
+              other_cluster.orders.issubset(first_cluster.orders)):
+        first_cluster.merge_with(other_cluster)
+    for tracking in trackings_tuple:
+      clusters_by_tracking[tracking] = first_cluster
+
+
+def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
+  for cluster in clusters_by_tracking.values():
+    # Reset the cluster if it's included in the groups
+    if args.groups and cluster.group not in args.groups:
+      continue
+    cluster.non_reimbursed_trackings = set(cluster.trackings)
+    cluster.tracked_cost = 0
+
+  # We've already merged by tracking tuple (if multiple trackings are counted as the same price)
+  # so only use the first tracking in each tuple
+  for trackings_tuple, cost in trackings_to_cost.items():
+    first_tracking = trackings_tuple[0]
+    if first_tracking in clusters_by_tracking:
+      cluster = clusters_by_tracking[first_tracking]
+      cluster.tracked_cost += cost
+      for tracking in trackings_tuple:
+        cluster.non_reimbursed_trackings.remove(tracking)
+
+  # Next, manual PO fixes
+  for cluster in clusters_by_tracking.values():
+    pos = cluster.purchase_orders
+    if pos:
+      for po in pos:
+        cluster.tracked_cost += float(po_to_cost.get(po, 0.0))
+
+
+def reconcile_new(config, args):
+  print("New reconciliation!")
+  reconciliation_uploader = ReconciliationUploader(config)
+
+  tracking_output = TrackingOutput(config)
+  trackings = tracking_output.get_existing_trackings()
+  reconcilable_trackings = [t for t in trackings if t.reconcile]
+  # start from scratch
+  all_clusters = []
+  clusters.update_clusters(all_clusters, reconcilable_trackings)
+
+  fill_order_info(all_clusters, config)
+  all_clusters = clusters.merge_orders(all_clusters)
+
+  # add manual PO entries (and only manual ones)
+  reconciliation_uploader.override_pos_and_costs(all_clusters)
+
+  driver_creator = DriverCreator()
+  group_site_manager = GroupSiteManager(config, driver_creator)
+
+  trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(
+      config, group_site_manager, args)
+  clusters_by_tracking = map_clusters_by_tracking(all_clusters)
+  merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost)
+
+  fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args)
+  reconciliation_uploader.download_upload_clusters_new(all_clusters)
+
+
 def main():
   parser = argparse.ArgumentParser(description='Reconciliation script')
   parser.add_argument("--groups", nargs="*")
@@ -104,6 +205,8 @@ def main():
 
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
+
+  reconcile_new(config, args)
 
   clusterify(config)
 
