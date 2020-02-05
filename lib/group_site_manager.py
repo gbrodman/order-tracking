@@ -161,12 +161,15 @@ class GroupSiteManager:
 
   async def _retrieve_usa_tracking_price(self, tracking_number, session,
                                          tracking_tuples_to_prices):
-    response = await session.request(
-        method="GET", url=f"{USA_API_TRACKINGS_URL}/{tracking_number}")
-    response.raise_for_status()
-    json = await response.json()
-    cost = float(json['data']['box']['total_price'])
-    tracking_tuples_to_prices[(tracking_number,)] = cost
+    try:
+      response = await session.request(
+          method="GET", url=f"{USA_API_TRACKINGS_URL}/{tracking_number}")
+      response.raise_for_status()
+      json = await response.json()
+      cost = float(json['data']['box']['total_price'])
+      tracking_tuples_to_prices[(tracking_number,)] = cost
+    except:
+      print(f"Error finding USA tracking cost for {tracking_number}")
 
   async def _get_usa_tracking_pos_prices(self):
     headers = self._get_usa_login_headers()
