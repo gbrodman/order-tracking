@@ -130,8 +130,14 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost):
       continue
 
     cluster_list = [
-        clusters_by_tracking[tracking] for tracking in trackings_tuple
+        clusters_by_tracking[tracking]
+        for tracking in trackings_tuple
+        if tracking in clusters_by_tracking
     ]
+
+    if not cluster_list:
+      continue
+
     # Merge all candidate clusters into the first cluster (if they're not already part of it)
     # then set all trackings to have the first cluster as their value
     first_cluster = cluster_list[0]
