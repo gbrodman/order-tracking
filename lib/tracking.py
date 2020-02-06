@@ -97,4 +97,5 @@ def from_row(header, row) -> Tracking:
       ship_date,
       tracked_cost,
       items,
+      merchant,
       reconcile=True)
