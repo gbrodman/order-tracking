@@ -165,7 +165,8 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
       cluster = clusters_by_tracking[first_tracking]
       cluster.tracked_cost += cost
       for tracking in trackings_tuple:
-        cluster.non_reimbursed_trackings.remove(tracking)
+        if tracking in cluster.non_reimbursed_trackings:
+          cluster.non_reimbursed_trackings.remove(tracking)
 
   # Next, manual PO fixes
   for cluster in clusters_by_tracking.values():
