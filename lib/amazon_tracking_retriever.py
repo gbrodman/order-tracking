@@ -44,7 +44,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_items_from_email(self, data):
     item_regex = r'(.*Qty: \d+)'
     soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]), features="html.parser")
+        quopri.decodestring(data[0][1]),
+        features="html.parser",
+        from_encoding="iso-8859-1")
     order_prefix_span = soup.find("span", {"class": "orderIdPrefix"})
 
     if not order_prefix_span:

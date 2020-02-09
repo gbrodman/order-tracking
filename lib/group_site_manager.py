@@ -513,7 +513,10 @@ class GroupSiteManager:
         email_ids, desc='Fetching BFMR check-ins', unit='email'):
       fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
       soup = BeautifulSoup(
-          quopri.decodestring(data[0][1]), features="html.parser")
+          quopri.decodestring(data[0][1]),
+          features="html.parser",
+          from_encoding="iso-8859-1")
+
       body = soup.find('td', id='email_body')
       if not body:
         continue

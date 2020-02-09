@@ -143,8 +143,8 @@ class EmailTrackingRetriever(ABC):
       return None
 
     merchant = self.get_merchant()
-    return Tracking(tracking_number, group, order_ids, price, to_email, '', date,
-                    0.0, items, merchant, reconcile)
+    return Tracking(tracking_number, group, order_ids, price, to_email, '',
+                    date, 0.0, items, merchant, reconcile)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])

@@ -159,7 +159,9 @@ class OrderInfoRetriever:
   def get_personal_amazon_totals(self, email_id, data,
                                  orders) -> Dict[str, OrderInfo]:
     soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]), features="html.parser")
+        quopri.decodestring(data[0][1]),
+        features="html.parser",
+        from_encoding="iso-8859-1")
     prices = [
         elem.getText().strip().replace(',', '').replace('$', '')
         for elem in soup.find_all('td', {"class": "price"})

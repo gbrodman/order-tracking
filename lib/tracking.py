@@ -1,3 +1,4 @@
+import datetime
 import re
 from typing import Any, List
 
@@ -79,6 +80,11 @@ def from_row(header, row) -> Tracking:
   price = float(price_str) if price_str else 0.0
   to_email = row[header.index("To Email")]
   ship_date = row[header.index("Ship Date")]
+
+  if isinstance(ship_date, int):
+    ship_date = (datetime.date(1900, 1, 1) +
+                 datetime.timedelta(int(ship_date) - 2)).strftime("%Y-%m-%d")
+
   group = row[header.index("Group")]
   tracked_cost_str = row[header.index(
       "Amount Reimbursed")] if "Amount Reimbursed" in header else ""
