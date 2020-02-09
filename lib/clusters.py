@@ -71,6 +71,8 @@ class Cluster:
   def merge_with(self, other) -> None:
     self.orders.update(other.orders)
     self.trackings.update(other.trackings)
+    if self.group != other.group:
+      self.group += f", {other.group}"
     self.expected_cost += other.expected_cost
     self.tracked_cost += other.tracked_cost
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
@@ -131,8 +133,7 @@ def get_existing_clusters(config) -> list:
 
 def find_cluster(all_clusters, tracking) -> Any:
   for cluster in all_clusters:
-    if cluster.group == tracking.group and cluster.orders.intersection(
-        set(tracking.order_ids)):
+    if cluster.orders.intersection(set(tracking.order_ids)):
       return cluster
   return None
 

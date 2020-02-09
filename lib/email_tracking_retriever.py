@@ -100,10 +100,6 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_order_url_from_email(self, raw_email) -> Any:
-    pass
-
-  @abstractmethod
   def get_items_from_email(self, data) -> Any:
     pass
 
@@ -124,7 +120,6 @@ class EmailTrackingRetriever(ABC):
                                             '\\r\\n', '').replace('&amp;', '&')
     to_email = self.get_to_address(data)
     date = self.get_date_from_msg(data)
-    url = self.get_order_url_from_email(raw_email)
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
     group, reconcile = self.get_buying_group(raw_email)
@@ -148,7 +143,7 @@ class EmailTrackingRetriever(ABC):
       return None
 
     merchant = self.get_merchant()
-    return Tracking(tracking_number, group, order_ids, price, to_email, url,
+    return Tracking(tracking_number, group, order_ids, price, to_email, '',
                     date, 0.0, items, merchant, reconcile)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:

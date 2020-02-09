@@ -285,6 +285,15 @@ class GroupSiteManager:
     time.sleep(3)
 
   def _upload_bfmr(self, numbers) -> None:
+    for batch in self.chunks(numbers, 30):
+      self._upload_bfmr_batch(batch)
+
+  def chunks(self, lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+      yield lst[i:i + n]
+
+  def _upload_bfmr_batch(self, numbers) -> None:
     group_config = self.config['groups']['bfmr']
     driver = self.driver_creator.new()
     try:
@@ -298,49 +307,39 @@ class GroupSiteManager:
 
       time.sleep(2)
 
-      for batch in self.chunks(numbers, 30):
-        self._upload_bfmr_batch(driver, batch)
+      # hope there's a button to submit tracking numbers -- it doesn't matter which one
+      try:
+        submit_button = driver.find_element_by_xpath(
+            "//button[text() = \"Submit tracking #'s\"]")
+        submit_button.click()
+      except NoSuchElementException:
+        raise Exception(
+            "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
+        )
 
+      time.sleep(2)
+
+      modal = driver.find_element_by_class_name("modal-body")
+      form = modal.find_element_by_tag_name("form")
+
+      textarea = form.find_element_by_class_name("textarea-control")
+      textarea.send_keys("\n".join(numbers))
+      form.find_element_by_xpath("//button[text() = 'Submit']").click()
+      time.sleep(1)
+
+      # If there are some dupes, we need to remove the dupes and submit again
+      modal = driver.find_element_by_class_name("modal-body")
+      if "Tracking number was already entered" in modal.text:
+        dupes_list = form.find_element_by_css_selector(
+            'ul.error-message > li.ng-star-inserted')
+        dupe_numbers = dupes_list.text.strip().split(", ")
+        new_numbers = [n for n in numbers if not n in dupe_numbers]
+        driver.find_element_by_class_name("modal-close").click()
+        if len(new_numbers) > 0:
+          # Re-run this batch with only new numbers, if there are any
+          self._upload_bfmr_batch(driver, new_numbers)
     finally:
       driver.close()
-
-  def chunks(self, lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-      yield lst[i:i + n]
-
-  def _upload_bfmr_batch(self, driver, numbers) -> None:
-    # hope there's a button to submit tracking numbers -- it doesn't matter which one
-    try:
-      submit_button = driver.find_element_by_xpath(
-          "//button[text() = \"Submit tracking #'s\"]")
-      submit_button.click()
-    except NoSuchElementException:
-      raise Exception(
-          "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
-      )
-
-    time.sleep(2)
-
-    modal = driver.find_element_by_class_name("modal-body")
-    form = modal.find_element_by_tag_name("form")
-
-    textarea = form.find_element_by_class_name("textarea-control")
-    textarea.send_keys("\n".join(numbers))
-    form.find_element_by_xpath("//button[text() = 'Submit']").click()
-    time.sleep(1)
-
-    # If there are some dupes, we need to remove the dupes and submit again
-    modal = driver.find_element_by_class_name("modal-body")
-    if "Tracking number was already entered" in modal.text:
-      dupes_list = form.find_element_by_css_selector(
-          'ul.error-message > li.ng-star-inserted')
-      dupe_numbers = dupes_list.text.strip().split(", ")
-      new_numbers = [n for n in numbers if not n in dupe_numbers]
-      driver.find_element_by_class_name("modal-close").click()
-      if len(new_numbers) > 0:
-        # Re-run this batch with only new numbers, if there are any
-        self._upload_bfmr_batch(driver, new_numbers)
 
   def _upload_yrcw(self, numbers) -> None:
     driver = self._login_yrcw()
@@ -514,7 +513,10 @@ class GroupSiteManager:
         email_ids, desc='Fetching BFMR check-ins', unit='email'):
       fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
       soup = BeautifulSoup(
-          quopri.decodestring(data[0][1]), features="html.parser")
+          quopri.decodestring(data[0][1]),
+          features="html.parser",
+          from_encoding="iso-8859-1")
+
       body = soup.find('td', id='email_body')
       if not body:
         continue

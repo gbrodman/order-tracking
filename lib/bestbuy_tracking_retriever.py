@@ -27,10 +27,6 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   def get_merchant(self) -> str:
     return "Best Buy"
 
-  def get_order_url_from_email(self, raw_email):
-    order_id = self._get_order_id(raw_email)
-    return "https://www.bestbuy.com/profile/ss/orders/order-details/%s/view" % order_id
-
   def _get_order_id(self, raw_email):
     match = re.search(self.order_id_regex, raw_email)
     if not match:
