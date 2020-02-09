@@ -155,7 +155,7 @@ def update_clusters(all_clusters, trackings) -> None:
       cluster.manual_override = False
     cluster.orders.update(tracking.order_ids)
     cluster.trackings.add(tracking.tracking_number)
-    cluster.last_ship_date = max(cluster.last_ship_date, tracking.ship_date)
+    cluster.last_ship_date = max(cluster.last_ship_date, str(tracking.ship_date))
     cluster.to_email = tracking.to_email
     if override_overridden:
       print(f"Cluster {cluster.orders} manual override unset because of newly "
