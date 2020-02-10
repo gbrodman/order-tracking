@@ -26,7 +26,8 @@ class Cluster:
                 to_email='',
                 notes='',
                 manual_override=False,
-                non_reimbursed_trackings=set()) -> None:
+                non_reimbursed_trackings=set(),
+                cancelled_items=[]) -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -40,6 +41,7 @@ class Cluster:
     self.notes = notes
     self.manual_override = manual_override
     self.non_reimbursed_trackings = non_reimbursed_trackings
+    self.cancelled_items = cancelled_items
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
@@ -54,7 +56,8 @@ class Cluster:
     return [
         "Orders", "Trackings", "To Email", "Amount Billed", "Amount Reimbursed",
         "Non-Reimbursed Trackings", "Last Ship Date", "POs", "Group",
-        "Manual Cost Adjustment", "Manual Override", "Total Diff", "Notes"
+        "Manual Cost Adjustment", "Manual Override", "Total Diff", "Notes",
+        "Cancelled Items"
     ]
 
   def to_row(self) -> list:
@@ -65,7 +68,7 @@ class Cluster:
         "'" + ", ".join(self.purchase_orders), self.group, self.adjustment,
         self.manual_override,
         '=INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("E", ROW())) - INDIRECT(CONCAT("J", ROW()))',
-        self.notes
+        self.notes, ", ".join(self.cancelled_items)
     ]
 
   def merge_with(self, other) -> None:
@@ -88,6 +91,7 @@ class Cluster:
       print(f"Newly merged cluster {self.orders} manual override unset.")
       self.manual_override = False
     self.non_reimbursed_trackings.update(other.non_reimbursed_trackings)
+    self.cancelled_items.extend(other.cancelled_items)
 
 
 def dedupe_clusters(clusters) -> list:
@@ -155,7 +159,8 @@ def update_clusters(all_clusters, trackings) -> None:
       cluster.manual_override = False
     cluster.orders.update(tracking.order_ids)
     cluster.trackings.add(tracking.tracking_number)
-    cluster.last_ship_date = max(cluster.last_ship_date, str(tracking.ship_date))
+    cluster.last_ship_date = max(cluster.last_ship_date,
+                                 str(tracking.ship_date))
     cluster.to_email = tracking.to_email
     if override_overridden:
       print(f"Cluster {cluster.orders} manual override unset because of newly "
@@ -241,8 +246,12 @@ def from_row(header, row) -> Cluster:
       'Manual Override')] if 'Manual Override' in header else False
   to_email = row[header.index('To Email')] if 'To Email' in header else ''
   notes = str(row[header.index('Notes')]) if 'Notes' in header else ''
+  cancelled_items_str = str(row[header.index(
+      "Cancelled Items")]) if "Cancelled Items" in header else ""
+  cancelled_items = [i.strip() for i in cancelled_items_str.split(',')
+                    ] if cancelled_items_str else []
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, email_ids, adjustment, to_email, notes,
-                    manual_override, non_reimbursed_trackings)
+                    manual_override, non_reimbursed_trackings, cancelled_items)
   return cluster
