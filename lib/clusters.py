@@ -11,7 +11,7 @@ CLUSTERS_FILE = OUTPUT_FOLDER + "/" + CLUSTERS_FILENAME
 class Cluster:
 
   def __init__(self, group) -> None:
-    self._initiate(set(), set(), group, 0, 0, '0', set(), set(), 0.0)
+    self._initiate(set(), set(), group, 0, 0, '0', set(), set(), 0.0, [])
 
   def _initiate(self,
                 orders,
