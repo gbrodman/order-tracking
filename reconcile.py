@@ -6,6 +6,7 @@ from lib import clusters
 import sys
 from tqdm import tqdm
 import yaml
+from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
@@ -176,6 +177,17 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
         cluster.tracked_cost += float(po_to_cost.get(po, 0.0))
 
 
+def fill_cancellations(all_clusters, config):
+  retriever = CancelledItemsRetriever(config)
+  cancellations_by_order = retriever.get_cancelled_items()
+
+  for cluster in all_clusters:
+    cluster.cancelled_items = []
+    for order in cluster.orders:
+      if order in cancellations_by_order:
+        cluster.cancelled_items += cancellations_by_order[order]
+
+
 def reconcile_new(config, args):
   print("New reconciliation!")
   reconciliation_uploader = ReconciliationUploader(config)
@@ -198,10 +210,13 @@ def reconcile_new(config, args):
 
   trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(
       config, group_site_manager, args)
+
   clusters_by_tracking = map_clusters_by_tracking(all_clusters)
   merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost)
 
   fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args)
+
+  fill_cancellations(all_clusters, config)
   reconciliation_uploader.download_upload_clusters_new(all_clusters)
 
 
