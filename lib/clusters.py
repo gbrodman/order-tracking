@@ -74,8 +74,8 @@ class Cluster:
   def merge_with(self, other) -> None:
     self.orders.update(other.orders)
     self.trackings.update(other.trackings)
-    if self.group != other.group:
-      self.group += f", {other.group}"
+    if self.group.strip() != other.group.strip():
+      self.group += f", {other.group.strip()}"
     self.expected_cost += other.expected_cost
     self.tracked_cost += other.tracked_cost
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
