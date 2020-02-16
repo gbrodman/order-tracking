@@ -15,11 +15,11 @@ class DriverCreator:
     parser.add_argument("--firefox", action="store_true")
     self.args, _ = parser.parse_known_args()
 
-  def new(self) -> Any:
+  def new(self, user_data_dir=None) -> Any:
     if self.args.firefox:
       return self._new_firefox_driver()
     else:
-      return self._new_chrome_driver()
+      return self._new_chrome_driver(user_data_dir=user_data_dir)
 
   def fix_perms(self, path):
     for root, dirs, files in os.walk(path):
@@ -28,8 +28,13 @@ class DriverCreator:
       for f in files:
         os.chmod(os.path.join(root, f), 0o755)
 
-  def _create_osx_windows_driver(self, options, url, base_dir, binary_location,
-                                 chromedriver_filename):
+  def _create_osx_windows_driver(self,
+                                 options,
+                                 url,
+                                 base_dir,
+                                 binary_location,
+                                 chromedriver_filename,
+                                 user_data_dir=None):
     current_working_dir = os.getcwd()
     base = current_working_dir + base_dir
     download_location = base + "Chrome.zip"
@@ -41,21 +46,24 @@ class DriverCreator:
       self.fix_perms(base)
       os.remove(download_location)
     options.binary_location = (base + binary_location)
+
+    if user_data_dir:
+      options.add_argument(f"user-data-dir={user_data_dir}")
     return webdriver.Chrome(base + chromedriver_filename, options=options)
 
-  def _create_osx_driver(self, options):
+  def _create_osx_driver(self, options, user_data_dir=None):
     url = "https://github.com/macchrome/chromium/releases/download/v78.0.3901.0-r692376-macOS/Chromium.78.0.3901.0.sync.app.zip"
     return self._create_osx_windows_driver(
         options, url, "/chrome/osx/", "Chromium.app/Contents/MacOS/Chromium",
-        "chromedriver")
+        "chromedriver", user_data_dir)
 
-  def _create_windows_driver(self, options):
+  def _create_windows_driver(self, options, user_data_dir=None):
     url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v78.0.3901.0-r692535-win32/chrome.zip"
     return self._create_osx_windows_driver(options, url, "/chrome/windows/",
                                            "chrome-win32/chrome.exe",
-                                           "chromedriver.exe")
+                                           "chromedriver.exe", user_data_dir)
 
-  def _new_chrome_driver(self) -> Any:
+  def _new_chrome_driver(self, user_data_dir=None) -> Any:
     options = webdriver.chrome.options.Options()
     options.headless = not self.args.no_headless
     options.add_argument("--log-level=3")
@@ -68,9 +76,9 @@ class DriverCreator:
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     if sys.platform.startswith("darwin"):  # osx
-      driver = self._create_osx_driver(options)
+      driver = self._create_osx_driver(options, user_data_dir)
     elif sys.platform.startswith("win"):  # windows
-      driver = self._create_windows_driver(options)
+      driver = self._create_windows_driver(options, user_data_dir)
     else:  # ??? probably Linux. Linux users can figure this out themselves
       driver = webdriver.Chrome(options=options)
 

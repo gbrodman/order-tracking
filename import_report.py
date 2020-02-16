@@ -49,8 +49,16 @@ def from_amazon_row(header, row) -> Tracking:
   items = row[header.index("Title")] + " Qty:" + str(
       row[header.index("Item Quantity")])
   merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
-  return Tracking(tracking, group, orders, price, to_email, url, ship_date,
-                  tracked_cost, items, merchant)
+  return Tracking(
+      tracking,
+      group,
+      orders,
+      price,
+      to_email,
+      ship_date=ship_date,
+      tracked_cost=tracked_cost,
+      items=items,
+      merchant=merchant)
 
 
 def find_candidate(tracking, candidates) -> Any:
