@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import collections
+import email
 import imaplib
 import quopri
 import re
@@ -382,6 +383,32 @@ class GroupSiteManager:
         group_config['password'])
     driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
     time.sleep(1)
+
+    # Sometimes, they use two-factor auth
+    if "Authentication required" in driver.page_source:
+      # ask for the email code
+      driver.find_element_by_css_selector(
+          "md-radio-button[value='email']").click()
+      driver.find_element_by_css_selector("button[type='submit']").click()
+      print("Waiting for passcode...")
+
+      time.sleep(20)
+
+      # get the email client and search for the code
+      mail = self._get_all_mail_folder()
+      _, email_ids = mail.uid('SEARCH', None, '(SUBJECT "Passcode for")')
+      last_id = email_ids[0].split()[-1]
+      _, data = mail.uid("FETCH", last_id, "(RFC822)")
+      msg = email.message_from_string(str(data[0][1], 'utf-8'))
+      subject = msg['Subject']
+      pattern = r'Passcode for .*(\d{3}-\d{3})'
+      code = re.match(pattern, subject).group(1).replace('-', '')
+
+      # submit it
+      driver.find_element_by_tag_name('input').send_keys(code)
+      driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
+      time.sleep(1)
+
     return driver
 
   def _usa_set_pagination_100(self, driver) -> None:
@@ -496,11 +523,15 @@ class GroupSiteManager:
     time.sleep(2)
     return driver
 
-  def _get_bfmr_costs(self):
+  def _get_all_mail_folder(self):
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
     mail.login(self.config['email']['username'],
                self.config['email']['password'])
     mail.select('"[Gmail]/All Mail"')
+    return mail
+
+  def _get_bfmr_costs(self):
+    mail = self._get_all_mail_folder()
     status, response = mail.uid('SEARCH', None,
                                 'SUBJECT "BuyForMeRetail - Payment Sent"',
                                 'SINCE "01-Aug-2019"')
