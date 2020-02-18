@@ -17,49 +17,6 @@ from lib.tracking_uploader import TrackingUploader
 CONFIG_FILE = "config.yml"
 
 
-def get_tracking_pos_costs_maps(config, group_site_manager, args):
-  print("Loading tracked costs. This will take several minutes.")
-  if args.groups:
-    print("Only reconciling groups %s" % ",".join(args.groups))
-    groups = args.groups
-  else:
-    groups = config['groups'].keys()
-
-  tracking_to_po_map = {}
-  po_to_cost_map = {}
-  for group in groups:
-    group_tracking_to_po, group_po_to_cost = group_site_manager.get_tracking_pos_costs_maps_with_retry(
-        group)
-    tracking_to_po_map.update(group_tracking_to_po)
-    po_to_cost_map.update(group_po_to_cost)
-
-  return (tracking_to_po_map, po_to_cost_map)
-
-
-def fill_purchase_orders(all_clusters, tracking_to_po, args):
-  print("Filling purchase orders")
-
-  for cluster in all_clusters:
-    if args.groups and cluster.group not in args.groups:
-      continue
-
-    cluster.non_reimbursed_trackings = set(cluster.trackings)
-    for tracking in cluster.trackings:
-      if tracking in tracking_to_po:
-        cluster.purchase_orders.add(tracking_to_po[tracking])
-        cluster.non_reimbursed_trackings.remove(tracking)
-
-
-def fill_costs_by_po(all_clusters, po_to_cost, args, group_site_manager):
-  tracked_groups = group_site_manager.get_tracked_groups()
-  for cluster in all_clusters:
-    if cluster.purchase_orders and (
-        not args.groups or
-        cluster.group in args.groups) and cluster.group in tracked_groups:
-      cluster.tracked_cost = sum(
-          [po_to_cost.get(po, 0.0) for po in cluster.purchase_orders])
-
-
 def fill_order_info(all_clusters, config):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
@@ -81,21 +38,6 @@ def fill_order_info(all_clusters, config):
           )
           tqdm.write(str(e))
         pbar.update()
-
-
-def clusterify(config):
-  tracking_output = TrackingOutput(config)
-  print("Getting all tracking objects")
-  trackings = tracking_output.get_existing_trackings()
-  reconcilable_trackings = [t for t in trackings if t.reconcile]
-
-  print("Converting to Cluster objects")
-  all_clusters = clusters.get_existing_clusters(config)
-  clusters.update_clusters(all_clusters, reconcilable_trackings)
-
-  print("Filling out order info and writing results to disk")
-  fill_order_info(all_clusters, config)
-  clusters.write_clusters(config, all_clusters)
 
 
 def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
@@ -229,24 +171,6 @@ def main():
     config = yaml.safe_load(config_file_stream)
 
   reconcile_new(config, args)
-
-  clusterify(config)
-
-  reconciliation_uploader = ReconciliationUploader(config)
-  all_clusters = clusters.get_existing_clusters(config)
-  reconciliation_uploader.override_pos(all_clusters)
-
-  driver_creator = DriverCreator()
-  group_site_manager = GroupSiteManager(config, driver_creator)
-  tracking_to_po, po_to_cost = get_tracking_pos_costs_maps(
-      config, group_site_manager, args)
-
-  fill_purchase_orders(all_clusters, tracking_to_po, args)
-  all_clusters = clusters.merge_orders(all_clusters)
-  fill_costs_by_po(all_clusters, po_to_cost, args, group_site_manager)
-
-  reconciliation_uploader.download_upload_clusters(all_clusters)
-  clusters.write_clusters(config, all_clusters)
 
 
 if __name__ == "__main__":
