@@ -66,35 +66,6 @@ class GroupSiteManager:
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_tracking_pos_costs_maps_with_retry(self, group):
-    last_exc = None
-    for i in range(5):
-      try:
-        return self.get_tracking_pos_costs_maps(group)
-      except Exception as e:
-        print("Received exception when getting costs: " + str(e))
-        type, value, trace = sys.exc_info()
-        formatted_trace = traceback.format_tb(trace)
-        for line in formatted_trace:
-          print(line)
-        print("Retrying up to five times")
-        last_exc = e
-    raise Exception("Exceeded retry limit", last_exc)
-
-  # returns (tracking -> po, po -> cost) dicts
-  def get_tracking_pos_costs_maps(self, group):
-    if group == 'bfmr':
-      print("Loading group bfmr")
-      return self._get_bfmr_costs()
-    elif group in self.melul_portal_groups:
-      print("Loading group %s" % group)
-      tracking_po, po_cost, _ = self._melul_get_tracking_pos_costs_maps(group)
-      return tracking_po, po_cost
-    elif group == "usa":
-      print("Loading group usa")
-      return self._get_usa_tracking_pos_costs_maps()
-    return (dict(), dict())
-
   def get_new_tracking_pos_costs_maps_with_retry(self, group):
     last_exc = None
     for i in range(5):
@@ -194,11 +165,6 @@ class GroupSiteManager:
     headers = self._get_usa_login_headers()
     data = {"trackings": ",".join(numbers)}
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
-
-  def _get_usa_tracking_pos_costs_maps(self):
-    po_to_cost = self._get_usa_po_to_price()
-    tracking_to_po = self._get_usa_tracking_to_purchase_order()
-    return (tracking_to_po, po_to_cost)
 
   # hacks, return tracking->po, po->cost, (trackings)->cost
   def _melul_get_tracking_pos_costs_maps(self, group):
@@ -409,106 +375,6 @@ class GroupSiteManager:
       driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
       time.sleep(1)
 
-    return driver
-
-  def _usa_set_pagination_100(self, driver) -> None:
-    driver.find_element_by_class_name(
-        'react-bs-table-pagination').find_element_by_tag_name('button').click()
-    driver.find_element_by_css_selector("a[data-page='100']").click()
-
-  def _get_usa_po_to_price(self) -> Dict[Any, float]:
-    result = {}
-    driver = self._login_usa()
-    try:
-      with tqdm(desc='Fetching USA POs', unit='page') as pbar:
-        self._load_page(driver, USA_PO_URL)
-        time.sleep(1)
-        self._usa_set_pagination_100(driver)
-        while True:
-          time.sleep(2)
-          table = driver.find_element_by_class_name("react-bs-container-body")
-          rows = table.find_elements_by_tag_name('tr')
-          for row in rows:
-            entries = row.find_elements_by_tag_name('td')
-            po = entries[1].text
-            cost = float(entries[5].text.replace('$', '').replace(',', ''))
-            result[po] = cost
-          pbar.update()
-          next_page_button = driver.find_elements_by_xpath(
-              "//li[contains(@title, 'next page')]")
-          if next_page_button:
-            next_page_button[0].find_element_by_tag_name('a').click()
-          else:
-            break
-
-      return result
-    finally:
-      driver.close()
-
-  def _get_usa_tracking_to_purchase_order(self) -> dict:
-    result = {}
-    driver = self._login_usa()
-    try:
-      with tqdm(desc='Fetching USA check-ins', unit='page') as pbar:
-        # Tell the USA tracking search to find received tracking numbers from the beginning of time
-        self._load_page(driver, USA_TRACKING_URL)
-        date_filter_div = driver.find_element_by_class_name(
-            "reports-dates-filter-cnt")
-        date_filter_btn = date_filter_div.find_element_by_tag_name("button")
-        date_filter_btn.click()
-        time.sleep(1)
-
-        date_filter_div.find_element_by_xpath(
-            '//a[contains(text(), "None")]').click()
-        time.sleep(2)
-
-        status_dropdown = driver.find_element_by_name("filterPurchaseid")
-        status_dropdown.click()
-        time.sleep(1)
-
-        status_dropdown.find_element_by_xpath("//*[text()='Received']").click()
-        time.sleep(1)
-
-        driver.find_element_by_xpath(
-            "//i[contains(@class, 'fa-search')]").click()
-        time.sleep(4)
-        self._usa_set_pagination_100(driver)
-
-        while True:
-          time.sleep(4)
-          table = driver.find_element_by_class_name("react-bs-container-body")
-          rows = table.find_elements_by_tag_name('tr')
-          for row in rows:
-            entries = row.find_elements_by_tag_name('td')
-            tracking = entries[2].text
-            purchase_order = entries[3].text.split(' ')[0]
-            result[tracking] = purchase_order
-          pbar.update()
-          next_page_button = driver.find_elements_by_xpath(
-              "//li[contains(@title, 'next page')]")
-          if next_page_button:
-            next_page_button[0].find_element_by_tag_name('a').click()
-          else:
-            break
-
-      return result
-    finally:
-      driver.close()
-
-  def _login_usa(self) -> Any:
-    driver = self.driver_creator.new()
-    self._load_page(driver, USA_LOGIN_URL)
-    group_config = self.config['groups']['usa']
-    driver.find_element_by_name("credentials").send_keys(
-        group_config['username'])
-    driver.find_element_by_name("password").send_keys(group_config['password'])
-    # for some reason there's an invalid login button in either the first or second array spot (randomly)
-    for element in driver.find_elements_by_name("log-me-in"):
-      try:
-        element.click()
-      except:
-        pass
-    time.sleep(2)
     return driver
 
   def _login_yrcw(self) -> Any:
