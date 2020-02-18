@@ -94,47 +94,6 @@ class Cluster:
     self.cancelled_items.extend(other.cancelled_items)
 
 
-def dedupe_clusters(clusters) -> list:
-  result = []
-  seen_tracking_ids = set()
-  for cluster in clusters:
-    if not cluster.group:
-      continue
-    if not cluster.trackings.intersection(seen_tracking_ids):
-      seen_tracking_ids.update(cluster.trackings)
-      result.append(cluster)
-  return result
-
-
-def write_clusters(config, clusters) -> None:
-  clusters = dedupe_clusters(clusters)
-  if not os.path.exists(OUTPUT_FOLDER):
-    os.mkdir(OUTPUT_FOLDER)
-
-  with open(CLUSTERS_FILE, 'wb') as output:
-    pickle.dump(clusters, output)
-
-  objects_to_drive = ObjectsToDrive()
-  objects_to_drive.save(config, CLUSTERS_FILENAME, CLUSTERS_FILE)
-
-
-def get_existing_clusters(config) -> list:
-  objects_to_drive = ObjectsToDrive()
-  from_drive = objects_to_drive.load(config, CLUSTERS_FILENAME)
-  if from_drive:
-    return from_drive
-
-  print(
-      "Drive folder ID not present or we couldn't load from drive. Loading from local"
-  )
-  if not os.path.exists(CLUSTERS_FILE):
-    return []
-
-  with open(CLUSTERS_FILE, 'rb') as clusters_file_stream:
-    clusters = pickle.load(clusters_file_stream)
-  return dedupe_clusters(clusters)
-
-
 def find_cluster(all_clusters, tracking) -> Any:
   for cluster in all_clusters:
     if cluster.orders.intersection(set(tracking.order_ids)):
