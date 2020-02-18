@@ -329,8 +329,7 @@ class GroupSiteManager:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
       textareas = driver.find_elements_by_xpath("//textarea")
       if not textareas:
-        print("Could not find order management for group %s" % group)
-        return
+        raise Exception("Could not find order management for group %s" % group)
 
       textarea = textareas[0]
       textarea.send_keys('\n'.join(numbers))
