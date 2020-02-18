@@ -1,3 +1,4 @@
+import email
 import imaplib
 import os
 import pickle
@@ -30,9 +31,12 @@ class CancelledItemsRetriever:
     for email_id in tqdm(
         all_email_ids, desc="Fetching cancellations", unit="email"):
       if email_id not in self.email_id_dict:
-        self.email_id_dict[email_id] = self.get_cancellations_from_email(
-            mail, email_id)
-        self.flush()
+        email_result = self.get_cancellations_from_email(mail, email_id)
+        if email_result:
+          self.email_id_dict[email_id] = email_result
+          self.flush()
+        else:
+          continue
 
       order_to_cancelled_items = self.email_id_dict[email_id]
       for order_id in order_to_cancelled_items:
@@ -57,19 +61,26 @@ class CancelledItemsRetriever:
   def get_cancellations_from_email(self, mail,
                                    email_id) -> Dict[str, List[str]]:
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
-    raw_email = data[0][1]
-    order = re.findall("Order #[ ]?(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
+    try:
+      raw_email = data[0][1]
+      order = re.findall("Order #[ ]?(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
 
-    cancelled_items = []
-    soup = BeautifulSoup(
-        quopri.decodestring(raw_email),
-        features="html.parser",
-        from_encoding="iso-8859-1")
+      cancelled_items = []
+      soup = BeautifulSoup(
+          quopri.decodestring(raw_email),
+          features="html.parser",
+          from_encoding="iso-8859-1")
 
-    cancelled_header = soup.find('h3', text="Canceled Items")
-    parent = cancelled_header.parent.parent.parent
-    cancelled_items = [t.text.strip() for t in parent.find_all('li')]
-    return {order: cancelled_items}
+      cancelled_header = soup.find('h3', text="Canceled Items")
+      parent = cancelled_header.parent.parent.parent
+      cancelled_items = [t.text.strip() for t in parent.find_all('li')]
+      return {order: cancelled_items}
+    except Exception as e:
+      msg = email.message_from_string(str(data[0][1], 'utf-8'))
+      print(
+          f"Received exception with message '{str(e)}' when processing cancellation email with subject {msg['Subject']}. Continuing..."
+      )
+      return None
 
   def load_mail(self):
     mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
