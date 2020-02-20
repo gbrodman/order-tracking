@@ -16,8 +16,16 @@ from lib.tracking_uploader import TrackingUploader
 
 CONFIG_FILE = "config.yml"
 
+def fill_costs(all_clusters, config):
+  print("Filling costs")
+  order_info_retriever = OrderInfoRetriever(config)
+  for cluster in all_clusters:
+    cluster.expected_cost = 0.0
+    for order_id in cluster.orders:
+      order_info = order_info_retriever.get_order_info(order_id)
+      cluster.expected_cost += order_info.cost
 
-def fill_order_info(all_clusters, config):
+def fill_email_ids(all_clusters, config):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
   with tqdm(
@@ -38,7 +46,6 @@ def fill_order_info(all_clusters, config):
           )
           tqdm.write(str(e))
         pbar.update()
-
 
 def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
   print("Loading tracked costs. This will take several minutes.")
@@ -141,8 +148,9 @@ def reconcile_new(config, args):
   all_clusters = []
   clusters.update_clusters(all_clusters, reconcilable_trackings)
 
-  fill_order_info(all_clusters, config)
+  fill_email_ids(all_clusters, config)
   all_clusters = clusters.merge_orders(all_clusters)
+  fill_costs(all_clusters, config)
 
   # add manual PO entries (and only manual ones)
   reconciliation_uploader.override_pos_and_costs(all_clusters)
