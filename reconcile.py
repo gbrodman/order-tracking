@@ -22,7 +22,12 @@ def fill_costs(all_clusters, config):
   for cluster in all_clusters:
     cluster.expected_cost = 0.0
     for order_id in cluster.orders:
-      order_info = order_info_retriever.get_order_info(order_id)
+      try:
+        order_info = order_info_retriever.get_order_info(order_id)
+      except Exception as e:
+        print(f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping...")
+        print(str(e))
+        continue
       cluster.expected_cost += order_info.cost
 
 def fill_email_ids(all_clusters, config):
