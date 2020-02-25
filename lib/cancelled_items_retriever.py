@@ -4,6 +4,8 @@ import os
 import pickle
 import quopri
 import re
+import sys
+import traceback
 
 from bs4 import BeautifulSoup
 from lib.objects_to_drive import ObjectsToDrive
@@ -47,9 +49,13 @@ class CancelledItemsRetriever:
     return result
 
   def get_all_email_ids(self, mail) -> Set[str]:
-    subject_searches = [[
-        "Successful cancellation of", "from your Amazon.com order"
-    ], ["Partial item(s) cancellation from your Amazon.com order"]]
+    subject_searches = [
+        ["Successful cancellation of", "from your Amazon.com order"],
+        ["Partial item(s) cancellation from your Amazon.com order"],
+        ["item has been canceled from your AmazonSmile order"],
+        ["items have been canceled from your AmazonSmile order"],
+        ["items have been canceled from your Amazon.com order"],
+        ["item has been canceled from your Amazon.com order"]]
     result_ids = set()
     for search_terms in subject_searches:
       search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
@@ -78,8 +84,10 @@ class CancelledItemsRetriever:
     except Exception as e:
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
       print(
-          f"Received exception with message '{str(e)}' when processing cancellation email with subject {msg['Subject']}. Continuing..."
+          f"Received exception with message '{str(e)}' when processing cancellation email with subject {msg['Subject']}:"
       )
+      traceback.print_exc(file=sys.stdout)
+      print("Continuing...")
       return None
 
   def load_mail(self):
