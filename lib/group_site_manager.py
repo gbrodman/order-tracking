@@ -37,7 +37,7 @@ USA_PO_URL = "https://usabuying.group/purchase-orders"
 USA_API_LOGIN_URL = "https://api.usabuying.group/index.php/buyers/login"
 USA_API_TRACKINGS_URL = "https://api.usabuying.group/index.php/buyers/trackings"
 
-YRCW_URL = "https://app.xchaintechnology.com/"
+YRCW_URL = "https://app.yrcwtech.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
@@ -140,8 +140,9 @@ class GroupSiteManager:
       json = await response.json()
       cost = float(json['data']['box']['total_price'])
       tracking_tuples_to_prices[(tracking_number,)] = cost
-    except:
+    except Exception as e:
       print(f"Error finding USA tracking cost for {tracking_number}")
+      print(e)
 
   async def _get_usa_tracking_pos_prices(self):
     headers = self._get_usa_login_headers()
@@ -327,9 +328,15 @@ class GroupSiteManager:
     driver = self._login_melul(group)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
-      textareas = driver.find_elements_by_xpath("//textarea")
+
+      textareas = driver.find_elements_by_tag_name("textarea")
       if not textareas:
-        raise Exception("Could not find order management for group %s" % group)
+        # omg sellerspeed wyd
+        driver.find_element_by_xpath("//span[text() = ' Show Import wizard']").click()
+        time.sleep(1)
+        textareas = driver.find_elements_by_tag_name("textarea")
+        if not textareas:
+          raise Exception("Could not find order management for group %s" % group)
 
       textarea = textareas[0]
       textarea.send_keys('\n'.join(numbers))
