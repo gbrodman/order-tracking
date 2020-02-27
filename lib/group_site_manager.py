@@ -140,8 +140,9 @@ class GroupSiteManager:
       json = await response.json()
       cost = float(json['data']['box']['total_price'])
       tracking_tuples_to_prices[(tracking_number,)] = cost
-    except:
+    except Exception as e:
       print(f"Error finding USA tracking cost for {tracking_number}")
+      print(e)
 
   async def _get_usa_tracking_pos_prices(self):
     headers = self._get_usa_login_headers()
