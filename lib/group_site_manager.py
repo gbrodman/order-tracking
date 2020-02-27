@@ -37,7 +37,7 @@ USA_PO_URL = "https://usabuying.group/purchase-orders"
 USA_API_LOGIN_URL = "https://api.usabuying.group/index.php/buyers/login"
 USA_API_TRACKINGS_URL = "https://api.usabuying.group/index.php/buyers/trackings"
 
-YRCW_URL = "https://app.xchaintechnology.com/"
+YRCW_URL = "https://app.yrcwtech.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
