@@ -332,11 +332,13 @@ class GroupSiteManager:
       textareas = driver.find_elements_by_tag_name("textarea")
       if not textareas:
         # omg sellerspeed wyd
-        driver.find_element_by_xpath("//span[text() = ' Show Import wizard']").click()
+        driver.find_element_by_xpath(
+            "//span[text() = ' Show Import wizard']").click()
         time.sleep(1)
         textareas = driver.find_elements_by_tag_name("textarea")
         if not textareas:
-          raise Exception("Could not find order management for group %s" % group)
+          raise Exception("Could not find order management for group %s" %
+                          group)
 
       textarea = textareas[0]
       textarea.send_keys('\n'.join(numbers))
