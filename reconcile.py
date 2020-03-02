@@ -16,6 +16,7 @@ from lib.tracking_uploader import TrackingUploader
 
 CONFIG_FILE = "config.yml"
 
+
 def fill_costs(all_clusters, config):
   print("Filling costs")
   order_info_retriever = OrderInfoRetriever(config)
@@ -25,10 +26,13 @@ def fill_costs(all_clusters, config):
       try:
         order_info = order_info_retriever.get_order_info(order_id)
       except Exception as e:
-        print(f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping...")
+        print(
+            f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
+        )
         print(str(e))
         continue
       cluster.expected_cost += order_info.cost
+
 
 def fill_email_ids(all_clusters, config):
   order_info_retriever = OrderInfoRetriever(config)
@@ -51,6 +55,7 @@ def fill_email_ids(all_clusters, config):
           )
           tqdm.write(str(e))
         pbar.update()
+
 
 def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
   print("Loading tracked costs. This will take several minutes.")

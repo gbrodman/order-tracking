@@ -25,7 +25,7 @@ SUBMIT_BUTTON_SELECTOR = "//*[contains(text(), 'SUBMIT')]"
 RESULT_SELECTOR = "//*[contains(text(), 'record(s) effected')]"
 RESULT_REGEX = r"(\d+) record\(s\) effected"
 
-BASE_URL_FORMAT = "https://www.%s.com"
+BASE_URL_FORMAT = "https://%s.com"
 MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 
 RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
@@ -91,8 +91,20 @@ class GroupSiteManager:
         trackings_map[(tracking,)] = cost
       return (trackings_map, costs_map)
     elif group in self.melul_portal_groups:
+      group_config = self.config['groups'][group]
+      username = group_config['username']
+      password = group_config['password']
       _, po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(
-          group)
+          group, username, password)
+
+      if 'archives' in group_config:
+        for archive_group in group_config['archives']:
+          print(f"Loading archive {archive_group}")
+          _, archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
+              archive_group, username, password)
+          po_cost.update(archive_po_cost)
+          trackings_cost.update(archive_trackings_cost)
+
       return trackings_cost, po_cost
     elif group == "usa":
       print("Loading group usa")
@@ -168,8 +180,8 @@ class GroupSiteManager:
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
 
   # hacks, return tracking->po, po->cost, (trackings)->cost
-  def _melul_get_tracking_pos_costs_maps(self, group):
-    driver = self._login_melul(group)
+  def _melul_get_tracking_pos_costs_maps(self, group, username, password):
+    driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
       tracking_to_po_map = {}
@@ -234,7 +246,9 @@ class GroupSiteManager:
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
         if group in self.melul_portal_groups:
-          return self._upload_melul(numbers, group)
+          username = self.config['groups'][group]['username']
+          password = self.config['groups'][group]['password']
+          return self._upload_melul(numbers, group, username, password)
         elif group == "usa":
           return self._upload_usa(numbers)
         elif group == "yrcw":
@@ -324,19 +338,21 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _upload_melul(self, numbers, group) -> None:
-    driver = self._login_melul(group)
+  def _upload_melul(self, numbers, group, username, password) -> None:
+    driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
 
       textareas = driver.find_elements_by_tag_name("textarea")
       if not textareas:
         # omg sellerspeed wyd
-        driver.find_element_by_xpath("//span[text() = ' Show Import wizard']").click()
+        driver.find_element_by_xpath(
+            "//span[text() = ' Show Import wizard']").click()
         time.sleep(1)
         textareas = driver.find_elements_by_tag_name("textarea")
         if not textareas:
-          raise Exception("Could not find order management for group %s" % group)
+          raise Exception("Could not find order management for group %s" %
+                          group)
 
       textarea = textareas[0]
       textarea.send_keys('\n'.join(numbers))
@@ -345,14 +361,11 @@ class GroupSiteManager:
     finally:
       driver.close()
 
-  def _login_melul(self, group) -> Any:
+  def _login_melul(self, group, username, password) -> Any:
     driver = self.driver_creator.new()
     self._load_page(driver, BASE_URL_FORMAT % group)
-    group_config = self.config['groups'][group]
-    driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(
-        group_config['username'])
-    driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(
-        group_config['password'])
+    driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
+    driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
     driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
     time.sleep(1)
 
