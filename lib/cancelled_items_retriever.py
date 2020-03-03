@@ -8,13 +8,19 @@ import sys
 import traceback
 
 from bs4 import BeautifulSoup
+from enum import Enum
 from lib.objects_to_drive import ObjectsToDrive
 from tqdm import tqdm
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, Tuple
 
 OUTPUT_FOLDER = "output"
 CANCELLATIONS_FILENAME = "cancellations.pickle"
 CANCELLATIONS_FILE = OUTPUT_FOLDER + "/" + CANCELLATIONS_FILENAME
+
+
+class CancFmt(Enum):
+  VOLUNTARY = 1
+  INVOLUNTARY = 2
 
 
 class CancelledItemsRetriever:
@@ -30,10 +36,10 @@ class CancelledItemsRetriever:
     all_email_ids = self.get_all_email_ids(mail)
 
     result = {}
-    for email_id in tqdm(
-        all_email_ids, desc="Fetching cancellations", unit="email"):
+    for email_id, canc_info in tqdm(
+        all_email_ids.items(), desc="Fetching cancellations", unit="email"):
       if email_id not in self.email_id_dict:
-        email_result = self.get_cancellations_from_email(mail, email_id)
+        email_result = self.get_cancellations_from_email(mail, email_id, canc_info)
         if email_result:
           self.email_id_dict[email_id] = email_result
           self.flush()
@@ -48,28 +54,31 @@ class CancelledItemsRetriever:
 
     return result
 
-  def get_all_email_ids(self, mail) -> Set[str]:
-    subject_searches = [
-        ["Successful cancellation of", "from your Amazon.com order"],
-        ["Partial item(s) cancellation from your Amazon.com order"],
-        ["item has been canceled from your AmazonSmile order"],
-        ["items have been canceled from your AmazonSmile order"],
-        ["items have been canceled from your Amazon.com order"],
-        ["item has been canceled from your Amazon.com order"]]
-    result_ids = set()
-    for search_terms in subject_searches:
-      search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
+  def get_all_email_ids(self, mail) -> Dict[str, Tuple[CancFmt, bool]]:
+    # For multi-part subject searches, | is used as delimiter because lists can't be
+    # dictionary keys in Python.
+    subject_searches = {
+        "Successful cancellation of|from your Amazon.com order": (CancFmt.VOLUNTARY, True),
+        "Partial item(s) cancellation from your Amazon.com order": (CancFmt.VOLUNTARY, False),
+        "item has been canceled from your AmazonSmile order": (CancFmt.INVOLUNTARY, False),
+        "items have been canceled from your AmazonSmile order": (CancFmt.INVOLUNTARY, False),
+        "items have been canceled from your Amazon.com order": (CancFmt.INVOLUNTARY, False),
+        "item has been canceled from your Amazon.com order": (CancFmt.INVOLUNTARY, False)}
+    result_ids = dict()
+    for search_terms, canc_info in subject_searches.items():
+      search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms.split('|')]
       status, response = mail.uid('SEARCH', None, *search_terms)
       email_ids = response[0].decode('utf-8')
-      result_ids.update(email_ids.split())
+      for email_id in email_ids.split():
+        result_ids[email_id] = canc_info
     return result_ids
 
-  def get_cancellations_from_email(self, mail,
-                                   email_id) -> Dict[str, List[str]]:
+  def get_cancellations_from_email(self, mail, email_id: str,
+                                   canc_info: Tuple[CancFmt, bool]) -> Dict[str, List[str]]:
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     try:
       raw_email = data[0][1]
-      order = re.findall("Order #[ ]?(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
+      order = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
 
       cancelled_items = []
       soup = BeautifulSoup(
@@ -77,9 +86,20 @@ class CancelledItemsRetriever:
           features="html.parser",
           from_encoding="iso-8859-1")
 
-      cancelled_header = soup.find('h3', text="Canceled Items")
+      if canc_info[0] == CancFmt.VOLUNTARY:
+        cancelled_header = soup.find("h3", text="Canceled Items")
+      elif canc_info[0] == CancFmt.INVOLUNTARY:
+        cancelled_header = soup.find("span", text="Canceled Items")
+      else:
+        raise Exception(f"Can't handle cancellation format {canc_info[0]}")
       parent = cancelled_header.parent.parent.parent
-      cancelled_items = [t.text.strip() for t in parent.find_all('li')]
+      cancelled_items = []
+      for li in parent.find_all('li'):
+        # Each li contains a single link whose link text is the item name.
+        canc_item = li.find('a').text.strip()
+        # If cancellation email format contains quantity info, then use the string from
+        # Amazon as-is, otherwise prepend with "??" to indicate indeterminate quantity.
+        cancelled_items.append(canc_item if canc_info[1] else f"?? {canc_item}")
       return {order: cancelled_items}
     except Exception as e:
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
