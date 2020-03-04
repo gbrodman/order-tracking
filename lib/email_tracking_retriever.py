@@ -1,10 +1,11 @@
 import datetime
 import email
 import imaplib
+import lib.tracking
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 from lib.tracking import Tracking
-import lib.tracking
+from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import Any, Callable, Optional, Tuple, TypeVar
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
@@ -113,6 +114,9 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
+  @retry(
+      stop=stop_after_attempt(7),
+      wait=wait_exponential(multiplier=1, min=2, max=120))
   def get_tracking(self, email_id, mail) -> Tracking:
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     raw_email = str(data[0][1]).replace("=3D",
