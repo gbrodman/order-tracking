@@ -11,6 +11,7 @@ import time
 import traceback
 
 from bs4 import BeautifulSoup
+from lib.archive_manager import ArchiveManager
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from tqdm import tqdm
@@ -48,6 +49,7 @@ class GroupSiteManager:
     self.config = config
     self.driver_creator = driver_creator
     self.melul_portal_groups = config['melulPortals']
+    self.archive_manager = ArchiveManager(config)
 
   def get_tracked_groups(self):
     result = set(self.melul_portal_groups)
@@ -100,8 +102,14 @@ class GroupSiteManager:
       if 'archives' in group_config:
         for archive_group in group_config['archives']:
           print(f"Loading archive {archive_group}")
-          _, archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
-              archive_group, username, password)
+          if not self.archive_manager.has_archive(archive_group):
+            _, archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
+                archive_group, username, password)
+            self.archive_manager.put_archive(archive_group, archive_po_cost,
+                                             archive_trackings_cost)
+
+          archive_po_cost, archive_trackings_cost = self.archive_manager.get_archive(
+              archive_group)
           po_cost.update(archive_po_cost)
           trackings_cost.update(archive_trackings_cost)
 
