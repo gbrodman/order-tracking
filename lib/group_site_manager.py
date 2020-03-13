@@ -201,8 +201,7 @@ class GroupSiteManager:
     pos_to_prices = {}
     all_entries = self._get_usa_tracking_entries(headers)
     for entry in all_entries:
-      po_id = entry['purchase_id']
-      pos_to_prices[po_id] = float(entry['purchase']['amount'])
+      pos_to_prices[entry['purchase_id']] = float(entry['purchase']['amount'])
     tracking_numbers = [entry['tracking_number'] for entry in all_entries]
     async with aiohttp.ClientSession(headers=headers) as session:
       tracking_tuples_to_prices = {}

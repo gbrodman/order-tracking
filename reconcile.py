@@ -127,6 +127,8 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
       for tracking in trackings_tuple:
         if tracking in cluster.non_reimbursed_trackings:
           cluster.non_reimbursed_trackings.remove(tracking)
+    else:
+      print(f"Unknown tracking: {first_tracking}")
 
   # Next, manual PO fixes
   for cluster in clusters_by_tracking.values():
