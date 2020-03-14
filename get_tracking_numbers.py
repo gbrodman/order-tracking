@@ -57,7 +57,7 @@ def main():
   if amazon_tracking_retriever.failed_email_ids:
     print(
         f"Found {len(amazon_tracking_retriever.failed_email_ids)} Amazon emails "
-        f"without buying group labels{action_taken}. Continuing...")
+        f"without buying group labels or tracking #s{action_taken}. Continuing...")
 
   print("Retrieving Best Buy tracking numbers from email...")
   bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args,
