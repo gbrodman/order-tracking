@@ -218,18 +218,20 @@ class GroupSiteManager:
           table = driver.find_element_by_xpath("//tbody[@class='md-body']")
           rows = table.find_elements_by_tag_name('tr')
           for row in rows:
-            po = str(row.find_elements_by_tag_name('td')[5].text)
-            cost = row.find_elements_by_tag_name('td')[13].text.replace(
-                '$', '').replace(',', '')
-            trackings = row.find_elements_by_tag_name('td')[14].text.replace(
-                '-', '').split(",")
+            tds = row.find_elements_by_tag_name('td')
+            verified_checkbox = tds[4].find_element_by_tag_name('md-checkbox')
+            verified = 'md-checked' in verified_checkbox.get_attribute('class')
+            po = str(tds[5].text)
+            cost = tds[13].text.replace('$', '').replace(',', '')
+            trackings = tds[14].text.replace('-', '').split(",")
 
             if trackings:
               trackings = [
                   tracking.strip() for tracking in trackings if tracking
               ]
               if cost:
-                trackings_to_cost_map[tuple(trackings)] = float(cost)
+                trackings_to_cost_map[tuple(trackings)] = float(
+                    cost) if verified else 0.0
               for tracking in trackings:
                 tracking_to_po_map[tracking] = po
             if cost and po:

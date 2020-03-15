@@ -44,7 +44,8 @@ class CancelledItemsRetriever:
     for email_id, canc_info in tqdm(
         all_email_ids.items(), desc="Fetching cancellations", unit="email"):
       if email_id not in self.email_id_dict:
-        email_result = self.get_cancellations_from_email(mail, email_id, canc_info)
+        email_result = self.get_cancellations_from_email(
+            mail, email_id, canc_info)
         if email_result:
           self.email_id_dict[email_id] = email_result
           self.flush()
@@ -61,12 +62,21 @@ class CancelledItemsRetriever:
 
   def get_all_email_ids(self, mail) -> Dict[str, Tuple[CancFmt, CancQty]]:
     subject_searches = {
-        ("Successful cancellation of", "from your Amazon.com order",): (CancFmt.VOLUNTARY, CancQty.YES),
-        ("Partial item(s) cancellation from your Amazon.com order",): (CancFmt.VOLUNTARY, CancQty.NO),
-        ("item has been canceled from your AmazonSmile order",): (CancFmt.INVOLUNTARY, CancQty.NO),
-        ("items have been canceled from your AmazonSmile order",): (CancFmt.INVOLUNTARY, CancQty.NO),
-        ("items have been canceled from your Amazon.com order",): (CancFmt.INVOLUNTARY, CancQty.NO),
-        ("item has been canceled from your Amazon.com order",): (CancFmt.INVOLUNTARY, CancQty.NO)}
+        (
+            "Successful cancellation of",
+            "from your Amazon.com order",
+        ): (CancFmt.VOLUNTARY, CancQty.YES),
+        ("Partial item(s) cancellation from your Amazon.com order",):
+            (CancFmt.VOLUNTARY, CancQty.NO),
+        ("item has been canceled from your AmazonSmile order",):
+            (CancFmt.INVOLUNTARY, CancQty.NO),
+        ("items have been canceled from your AmazonSmile order",):
+            (CancFmt.INVOLUNTARY, CancQty.NO),
+        ("items have been canceled from your Amazon.com order",):
+            (CancFmt.INVOLUNTARY, CancQty.NO),
+        ("item has been canceled from your Amazon.com order",):
+            (CancFmt.INVOLUNTARY, CancQty.NO)
+    }
     result_ids = dict()
     for search_terms, canc_info in subject_searches.items():
       search_terms = [f'(SUBJECT "{phrase}")' for phrase in search_terms]
@@ -76,8 +86,9 @@ class CancelledItemsRetriever:
         result_ids[email_id] = canc_info
     return result_ids
 
-  def get_cancellations_from_email(self, mail, email_id: str,
-                                   canc_info: Tuple[CancFmt, CancQty]) -> Dict[str, List[str]]:
+  def get_cancellations_from_email(
+      self, mail, email_id: str,
+      canc_info: Tuple[CancFmt, CancQty]) -> Dict[str, List[str]]:
     try:
       result, data = mail.uid("FETCH", email_id, "(RFC822)")
     except Exception as e:
@@ -105,7 +116,8 @@ class CancelledItemsRetriever:
         canc_item = li.find('a').text.strip()
         # If cancellation email format contains quantity info, then use the string from
         # Amazon as-is, otherwise prepend with "??" to indicate indeterminate quantity.
-        cancelled_items.append(canc_item if canc_info[1] == CancQty.YES else f"?? {canc_item}")
+        cancelled_items.append(canc_item if canc_info[1] ==
+                               CancQty.YES else f"?? {canc_item}")
       return {order: cancelled_items}
     except Exception as e:
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
