@@ -391,7 +391,8 @@ class GroupSiteManager:
       driver.find_element_by_css_selector(
           "md-radio-button[value='email']").click()
       driver.find_element_by_css_selector("button[type='submit']").click()
-      print(f"Solve the CAPTCHA for group {group}, then WAIT FOR THE 2FA EMAIL.")
+      print(
+          f"Solve the CAPTCHA for group {group}, then WAIT FOR THE 2FA EMAIL.")
       input("Press Return once the email has arrived (don't open it): ")
       print("Fetching 2FA code from email ...")
 
@@ -406,7 +407,8 @@ class GroupSiteManager:
       code = re.match(pattern, subject).group(1).replace('-', '')
       print(f"Found passcode {code}, submitting ...")
 
-      driver.find_element_by_css_selector('input[ui-mask="999-999"]').send_keys(code)
+      driver.find_element_by_css_selector('input[ui-mask="999-999"]').send_keys(
+          code)
       time.sleep(1)
       # The "Authenticate" button is the last button on the page.
       driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
