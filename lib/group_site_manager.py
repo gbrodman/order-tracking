@@ -218,18 +218,20 @@ class GroupSiteManager:
           table = driver.find_element_by_xpath("//tbody[@class='md-body']")
           rows = table.find_elements_by_tag_name('tr')
           for row in rows:
-            po = str(row.find_elements_by_tag_name('td')[5].text)
-            cost = row.find_elements_by_tag_name('td')[13].text.replace(
-                '$', '').replace(',', '')
-            trackings = row.find_elements_by_tag_name('td')[14].text.replace(
-                '-', '').split(",")
+            tds = row.find_elements_by_tag_name('td')
+            verified_checkbox = tds[4].find_element_by_tag_name('md-checkbox')
+            verified = 'md-checked' in verified_checkbox.get_attribute('class')
+            po = str(tds[5].text)
+            cost = tds[13].text.replace('$', '').replace(',', '')
+            trackings = tds[14].text.replace('-', '').split(",")
 
             if trackings:
               trackings = [
                   tracking.strip() for tracking in trackings if tracking
               ]
               if cost:
-                trackings_to_cost_map[tuple(trackings)] = float(cost)
+                trackings_to_cost_map[tuple(trackings)] = float(
+                    cost) if verified else 0.0
               for tracking in trackings:
                 tracking_to_po_map[tracking] = po
             if cost and po:
@@ -268,6 +270,7 @@ class GroupSiteManager:
       except Exception as e:
         last_ex = e
         print("Received exception when uploading: " + str(e))
+        traceback.print_exc(file=sys.stdout)
     raise Exception("Exceeded retry limit") from last_ex
 
   def _load_page(self, driver, url) -> None:
@@ -370,7 +373,12 @@ class GroupSiteManager:
       driver.close()
 
   def _login_melul(self, group, username, password) -> Any:
+    # Always use no-headless for Melul portals for CAPTCHA solving,
+    # and save previous no-headless state and restore it aftewards.
+    former_headless = self.driver_creator.args.no_headless
+    self.driver_creator.args.no_headless = True
     driver = self.driver_creator.new()
+    self.driver_creator.args.no_headless = former_headless
     self._load_page(driver, BASE_URL_FORMAT % group)
     driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
     driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
@@ -383,9 +391,10 @@ class GroupSiteManager:
       driver.find_element_by_css_selector(
           "md-radio-button[value='email']").click()
       driver.find_element_by_css_selector("button[type='submit']").click()
-      print("Waiting for passcode...")
-
-      time.sleep(20)
+      print(
+          f"Solve the CAPTCHA for group {group}, then WAIT FOR THE 2FA EMAIL.")
+      input("Press Return once the email has arrived (don't open it): ")
+      print("Fetching 2FA code from email ...")
 
       # get the email client and search for the code
       mail = self._get_all_mail_folder()
@@ -396,9 +405,12 @@ class GroupSiteManager:
       subject = msg['Subject']
       pattern = r'Passcode for .*(\d{3}-\d{3})'
       code = re.match(pattern, subject).group(1).replace('-', '')
+      print(f"Found passcode {code}, submitting ...")
 
-      # submit it
-      driver.find_element_by_tag_name('input').send_keys(code)
+      driver.find_element_by_css_selector('input[ui-mask="999-999"]').send_keys(
+          code)
+      time.sleep(1)
+      # The "Authenticate" button is the last button on the page.
       driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
       time.sleep(1)
 
