@@ -55,6 +55,7 @@ class GroupSiteManager:
     result = set(self.melul_portal_groups)
     result.add('bfmr')
     result.add('usa')
+    result.add('yrcw')
     return result
 
   def upload(self, trackings) -> None:
