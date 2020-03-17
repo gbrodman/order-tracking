@@ -117,7 +117,35 @@ class GroupSiteManager:
     elif group == "usa":
       print("Loading group usa")
       return asyncio.run(self._get_usa_tracking_pos_prices())
+    elif group == "yrcw":
+      print("Loading yrcw")
+      return self._get_yrcw_tracking_pos_prices()
     return (dict(), dict())
+
+  # returns ((trackings) -> cost, po -> cost) maps
+  def _get_yrcw_tracking_pos_prices(self):
+    tracking_cost_map = {}
+    po_cost_map = {}
+    driver = self._login_yrcw()
+    try:
+      nav_home = driver.find_element_by_id('nav-home')
+      table = nav_home.find_element_by_tag_name('table')
+      body = table.find_element_by_tag_name('tbody')
+      rows = body.find_elements_by_tag_name('tr')
+      for row in rows:
+        tds = row.find_elements_by_tag_name('td')
+        if len(tds) > 1:  # there's a ghost <tr> at the end
+          tracking = tds[0].text.upper().strip()
+          # Something screwy is going on here with USPS labels.
+          # Strip the first 8 chars
+          if len(tracking) == 30:
+            tracking = tracking[8:]
+          value = float(tds[4].text.replace('$', '').replace(',', ''))
+          tracking_cost_map[(tracking,)] = value
+          po_cost_map[tracking] = value
+    finally:
+      driver.close()
+    return tracking_cost_map, po_cost_map
 
   def _get_usa_login_headers(self):
     group_config = self.config['groups']['usa']
