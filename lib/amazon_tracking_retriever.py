@@ -1,3 +1,4 @@
+import datetime
 import quopri
 import re
 import time
@@ -82,6 +83,24 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       return None
     finally:
       driver.close()
+
+  def get_delivery_date_from_email(self, data):
+    soup = BeautifulSoup(
+        quopri.decodestring(data[0][1]),
+        features="html.parser",
+        from_encoding="iso-8859-1")
+    critical_info = soup.find(id='criticalInfo')
+    if not critical_info:
+      return ''
+
+    tds = critical_info.find_all('td')
+    if len(tds) < 2:
+      return ''
+
+    date_text = tds[1].text.split(',')[-1].strip()
+    date = datetime.datetime.strptime(
+        date_text, "%B %d").replace(year=datetime.datetime.now().year)
+    return date.strftime('%Y-%m-%d')
 
   @retry(
       stop=stop_after_attempt(7),

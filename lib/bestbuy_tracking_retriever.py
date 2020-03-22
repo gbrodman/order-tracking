@@ -35,3 +35,6 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   def get_items_from_email(self, data):
     return ""
+
+  def get_delivery_date_from_email(self, data):
+    return ""
