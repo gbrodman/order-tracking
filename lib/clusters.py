@@ -27,7 +27,8 @@ class Cluster:
                 notes='',
                 manual_override=False,
                 non_reimbursed_trackings=set(),
-                cancelled_items=[]) -> None:
+                cancelled_items=[],
+                last_delivery_date='') -> None:
     self.orders = orders
     self.trackings = trackings
     self.group = group
@@ -42,22 +43,24 @@ class Cluster:
     self.manual_override = manual_override
     self.non_reimbursed_trackings = non_reimbursed_trackings
     self.cancelled_items = cancelled_items
+    self.last_delivery_date = last_delivery_date
 
   def __setstate__(self, state) -> None:
     self._initiate(**state)
 
   def __str__(self) -> str:
-    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, purchase_orders: %s, email_ids: %s, adjustment: %s" % (
+    return "orders: %s, trackings: %s, group: %s, expected cost: %s, tracked cost: %s, last_ship_date: %s, last_delivery_date: %s, purchase_orders: %s, email_ids: %s, adjustment: %s" % (
         str(self.orders), str(self.trackings), self.group,
-        str(self.expected_cost), str(self.tracked_cost), self.last_ship_date,
+        str(self.expected_cost), str(
+            self.tracked_cost), self.last_ship_date, self.last_delivery_date,
         str(self.purchase_orders), str(self.email_ids), str(self.adjustment))
 
   def get_header(self) -> List[str]:
     return [
         "Orders", "Trackings", "To Email", "Amount Billed", "Amount Reimbursed",
-        "Non-Reimbursed Trackings", "Last Ship Date", "POs", "Group",
-        "Manual Cost Adjustment", "Manual Override", "Total Diff", "Notes",
-        "Cancelled Items"
+        "Non-Reimbursed Trackings", "Last Ship Date",
+        "Last Delivery Date (Est.)", "POs", "Group", "Manual Cost Adjustment",
+        "Manual Override", "Total Diff", "Notes", "Cancelled Items"
     ]
 
   def to_row(self) -> list:
@@ -65,9 +68,9 @@ class Cluster:
         ", ".join(self.orders), ", ".join(self.trackings), self.to_email,
         self.expected_cost, self.tracked_cost,
         ", ".join(self.non_reimbursed_trackings), self.last_ship_date,
-        "'" + ", ".join(self.purchase_orders), self.group, self.adjustment,
-        self.manual_override,
-        '=INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("E", ROW())) - INDIRECT(CONCAT("J", ROW()))',
+        self.last_delivery_date, "'" + ", ".join(self.purchase_orders),
+        self.group, self.adjustment, self.manual_override,
+        '=INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("E", ROW())) - INDIRECT(CONCAT("K", ROW()))',
         self.notes, ", ".join(self.cancelled_items)
     ]
 
@@ -79,6 +82,8 @@ class Cluster:
     self.expected_cost += other.expected_cost
     self.tracked_cost += other.tracked_cost
     self.last_ship_date = max(self.last_ship_date, other.last_ship_date)
+    self.last_delivery_date = max(self.last_delivery_date,
+                                  other.last_delivery_date)
     self.purchase_orders.update(other.purchase_orders)
     self.email_ids.update(other.email_ids)
     self.adjustment += other.adjustment
@@ -120,6 +125,8 @@ def update_clusters(all_clusters, trackings) -> None:
     cluster.trackings.add(tracking.tracking_number)
     cluster.last_ship_date = max(cluster.last_ship_date,
                                  str(tracking.ship_date))
+    cluster.last_delivery_date = max(cluster.last_delivery_date,
+                                     str(tracking.delivery_date))
     cluster.to_email = tracking.to_email
     if override_overridden:
       print(f"Cluster {cluster.orders} manual override unset because of newly "
@@ -194,6 +201,9 @@ def from_row(header, row) -> Cluster:
   ]) if non_reimbursed_str else set()
   last_ship_date = row[header.index(
       'Last Ship Date')] if 'Last Ship Date' in header else '0'
+  last_delivery_date = row[
+      header.index('Last Delivery Date (Est.)'
+                  )] if 'Last Delivery Date (Est.)' in header else ''
   pos_string = str(row[header.index('POs')]) if 'POs' in header else ''
   pos = set([s.strip() for s in pos_string.split(',')]) if pos_string else set()
   email_ids = set()  # Set this if we want email IDs in the Sheet
@@ -212,5 +222,6 @@ def from_row(header, row) -> Cluster:
   cluster = Cluster(group)
   cluster._initiate(orders, trackings, group, expected_cost, tracked_cost,
                     last_ship_date, pos, email_ids, adjustment, to_email, notes,
-                    manual_override, non_reimbursed_trackings, cancelled_items)
+                    manual_override, non_reimbursed_trackings, cancelled_items,
+                    last_delivery_date)
   return cluster

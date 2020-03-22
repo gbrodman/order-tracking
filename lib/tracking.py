@@ -16,7 +16,8 @@ class Tracking:
                tracked_cost=0.0,
                items='',
                merchant='',
-               reconcile: bool = True) -> None:
+               reconcile: bool = True,
+               delivery_date="") -> None:
     self.tracking_number = tracking_number
     self.group = group
     self.order_ids = order_ids
@@ -27,6 +28,7 @@ class Tracking:
     self.items = items
     self.merchant = merchant
     self.reconcile = reconcile
+    self.delivery_date = delivery_date
 
   def __setstate__(self, state) -> None:
     self.__init__(**state)
@@ -36,19 +38,21 @@ class Tracking:
             f"order(s): {self.order_ids}, price: {self.price}, "
             f"to_email: {self.to_email}, "
             f"ship_date: {self.ship_date}, items: {self.items}, "
-            f"merchant: {self.merchant}, reconcile: {self.reconcile}")
+            f"merchant: {self.merchant}, reconcile: {self.reconcile}, "
+            f"delivery_date: {self.delivery_date}")
 
   def to_row(self) -> list:
     hyperlink = self._create_hyperlink()
     return [
         hyperlink, ", ".join(self.order_ids), self.to_email, self.ship_date,
-        self.group, self.tracked_cost, self.merchant, self.items
+        self.delivery_date, self.group, self.tracked_cost, self.merchant,
+        self.items
     ]
 
   def get_header(self) -> List[str]:
     return [
-        "Tracking Number", "Order Number(s)", "To Email", "Ship Date", "Group",
-        "Amount Reimbursed", "Merchant", "Items"
+        "Tracking Number", "Order Number(s)", "To Email", "Ship Date",
+        "Est. Delivery Date", "Group", "Amount Reimbursed", "Merchant", "Items"
     ]
 
   def _create_hyperlink(self) -> Any:
@@ -71,6 +75,11 @@ class Tracking:
       return None
 
 
+def convert_int_to_date(i):
+  return (datetime.date(1900, 1, 1) +
+          datetime.timedelta(int(i) - 2)).strftime("%Y-%m-%d")
+
+
 def from_row(header, row) -> Tracking:
   tracking = row[header.index('Tracking Number')]
   orders = set(
@@ -82,8 +91,12 @@ def from_row(header, row) -> Tracking:
   ship_date = row[header.index("Ship Date")]
 
   if isinstance(ship_date, int):
-    ship_date = (datetime.date(1900, 1, 1) +
-                 datetime.timedelta(int(ship_date) - 2)).strftime("%Y-%m-%d")
+    ship_date = convert_int_to_date(ship_date)
+
+  delivery_date = row[header.index(
+      "Est. Delivery Date")] if "Est. Delivery Date" in header else ""
+  if isinstance(delivery_date, int):
+    delivery_date = convert_int_to_date(delivery_date)
 
   group = row[header.index("Group")]
   tracked_cost_str = row[header.index(
@@ -101,4 +114,5 @@ def from_row(header, row) -> Tracking:
       tracked_cost=tracked_cost,
       items=items,
       merchant=merchant,
-      reconcile=True)
+      reconcile=True,
+      delivery_date=delivery_date)

@@ -98,22 +98,22 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
       "sheetId": int(tab_id),
       "startRowIndex": 1,
       "endRowIndex": num_objects + 1,
-      "startColumnIndex": 7,
-      "endColumnIndex": 8,
+      "startColumnIndex": 8,
+      "endColumnIndex": 9,
   }
   checkbox_range = {
       "sheetId": int(tab_id),
       "startRowIndex": 1,
       "endRowIndex": num_objects + 1,
-      "startColumnIndex": 10,
-      "endColumnIndex": 11
+      "startColumnIndex": 11,
+      "endColumnIndex": 12
   }
   total_diff_range = {
       "sheetId": int(tab_id),
       "startRowIndex": 1,
       "endRowIndex": num_objects + 1,
-      "startColumnIndex": 11,
-      "endColumnIndex": 12
+      "startColumnIndex": 12,
+      "endColumnIndex": 13
   }
   requests = [
       # freeze the header in place
@@ -168,7 +168,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                               "CUSTOM_FORMULA",
                           "values": [{
                               'userEnteredValue':
-                                  '=OR((J2:J)+(E2:E)=D2:D, K2:K=TRUE)'
+                                  '=OR((K2:K)+(E2:E)=D2:D, L2:L=TRUE)'
                           }]
                       },
                       "format": {
@@ -193,7 +193,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                           "type":
                               "CUSTOM_FORMULA",
                           "values": [{
-                              'userEnteredValue': '=(J2:J)+(E2:E)>D2:D'
+                              'userEnteredValue': '=(K2:K)+(E2:E)>D2:D'
                           }]
                       },
                       "format": {
@@ -218,7 +218,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title,
                           "type":
                               "CUSTOM_FORMULA",
                           "values": [{
-                              'userEnteredValue': '=(J2:J)+(E2:E)<D2:D'
+                              'userEnteredValue': '=(K2:K)+(E2:E)<D2:D'
                           }]
                       },
                       "format": {

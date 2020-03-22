@@ -104,6 +104,10 @@ class EmailTrackingRetriever(ABC):
   def get_items_from_email(self, data) -> Any:
     pass
 
+  @abstractmethod
+  def get_delivery_date_from_email(self, data) -> Any:
+    pass
+
   def get_date_from_msg(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     msg_date = msg['Date']
@@ -147,8 +151,9 @@ class EmailTrackingRetriever(ABC):
       return None
 
     merchant = self.get_merchant()
+    delivery_date = self.get_delivery_date_from_email(data)
     return Tracking(tracking_number, group, order_ids, price, to_email, '',
-                    date, 0.0, items, merchant, reconcile)
+                    date, 0.0, items, merchant, reconcile, delivery_date)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = imaplib.IMAP4_SSL(self.email_config['imapUrl'])
