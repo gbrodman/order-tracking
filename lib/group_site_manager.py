@@ -136,7 +136,7 @@ class GroupSiteManager:
       for row in rows:
         tds = row.find_elements_by_tag_name('td')
         if len(tds) > 1:  # there's a ghost <tr> at the end
-          tracking = tds[0].text.upper().strip()
+          tracking = tds[1].text.upper().strip()
           # Something screwy is going on here with USPS labels.
           # Strip the first 8 chars
           if len(tracking) == 30:
