@@ -19,10 +19,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     match = re.match(self.first_regex, str(raw_email))
     if not match:
       match = re.match(self.second_regex, str(raw_email))
-    if match:
-      return match.group(1)
-    print(raw_email)
-    raise Exception("Could not get URL from email")
+    return match.group(1) if match else None
 
   def get_order_ids_from_email(self, raw_email):
     matches = re.findall(self.order_ids_regex, raw_email)
@@ -65,6 +62,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   def get_tracking_number_from_email(self, raw_email):
     url = self.get_order_url_from_email(raw_email)
+    if not url:
+      return None
     return self.get_tracking_info(url)
 
   def get_tracking_info(self, amazon_url):
