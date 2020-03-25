@@ -92,9 +92,12 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     if not text:
       return ''
     date_text = text.split(',')[-1].strip()
-    date = datetime.datetime.strptime(
+    try:
+      date = datetime.datetime.strptime(
         date_text, "%B %d").replace(year=datetime.datetime.now().year)
-    return date.strftime('%Y-%m-%d')
+      return date.strftime('%Y-%m-%d')
+    except:
+      return ''
 
   def get_date_text_from_soup(self, soup):
     critical_info = soup.find(id='criticalInfo')
