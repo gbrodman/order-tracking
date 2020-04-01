@@ -75,11 +75,6 @@ class DriverCreator:
     # reduce Windows log spam
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    if not user_data_dir:
-      user_data_dir = os.path.join(os.getcwd(), "chrome", "data-dir")
-      if not os.path.exists(user_data_dir):
-        os.mkdir(user_data_dir)
-
     if sys.platform.startswith("darwin"):  # osx
       driver = self._create_osx_driver(options, user_data_dir)
     elif sys.platform.startswith("win"):  # windows
