@@ -19,7 +19,9 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     match = re.search(self.tracking_regex, raw_email)
     if not match:
       return None
-    return match.group(1)
+    # The second part of the tuple here is the shipping status, which would need
+    # to be retrieved from a shipping status web page (like it is for Amazon).
+    return match.group(1), None
 
   def get_subject_searches(self):
     return [["Your order #BBY01", "has shipped"]]

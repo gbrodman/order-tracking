@@ -2,6 +2,8 @@ import datetime
 import quopri
 import re
 import time
+from typing import Tuple, Optional
+
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from lib.email_tracking_retriever import EmailTrackingRetriever
@@ -60,13 +62,13 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_number_from_email(self, raw_email):
+  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
       return None
     return self.get_tracking_info(url)
 
-  def get_tracking_info(self, amazon_url):
+  def get_tracking_info(self, amazon_url) -> Tuple[str, Optional[str]]:
     driver = self.load_url(amazon_url)
     try:
       element = driver.find_element_by_xpath(
@@ -74,12 +76,13 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
-        return None
-      tracking_number = match.group(1)
-      return tracking_number.upper()
+        return None, None
+      tracking_number = match.group(1).upper()
+      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute("textContent").strip(" \t\n\r")
+      return tracking_number, shipping_status
     except:
       # swallow this and continue on
-      return None
+      return None, None
     finally:
       driver.close()
 

@@ -89,7 +89,10 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_tracking_number_from_email(self, raw_email) -> Any:
+  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
+    """
+    Returns a Tuple of [tracking number, optional shipping status].
+    """
     pass
 
   @abstractmethod
@@ -131,9 +134,9 @@ class EmailTrackingRetriever(ABC):
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
     group, reconcile = self.get_buying_group(raw_email)
-    tracking_number = self.get_tracking_number_from_email(raw_email)
+    tracking_number, shipping_status = self.get_tracking_number_from_email(raw_email)
     tqdm.write(
-        f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}")
+        f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}, Status: {shipping_status}")
     if tracking_number == None:
       self.failed_email_ids.append(email_id)
       tqdm.write(
