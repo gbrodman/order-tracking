@@ -144,6 +144,9 @@ class GroupSiteManager:
           value = float(tds[4].text.replace('$', '').replace(',', ''))
           tracking_cost_map[(tracking,)] = value
           po_cost_map[tracking] = value
+          print(f"YRCW: {tracking}: {value}")
+        else:
+          print("Found last YRCW row")
     finally:
       driver.close()
     return tracking_cost_map, po_cost_map
