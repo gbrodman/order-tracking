@@ -11,3 +11,4 @@ PyYAML==5.1.1
 selenium==3.141.0
 tenacity==5.1.4
 tqdm==4.40.0
+oauth2client==4.1.3
