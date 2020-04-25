@@ -27,7 +27,7 @@ def authentication():
    mail.authenticate('XOAUTH2', lambda x: authstring)
    return mail
 def getAuthString():
-   CONFIG_FILE = "/Users/khorch/order-tracking/config.yml"
+   CONFIG_FILE = "config.yml"
    with open(CONFIG_FILE, 'r') as config_file_stream:
       config = yaml.safe_load(config_file_stream)
       email_config = config['email']
