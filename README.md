@@ -88,7 +88,7 @@ We need to create and use an automated Google Cloud account to write to Drive an
 - When you download the credentials JSON file, rename it "creds.json" and put it in the same directory as these scripts.
 - In the Google Cloud console website, use the left navigation pane to go to "APIs and Services"
 - Next, click "Enable APIs and Services". This will take you to the API library. You need to search for and enable the "Google Drive API" and "Google Sheets API". For each, search for it, click the term, and enable it.
-- Next, For OAuth create a key on [this page] (https://support.google.com/cloud/answer/6158849?hl=en) and store as client_credentials.json
+- Next, For OAuth create a key on https://support.google.com/cloud/answer/6158849?hl=en and store as client_credentials.json
 - Next, for the reconciliation Google Sheet and the Google Drive folder that we set up, make sure to share the sheet/folder with the service account that we created before. Just share them both with the email address that ends in ".gserviceaccount.com" (make sure the address has editing permissions on the sheet and folder).
 
 That should be it -- the "creds.json" file will give the scripts the ability to run as the service account, and we've given the service account permissions to the things it needs to write to.
