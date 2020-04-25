@@ -6,6 +6,7 @@ import quopri
 import re
 import sys
 import traceback
+import lib.oauth2 as oauth2
 
 from bs4 import BeautifulSoup
 from enum import Enum
@@ -129,9 +130,7 @@ class CancelledItemsRetriever:
       return None
 
   def load_mail(self):
-    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
-    mail.login(self.config['email']['username'],
-               self.config['email']['password'])
+    mail = oauth2.authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
