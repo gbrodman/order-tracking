@@ -42,7 +42,7 @@ class OrderInfoRetriever:
     self.mail = self.load_mail()
 
   def load_mail(self):
-    mmail = oauth2.authentication()
+    mail = oauth2.authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
