@@ -38,7 +38,7 @@ class EmailSender:
 
   def send_email_content(self, subject, content, recipients=[]) -> None:
     recipients = recipients if recipients else [self.email_config['username']]
-    authstring, client_id, credentials = oauth2.getAuthString()
+    credentials = oauth2.getAuthString()
     service = build('gmail','v1',credentials=credentials)
 
     message = MIMEText(content)
