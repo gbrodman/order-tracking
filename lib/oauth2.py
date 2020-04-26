@@ -33,7 +33,6 @@ def getAuthString():
       email_config = config['email']
    store = file.Storage('storage.json')
    creds = store.get()
-
    if not creds or creds.invalid:
       flow = client.flow_from_clientsecrets('client_secret.json', SCOPES)
       creds = tools.run_flow(flow, store)
@@ -41,7 +40,4 @@ def getAuthString():
    else:
       creds.refresh(Http())
       client_credentials = creds.get_access_token().access_token
-   authstring = "user=%s\1auth=Bearer %s\1\1" % (email_config["username"], client_credentials)
-   client_id = json.loads(creds.to_json())['client_id']
-
-   return authstring, client_id, creds
+   return creds
