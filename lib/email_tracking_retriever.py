@@ -2,7 +2,7 @@ import datetime
 import email
 import imaplib
 import lib.tracking
-import lib.oauth2 as oauth2
+import lib.email_auth as email_auth
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 from lib.tracking import Tracking
@@ -160,7 +160,7 @@ class EmailTrackingRetriever(ABC):
                     date, 0.0, items, merchant, reconcile, delivery_date)
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
-    mail = oauth2.authentication()
+    mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 

@@ -1,10 +1,8 @@
 import collections
 import datetime
-import smtplib
 from email.mime.text import MIMEText
-import lib.oauth2 as oauth2
-from googleapiclient.discovery import build
-import base64
+import lib.email_auth as email_auth
+
 
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -38,15 +36,9 @@ class EmailSender:
 
   def send_email_content(self, subject, content, recipients=[]) -> None:
     recipients = recipients if recipients else [self.email_config['username']]
-    credentials = oauth2.getAuthString()
-    service = build('gmail','v1',credentials=credentials)
 
     message = MIMEText(content)
     message['From'] = self.email_config['username']
     message['To'] = ", ".join(recipients)
     message['Subject'] = subject
-    raw = base64.urlsafe_b64encode(message.as_bytes())
-    raw = raw.decode()
-    body = {'raw': raw}
-    message=body
-    service.users().messages().send(userId=self.email_config['username'],body=message).execute()
+    email_auth.send_email(self,recipients, message)

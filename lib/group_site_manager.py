@@ -9,7 +9,7 @@ import requests
 import sys
 import time
 import traceback
-import lib.oauth2 as oauth2
+import lib.email_auth as email_auth
 
 from bs4 import BeautifulSoup
 from lib.archive_manager import ArchiveManager
@@ -460,7 +460,7 @@ class GroupSiteManager:
     return driver
 
   def _get_all_mail_folder(self):
-    mail = oauth2.authentication()
+    mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 

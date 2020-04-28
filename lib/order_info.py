@@ -3,7 +3,7 @@ import os.path
 import imaplib
 import re
 import quopri
-import lib.oauth2 as oauth2
+import lib.email_auth as email_auth
 from bs4 import BeautifulSoup
 from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, Union
@@ -42,7 +42,7 @@ class OrderInfoRetriever:
     self.mail = self.load_mail()
 
   def load_mail(self):
-    mail = oauth2.authentication()
+    mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
