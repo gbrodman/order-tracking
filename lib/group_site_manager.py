@@ -129,6 +129,7 @@ class GroupSiteManager:
     po_cost_map = {}
     driver = self._login_yrcw()
     try:
+      time.sleep(5) # it can take a bit to load
       nav_home = driver.find_element_by_id('nav-home')
       table = nav_home.find_element_by_tag_name('table')
       body = table.find_element_by_tag_name('tbody')
