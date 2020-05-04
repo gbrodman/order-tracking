@@ -125,8 +125,8 @@ class GroupSiteManager:
 
   # returns ((trackings) -> cost, po -> cost) maps
   def _get_yrcw_tracking_pos_prices(self):
-    tracking_cost_map = {}
-    po_cost_map = {}
+    tracking_cost_map = collections.defaultdict(float)
+    po_cost_map = collections.defaultdict(float)
     driver = self._login_yrcw()
     try:
       time.sleep(5) # it can take a bit to load
@@ -143,8 +143,8 @@ class GroupSiteManager:
           if len(tracking) == 30:
             tracking = tracking[8:]
           value = float(tds[4].text.replace('$', '').replace(',', ''))
-          tracking_cost_map[(tracking,)] = value
-          po_cost_map[tracking] = value
+          tracking_cost_map[(tracking,)] += value
+          po_cost_map[tracking] += value
     finally:
       driver.close()
     return tracking_cost_map, po_cost_map
