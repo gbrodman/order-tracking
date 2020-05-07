@@ -1,6 +1,6 @@
 # config.py
 #
-# Combine standard login with option of OAuth2.0
+# Open config file
 #
 import yaml
 
