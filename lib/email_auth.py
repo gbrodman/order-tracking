@@ -6,7 +6,7 @@
 from httplib2 import Http
 from oauth2client import file, client, tools
 from googleapiclient.discovery import build
-from lib.config_file import open_config
+from lib.config import open_config
 import smtplib
 import base64
 from imaplib import IMAP4_SSL
