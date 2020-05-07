@@ -1,4 +1,4 @@
-# config_file.py
+# config.py
 #
 # Combine standard login with option of OAuth2.0
 #
