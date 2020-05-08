@@ -13,13 +13,16 @@ from imaplib import IMAP4_SSL
 
 config = open_config()
 email_config = config['email']
-gmail_url = email_config["gmailUrl"]
+gmail_url = "https://mail.google.com/"
+imapUrl = "imap.gmail.com"
+smtpUrl = "smtp.gmail.com"
+smtpPort = "587"
 username= email_config["username"]
 
 
 def email_authentication():
    
-  mail = IMAP4_SSL(email_config['imapUrl'])
+  mail = IMAP4_SSL(imapUrl)
   if "password"  in email_config and email_config["password"]:
     mail.login(email_config['username'], email_config['password'])
   else:
@@ -31,9 +34,9 @@ def email_authentication():
 
 
 def send_email(self, recipients, message):
-  if "password" in self.email_config:
-    s = smtplib.SMTP(self.email_config['smtpUrl'],
-                     self.email_config['smtpPort'])
+  if "password"  in email_config and email_config["password"]:
+    s = smtplib.SMTP(smtpUrl,
+                     smtpPort)
     s.starttls()
     s.login(self.email_config['username'], self.email_config['password'])
     s.sendmail(self.email_config['username'], recipients, message.as_string())

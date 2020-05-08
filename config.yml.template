@@ -1,11 +1,9 @@
 email:
   username: my_email@gmail.com
   # for Gmail, password should be an application-specific password
+  # App Passwords are depeciated.  Follow Readme to set up OAuth.
+  # password line can be removed, if desired.
   password:
-  imapUrl: imap.gmail.com
-  smtpUrl: smtp.gmail.com
-  smtpPort: 587
-  gmailUrl: https://mail.google.com/
 
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site

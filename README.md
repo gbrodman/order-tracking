@@ -74,6 +74,8 @@ pip install -r requirements.txt
 
 Here are details of the fields on config.yml:
 
+- The email and password should be a GMail account -- specifically, the password should be an [app-specific password](https://support.google.com/accounts/answer/185833?hl=en). You can likely keep the IMAP and SMTP configuration the same (unless you know for sure that you shouldn't).
+- As of March 2020, App passwords are no longer supported by Google.  OAuth is needed to be used to log into Gmail.  See details below on how to set that up.
 - For each group in 'groups', include the full name of the group (for sites like MYS, this should be the URL minus the ".com" bit). Include a unique key per group (default is based on the address) that will appear only in shipping notifications to that group. The username and password should be to the group's online portal so that we can upload tracking numbers and scrape reconciliation data.
 - lookbackDays is how far back in your email account we'll search for unread Amazon shipping emails. Note: the shipment links expire after 45 days so we shouldn't go past that
 - The reconciliation baseSpreadsheetId should be the ID of an existing Google Sheet. See the section below on how to give correct permissions to that sheet. The ID can be retrieved form the URL, which is of the form "https://docs.google.com/spreadsheets/d/SHEET_ID"
@@ -88,8 +90,8 @@ We need to create and use an automated Google Cloud account to write to Drive an
 - When you download the credentials JSON file, rename it "creds.json" and put it in the same directory as these scripts.
 - In the Google Cloud console website, use the left navigation pane to go to "APIs and Services"
 - Next, click "Enable APIs and Services". This will take you to the API library. You need to search for and enable the "Google Drive API" and "Google Sheets API". For each, search for it, click the term, and enable it.
-- Next, For OAuth create a key on https://support.google.com/cloud/answer/6158849?hl=en and store as client_secret.json
 - Next, for the reconciliation Google Sheet and the Google Drive folder that we set up, make sure to share the sheet/folder with the service account that we created before. Just share them both with the email address that ends in ".gserviceaccount.com" (make sure the address has editing permissions on the sheet and folder).
+- For OAuth, create a key on https://support.google.com/cloud/answer/6158849?hl=en and store as client_secret.json in the same directory as these scripts.
 
 That should be it -- the "creds.json" file will give the scripts the ability to run as the service account, and we've given the service account permissions to the things it needs to write to.
 
