@@ -19,15 +19,15 @@ username= email_config["username"]
 
 def email_authentication():
    
-   mail = IMAP4_SSL(email_config['imapUrl'])
-   if "password"  in email_config and email_config["password"]:
-      mail.login(email_config['username'], email_config['password'])
-   else:
-      creds = get_oauth_credentials(gmail_url)
-      client_credentials = creds.get_access_token().access_token
-      authstring = f"user={username}\1auth=Bearer {client_credentials}\1\1"
-      mail.authenticate('XOAUTH2', lambda x: authstring)
-   return mail
+  mail = IMAP4_SSL(email_config['imapUrl'])
+  if "password"  in email_config and email_config["password"]:
+    mail.login(email_config['username'], email_config['password'])
+  else:
+    creds = get_oauth_credentials(gmail_url)
+    client_credentials = creds.get_access_token().access_token
+    authstring = f"user={username}\1auth=Bearer {client_credentials}\1\1"
+    mail.authenticate('XOAUTH2', lambda x: authstring)
+  return mail
 
 
 def send_email(self, recipients, message):
