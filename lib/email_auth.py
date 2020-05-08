@@ -11,17 +11,19 @@ import smtplib
 import base64
 from imaplib import IMAP4_SSL
 
+config = open_config()
+email_config = config['email']
+gmail_url = email_config["gmailUrl"]
+username= email_config["username"]
+
 
 def email_authentication():
-   config = open_config()
-   email_config = config['email']
-   SCOPES = email_config["gmailUrl"]
-   username= email_config["username"]
+   
    mail = IMAP4_SSL(email_config['imapUrl'])
    if "password" in email_config:
       mail.login(email_config['username'], email_config['password'])
    else:
-      creds = get_oauth_credentials(SCOPES)
+      creds = get_oauth_credentials(gmail_url)
       client_credentials = creds.get_access_token().access_token
       authstring = f"user={username}\1auth=Bearer {client_credentials}\1\1"
       mail.authenticate('XOAUTH2', lambda x: authstring)
@@ -37,10 +39,7 @@ def send_email(self, recipients, message):
     s.sendmail(self.email_config['username'], recipients, message.as_string())
     s.quit()
   else:
-    config = open_config()
-    email_config = config['email']
-    SCOPES = email_config["gmailUrl"]
-    creds = get_oauth_credentials(SCOPES)
+    creds = get_oauth_credentials(gmail_url)
     service = build('gmail','v1',credentials=creds)
     raw = base64.urlsafe_b64encode(message.as_bytes())
     raw = raw.decode()
@@ -49,11 +48,11 @@ def send_email(self, recipients, message):
     service.users().messages().send(userId=self.email_config['username'],body=message).execute()
 
 
-def get_oauth_credentials(SCOPES):
+def get_oauth_credentials(gmail_url):
   store = file.Storage('storage.json')
   creds = store.get()
   if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('client_secret.json', SCOPES)
+    flow = client.flow_from_clientsecrets('client_secret.json', gmail_url)
     creds = tools.run_flow(flow, store)
   else:
     creds.refresh(Http())
