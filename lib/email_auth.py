@@ -20,7 +20,7 @@ username= email_config["username"]
 def email_authentication():
    
    mail = IMAP4_SSL(email_config['imapUrl'])
-   if "password" in email_config:
+   if "password"  in email_config and email_config["password"]:
       mail.login(email_config['username'], email_config['password'])
    else:
       creds = get_oauth_credentials(gmail_url)
