@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
-#email_auth.py
+# email_auth.py
 #
-#Combine standard login with option of OAuth2.0
+# Combine standard login with option of OAuth2.0
 #
+
 from httplib2 import Http
 from oauth2client import file, client, tools
 from googleapiclient.discovery import build
