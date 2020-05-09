@@ -65,7 +65,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
-      return None
+      return None, None
     return self.get_tracking_info(url)
 
   def get_tracking_info(self, amazon_url) -> Tuple[str, Optional[str]]:

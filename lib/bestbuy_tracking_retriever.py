@@ -18,7 +18,7 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   def get_tracking_number_from_email(self, raw_email):
     match = re.search(self.tracking_regex, raw_email)
     if not match:
-      return None
+      return None, None
     # The second part of the tuple here is the shipping status, which would need
     # to be retrieved from a shipping status web page (like it is for Amazon).
     return match.group(1), None
