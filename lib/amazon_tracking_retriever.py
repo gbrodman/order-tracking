@@ -95,6 +95,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     if not text:
       return ''
     date_text = text.split(',')[-1].strip()
+    date_text = ' '.join(date_text.split(' ')[0:2])
     try:
       date = datetime.datetime.strptime(
         date_text, "%B %d").replace(year=datetime.datetime.now().year)
