@@ -33,13 +33,13 @@ def email_authentication():
   return mail
 
 
-def send_email(self, recipients, message):
+def send_email(recipients, message):
   if "password"  in email_config and email_config["password"]:
     s = smtplib.SMTP(smtpUrl,
                      smtpPort)
     s.starttls()
-    s.login(self.email_config['username'], self.email_config['password'])
-    s.sendmail(self.email_config['username'], recipients, message.as_string())
+    s.login(email_config['username'], email_config['password'])
+    s.sendmail(email_config['username'], recipients, message.as_string())
     s.quit()
   else:
     creds = get_oauth_credentials(gmail_url)
