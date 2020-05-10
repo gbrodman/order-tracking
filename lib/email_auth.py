@@ -51,7 +51,7 @@ def send_email(recipients, message):
     service.users().messages().send(userId=self.email_config['username'],body=message).execute()
 
 
-def get_oauth_credentials(gmail_url):
+def get_oauth_credentials():
   store = file.Storage('storage.json')
   creds = store.get()
   if not creds or creds.invalid:
