@@ -17,13 +17,13 @@ GMAIL_URL = "https://mail.google.com/"
 IMAPURL = "imap.gmail.com"
 SMTPURL = "smtp.gmail.com"
 SMTPPORT = "587"
-USERNAME= EMAIL_CONFIG["username"]
+USERNAME = EMAIL_CONFIG["username"]
 
 
 def email_authentication():
-   
+
   mail = IMAP4_SSL(IMAPURL)
-  if "password"  in EMAIL_CONFIG and EMAIL_CONFIG["password"]:
+  if "password" in EMAIL_CONFIG and EMAIL_CONFIG["password"]:
     mail.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
   else:
     creds = get_oauth_credentials()
@@ -34,21 +34,21 @@ def email_authentication():
 
 
 def send_email(recipients, message):
-  if "password"  in EMAIL_CONFIG and EMAIL_CONFIG["password"]:
-    s = smtplib.SMTP(SMTPURL,
-                     SMTPPORT)
+  if "password" in EMAIL_CONFIG and EMAIL_CONFIG["password"]:
+    s = smtplib.SMTP(SMTPURL, SMTPPORT)
     s.starttls()
     s.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
     s.sendmail(EMAIL_CONFIG['username'], recipients, message.as_string())
     s.quit()
   else:
     creds = get_oauth_credentials()
-    service = build('gmail','v1',credentials=creds)
+    service = build('gmail', 'v1', credentials=creds)
     raw = base64.urlsafe_b64encode(message.as_bytes())
     raw = raw.decode()
     body = {'raw': raw}
-    message=body
-    service.users().messages().send(userId=EMAIL_CONFIG['username'],body=message).execute()
+    message = body
+    service.users().messages().send(
+        userId=EMAIL_CONFIG['username'], body=message).execute()
 
 
 def get_oauth_credentials():

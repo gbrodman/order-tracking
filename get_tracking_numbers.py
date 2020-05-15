@@ -15,13 +15,12 @@ import traceback
 import yaml
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.bestbuy_tracking_retriever import BestBuyTrackingRetriever
+from lib.config import open_config
 from lib.driver_creator import DriverCreator
 from lib.email_sender import EmailSender
 from lib.group_site_manager import GroupSiteManager
 from lib.tracking_uploader import TrackingUploader
 from lib.tracking_output import TrackingOutput
-
-CONFIG_FILE = "config.yml"
 
 
 def send_error_email(email_sender, subject):
@@ -39,8 +38,7 @@ def main():
 
   driver_creator = DriverCreator()
 
-  with open(CONFIG_FILE, 'r') as config_file_stream:
-    config = yaml.safe_load(config_file_stream)
+  config = open_config()
   email_config = config['email']
   email_sender = EmailSender(email_config)
 

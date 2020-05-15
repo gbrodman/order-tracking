@@ -3,7 +3,6 @@ import datetime
 from email.mime.text import MIMEText
 import lib.email_auth as email_auth
 
-
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
 
 
@@ -41,4 +40,4 @@ class EmailSender:
     message['From'] = self.email_config['username']
     message['To'] = ", ".join(recipients)
     message['Subject'] = subject
-    email_auth.send_email(self,recipients, message)
+    email_auth.send_email(self, recipients, message)

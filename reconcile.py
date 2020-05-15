@@ -7,14 +7,13 @@ import sys
 from tqdm import tqdm
 import yaml
 from lib.cancelled_items_retriever import CancelledItemsRetriever
+from lib.config import open_config
 from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
 from lib.tracking_uploader import TrackingUploader
-
-CONFIG_FILE = "config.yml"
 
 
 def fill_costs(all_clusters, config):
@@ -185,8 +184,7 @@ def main():
   parser.add_argument("--groups", nargs="*")
   args, _ = parser.parse_known_args()
 
-  with open(CONFIG_FILE, 'r') as config_file_stream:
-    config = yaml.safe_load(config_file_stream)
+  config = open_config()
 
   reconcile_new(config, args)
 

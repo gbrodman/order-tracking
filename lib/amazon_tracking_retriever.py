@@ -62,7 +62,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
+  def get_tracking_number_from_email(self,
+                                     raw_email) -> Tuple[str, Optional[str]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
       return None, None
@@ -78,7 +79,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       if not match:
         return None, None
       tracking_number = match.group(1).upper()
-      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute("textContent").strip(" \t\n\r")
+      shipping_status = driver.find_element_by_id(
+          "primaryStatus").get_attribute("textContent").strip(" \t\n\r")
       return tracking_number, shipping_status
     except:
       # swallow this and continue on
@@ -98,7 +100,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     date_text = ' '.join(date_text.split(' ')[0:2])
     try:
       date = datetime.datetime.strptime(
-        date_text, "%B %d").replace(year=datetime.datetime.now().year)
+          date_text, "%B %d").replace(year=datetime.datetime.now().year)
       return date.strftime('%Y-%m-%d')
     except:
       return ''

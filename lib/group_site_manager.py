@@ -130,7 +130,7 @@ class GroupSiteManager:
     po_cost_map = collections.defaultdict(float)
     driver = self._login_yrcw()
     try:
-      time.sleep(5) # it can take a bit to load
+      time.sleep(5)  # it can take a bit to load
       nav_home = driver.find_element_by_id('nav-home')
       table = nav_home.find_element_by_tag_name('table')
       body = table.find_element_by_tag_name('tbody')
@@ -422,7 +422,8 @@ class GroupSiteManager:
       driver.find_element_by_css_selector(
           "md-radio-button[value='email']").click()
       driver.find_element_by_css_selector("button[type='submit']").click()
-      print(f"Solve the CAPTCHA for group {group}, then WAIT FOR THE 2FA EMAIL.")
+      print(
+          f"Solve the CAPTCHA for group {group}, then WAIT FOR THE 2FA EMAIL.")
       input("Press Return once the email has arrived (don't open it): ")
       print("Fetching 2FA code from email ...")
 
@@ -437,7 +438,8 @@ class GroupSiteManager:
       code = re.match(pattern, subject).group(1).replace('-', '')
       print(f"Found passcode {code}, submitting ...")
 
-      driver.find_element_by_css_selector('input[ui-mask="999-999"]').send_keys(code)
+      driver.find_element_by_css_selector('input[ui-mask="999-999"]').send_keys(
+          code)
       time.sleep(1)
       # The "Authenticate" button is the last button on the page.
       driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
