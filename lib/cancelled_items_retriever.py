@@ -64,6 +64,8 @@ class CancelledItemsRetriever:
 
   def get_all_email_ids(self, mail) -> Dict[str, Tuple[CancFmt, CancQty]]:
     subject_searches = {
+        ('Your Amazon.com order', 'has been canceled'):
+            (CancFmt.IRRELEVANT, CancQty.NO),
         ('Your Amazon.com Order', 'Has Been Canceled'):
             (CancFmt.IRRELEVANT, CancQty.NO),
         ('Your Amazon.com Order', 'Has Been Cancelled'):
