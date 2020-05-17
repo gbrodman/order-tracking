@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 from lib.archive_manager import ArchiveManager
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
 from typing import Any, Dict
 
@@ -131,6 +132,18 @@ class GroupSiteManager:
     driver = self._login_yrcw()
     try:
       time.sleep(5)  # it can take a bit to load
+
+      # show all trackings, not just non-paid
+      driver.find_element_by_css_selector('button[title="Filters"]').click()
+      time.sleep(2)
+      select = Select(driver.find_element_by_tag_name('select'))
+      select.select_by_visible_text('Any')
+
+      driver.find_element_by_css_selector(
+          'div.modal-footer .btn-primary').click()
+      time.sleep(2)
+
+      # next load the actual data
       nav_home = driver.find_element_by_id('nav-home')
       table = nav_home.find_element_by_tag_name('table')
       body = table.find_element_by_tag_name('tbody')
