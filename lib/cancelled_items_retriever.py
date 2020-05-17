@@ -105,7 +105,10 @@ class CancelledItemsRetriever:
       raise Exception(f"Error retrieving email UID {email_id}") from e
     try:
       raw_email = data[0][1]
-      order = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
+      orders = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))
+      if not orders:
+        return {}
+      order = orders[0]
 
       cancelled_items = []
       soup = BeautifulSoup(
