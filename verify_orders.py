@@ -41,7 +41,7 @@ def order_from_row(header, row):
 
 
 def get_email_ids(mail, args):
-  lookback_days = int(args.days) if args.days else 30
+  lookback_days = int(args.days) if args.days else 90
   date = datetime.date.today() - datetime.timedelta(days=lookback_days)
   date_to_search = date.strftime("%d-%b-%Y")
   status, response = mail.uid('SEARCH', None, f'(SINCE "{date_to_search}")',
