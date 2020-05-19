@@ -1,8 +1,11 @@
-from lib import drive_service
 import io
 import pickle
-from googleapiclient.http import MediaIoBaseDownload
+
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseDownload
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from lib import drive_service
 
 
 class ObjectsToDrive:
@@ -10,6 +13,11 @@ class ObjectsToDrive:
   def __init__(self):
     self.service = drive_service.create_drive()
 
+
+  @retry(
+      stop=stop_after_attempt(3),
+      wait=wait_exponential(multiplier=1, min=2, max=16),
+      reraise=True)
   def save(self, config, filename, local_filename):
     folder_id = self._get_folder_id(config)
     file_metadata = {"name": filename, "mimeType": "*/*"}
@@ -26,6 +34,11 @@ class ObjectsToDrive:
       # update
       self.service.files().update(fileId=file_id, media_body=media).execute()
 
+
+  @retry(
+      stop=stop_after_attempt(3),
+      wait=wait_exponential(multiplier=1, min=2, max=16),
+      reraise=True)
   def load(self, config, filename):
     folder_id = self._get_folder_id(config)
     files_in_folder = self._get_files_in_folder(folder_id)
