@@ -5,7 +5,7 @@ from lib.email_tracking_retriever import EmailTrackingRetriever
 class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   tracking_regex = r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>'
-  order_id_regex = r'(BBY01-\d{12})'
+  order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
   def get_order_ids_from_email(self, raw_email):
     result = set()
@@ -24,7 +24,7 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     return match.group(1), None
 
   def get_subject_searches(self):
-    return [["Your order #BBY01", "has shipped"]]
+    return [["Your order #BBY01", "has shipped"], ["Your order #BBYTX", "has shipped"]]
 
   def get_merchant(self) -> str:
     return "Best Buy"
