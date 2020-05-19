@@ -47,6 +47,7 @@ class ObjectsToDrive:
       return None
     return self._download_file(file_id)
 
+
   def _get_folder_id(self, config):
     if "driveFolderId" in config:
       return config["driveFolderId"]
@@ -54,16 +55,19 @@ class ObjectsToDrive:
       return config["driveFolder"]
     raise Exception("Please include 'driveFolderId' in the config")
 
+
   def _find_file_id(self, files, filename):
     for file in files:
       if file['name'] == filename:
         return file['id']
     return None
 
+
   def _get_files_in_folder(self, folder_id):
     return self.service.files().list(
         q="'%s' in parents" % folder_id,
         fields='nextPageToken, files(id, name)').execute()['files']
+
 
   def _download_file(self, file_id):
     request = self.service.files().get_media(fileId=file_id)
