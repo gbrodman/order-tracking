@@ -27,9 +27,11 @@ class EmailTrackingRetriever(ABC):
     Called when an exception is received. If running in the (default) unseen
     mode, then all processed emails are set to unread again.
     """
+    self.mark_emails_as_unread(self.all_email_ids)
 
+  def mark_emails_as_unread(self, email_ids) -> None:
     if not self.args.seen:
-      for email_id in self.all_email_ids:
+      for email_id in email_ids:
         self.mark_as_unread(email_id)
 
   def mark_as_unread(self, email_id) -> None:
@@ -44,18 +46,27 @@ class EmailTrackingRetriever(ABC):
           "shipping emails in the dates we searched.")
     trackings = {}
     mail = self.get_all_mail_folder()
+    failed_email_ids = []
     try:
-      for email_id in tqdm(
-          self.all_email_ids, desc="Fetching trackings", unit="email"):
-        tracking = self.get_tracking(email_id, mail)
-        if tracking:
-          trackings[tracking.tracking_number] = tracking
+      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
+        try:
+          tracking = self.get_tracking(email_id, mail)
+          if tracking:
+            trackings[tracking.tracking_number] = tracking
+        except Exception as e:
+          failed_email_ids.append(email_id)
+          tqdm.write(f"Error fetching tracking from email ID {email_id}: {str(e)}")
     except:
-      print("Error when parsing emails.")
+      print("Unexpected error when parsing emails.")
       if not self.args.seen:
         print("Marking emails as unread.")
-      self.back_out_of_all()
+        self.back_out_of_all()
       raise
+    if len(failed_email_ids) > 0:
+      print(f"Failed retrieving trackings for the following email IDs: {failed_email_ids}.")
+      if not self.args.seen:
+        print("Marking these emails as unread.")
+        self.mark_emails_as_unread(failed_email_ids)
     return trackings
 
   def get_buying_group(self, raw_email) -> Tuple[str, bool]:
@@ -124,8 +135,9 @@ class EmailTrackingRetriever(ABC):
     return str(msg['To']).replace('<', '').replace('>', '')
 
   @retry(
-      stop=stop_after_attempt(7),
-      wait=wait_exponential(multiplier=1, min=2, max=120))
+      stop=stop_after_attempt(3),
+      wait=wait_exponential(multiplier=1, min=2, max=16),
+      reraise=True)
   def get_tracking(self, email_id, mail) -> Tracking:
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     raw_email = str(data[0][1]).replace("=3D",
