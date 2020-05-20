@@ -83,7 +83,7 @@ def map_clusters_by_tracking(all_clusters):
   return result
 
 
-def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost):
+def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clusters):
   for trackings_tuple, cost in trackings_to_cost.items():
     if len(trackings_tuple) == 1:
       continue
@@ -103,6 +103,7 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost):
     for other_cluster in cluster_list[1:]:
       if not (other_cluster.trackings.issubset(first_cluster.trackings) and
               other_cluster.orders.issubset(first_cluster.orders)):
+        all_clusters.remove(other_cluster)
         first_cluster.merge_with(other_cluster)
     for tracking in trackings_tuple:
       clusters_by_tracking[tracking] = first_cluster
@@ -171,7 +172,7 @@ def reconcile_new(config, args):
       config, group_site_manager, args)
 
   clusters_by_tracking = map_clusters_by_tracking(all_clusters)
-  merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost)
+  merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clusters)
 
   fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args)
 
