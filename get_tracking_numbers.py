@@ -9,18 +9,17 @@
 #             value.
 
 import argparse
-import lib.donations
 import sys
 import traceback
-import yaml
+
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.bestbuy_tracking_retriever import BestBuyTrackingRetriever
 from lib.config import open_config
 from lib.driver_creator import DriverCreator
 from lib.email_sender import EmailSender
 from lib.group_site_manager import GroupSiteManager
-from lib.tracking_uploader import TrackingUploader
 from lib.tracking_output import TrackingOutput
+from lib.tracking_uploader import TrackingUploader
 
 
 def send_error_email(email_sender, subject):
@@ -42,7 +41,7 @@ def main():
   email_config = config['email']
   email_sender = EmailSender(email_config)
 
-  print("Retrieving Amazon tracking numbers from email...")
+  print("Retrieving Amazon tracking numbers from email ...")
   amazon_tracking_retriever = AmazonTrackingRetriever(config, args,
                                                       driver_creator)
   try:
@@ -51,26 +50,14 @@ def main():
     send_error_email(email_sender, "Error retrieving Amazon emails")
     raise
 
-  action_taken = "" if args.seen else " and marked them as unread"
-  if amazon_tracking_retriever.failed_email_ids:
-    print(
-        f"Found {len(amazon_tracking_retriever.failed_email_ids)} Amazon emails "
-        f"without buying group labels or tracking #s{action_taken}. Continuing..."
-    )
-
-  print("Retrieving Best Buy tracking numbers from email...")
+  print("Retrieving Best Buy tracking numbers from email ...")
   bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args,
                                                         driver_creator)
   try:
     trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:
-    send_error_email(email_sender, "Error retrieving BB emails")
+    send_error_email(email_sender, "Error retrieving Best Buy emails")
     raise
-
-  if bestbuy_tracking_retriever.failed_email_ids:
-    print(
-        f"Found {len(bestbuy_tracking_retriever.failed_email_ids)} Best Buy emails "
-        f"without buying group labels{action_taken}. Continuing...")
 
   try:
     tracking_output = TrackingOutput(config)
