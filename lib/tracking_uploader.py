@@ -10,12 +10,11 @@ class TrackingUploader:
     self.base_spreadsheet_id = config['reconciliation']['baseSpreadsheetId']
 
   def upload_trackings(self, trackings) -> None:
-    existing_trackings = self.objects_to_sheet.download_from_sheet(
-        tracking.from_row, self.base_spreadsheet_id, "Trackings")
-    existing_tracking_numbers = set([
-        existing_tracking.tracking_number
-        for existing_tracking in existing_trackings
-    ])
+    existing_trackings = self.objects_to_sheet.download_from_sheet(tracking.from_row,
+                                                                   self.base_spreadsheet_id,
+                                                                   "Trackings")
+    existing_tracking_numbers = set(
+        [existing_tracking.tracking_number for existing_tracking in existing_trackings])
 
     new_trackings = [
         tracking for tracking in trackings
@@ -26,5 +25,4 @@ class TrackingUploader:
     self.upload_all_trackings(all_trackings)
 
   def upload_all_trackings(self, trackings) -> None:
-    self.objects_to_sheet.upload_to_sheet(trackings, self.base_spreadsheet_id,
-                                          "Trackings")
+    self.objects_to_sheet.upload_to_sheet(trackings, self.base_spreadsheet_id, "Trackings")

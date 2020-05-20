@@ -97,14 +97,11 @@ class EmailTrackingRetriever(ABC):
       # An optional "except" list in the config indicates terms that we wish to avoid for this
       # group. If a term is found that's in this list, we will not include this email as part of
       # the group in question. This is useful when two groups share the same address.
-      if any([
-          str(except_elem).upper() in raw_email
-          for except_elem in group_conf.get('except', [])
-      ]):
+      if any(
+          [str(except_elem).upper() in raw_email for except_elem in group_conf.get('except', [])]):
         continue
 
-      reconcile = bool(
-          group_conf['reconcile']) if 'reconcile' in group_conf else True
+      reconcile = bool(group_conf['reconcile']) if 'reconcile' in group_conf else True
       group_keys = group_conf['keys']
       if isinstance(group_keys, str):
         group_keys = [group_keys]
@@ -122,8 +119,7 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_tracking_number_from_email(self,
-                                     raw_email) -> Tuple[str, Optional[str]]:
+  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
     """
     Returns a Tuple of [tracking number, optional shipping status].
     """
@@ -148,17 +144,14 @@ class EmailTrackingRetriever(ABC):
   def get_date_from_msg(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     msg_date = msg['Date']
-    return datetime.datetime.strptime(
-        msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+    return datetime.datetime.strptime(msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
 
   def get_to_address(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
   @retry(
-      stop=stop_after_attempt(3),
-      wait=wait_exponential(multiplier=1, min=2, max=16),
-      reraise=True)
+      stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=16), reraise=True)
   def get_tracking(self, email_id, mail) -> Tuple[bool, Tracking]:
     """
     Returns a Tuple of boolean success status and tracking information for a
@@ -167,22 +160,19 @@ class EmailTrackingRetriever(ABC):
     and is only suitable for use as error output.
     """
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
-    raw_email = str(data[0][1]).replace("=3D",
-                                        "=").replace('=\\r\\n', '').replace(
-                                            '\\r\\n', '').replace('&amp;', '&')
+    raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
+                                                            '').replace('\\r\\n',
+                                                                        '').replace('&amp;', '&')
     to_email = self.get_to_address(data)
     date = self.get_date_from_msg(data)
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
     group, reconcile = self.get_buying_group(raw_email)
-    tracking_number, shipping_status = self.get_tracking_number_from_email(
-        raw_email)
-    tracking = Tracking(tracking_number, group, order_ids, price, to_email, '',
-                        date, 0.0, reconcile=reconcile)
-    tqdm.write(
-        f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-        f"Group: {group}, Status: {shipping_status}"
-    )
+    tracking_number, shipping_status = self.get_tracking_number_from_email(raw_email)
+    tracking = Tracking(
+        tracking_number, group, order_ids, price, to_email, '', date, 0.0, reconcile=reconcile)
+    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+               f"Group: {group}, Status: {shipping_status}")
     if tracking_number is None:
       tqdm.write(f"Could not find tracking number from email; we got: {tracking}")
       return False, tracking
@@ -210,8 +200,8 @@ class EmailTrackingRetriever(ABC):
     seen_filter = '(SEEN)' if self.args.seen else '(UNSEEN)'
     for search_terms in subject_searches:
       search_terms = ['(SUBJECT "%s")' % phrase for phrase in search_terms]
-      status, response = mail.uid('SEARCH', None, seen_filter,
-                                  f'(SINCE "{date_to_search}")', *search_terms)
+      status, response = mail.uid('SEARCH', None, seen_filter, f'(SINCE "{date_to_search}")',
+                                  *search_terms)
       email_ids = response[0].decode('utf-8')
       result.update(email_ids.split())
 

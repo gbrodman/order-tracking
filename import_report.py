@@ -31,23 +31,22 @@ def from_amazon_row(header, row) -> Tracking:
   tracking = str(row[header.index('Carrier Tracking #')]).upper()
   orders = {row[header.index('Order ID')].upper()}
   price = float(
-      str(row[header.index('Shipment Subtotal')]).replace(',', '').replace(
-          '$', '').replace('N/A', '0.0'))
+      str(row[header.index('Shipment Subtotal')]).replace(',',
+                                                          '').replace('$',
+                                                                      '').replace('N/A', '0.0'))
   to_email = row[header.index("Account User Email")]
   url = ''
   original_ship_date = str(row[header.index("Shipment Date")])
   try:
     ship_date = datetime.datetime.strptime(
-        original_ship_date,
-        "%m/%d/%Y").strftime("%Y-%m-%d") if original_ship_date != 'N/A' else ''
+        original_ship_date, "%m/%d/%Y").strftime("%Y-%m-%d") if original_ship_date != 'N/A' else ''
   except:
     ship_date = "n/a"
   group = get_group(header, row)
   if group is None:
     return None
   tracked_cost = 0.0
-  items = row[header.index("Title")] + " Qty:" + str(
-      row[header.index("Item Quantity")])
+  items = row[header.index("Title")] + " Qty:" + str(row[header.index("Item Quantity")])
   merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
   return Tracking(
       tracking,
@@ -94,20 +93,17 @@ def main():
   sheet_id = get_required("Enter Google Sheet ID: ")
   tab_name = get_required("Enter the name of the tab within the sheet: ")
   objects_to_sheet = ObjectsToSheet()
-  all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row,
-                                                       sheet_id, tab_name)
+  all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row, sheet_id, tab_name)
   all_trackings = [
-      tracking for tracking in all_trackings if tracking and
-      tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
+      tracking for tracking in all_trackings
+      if tracking and tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   all_trackings = dedupe_trackings(all_trackings)
   tracking_output = TrackingOutput(config)
-  print("Number of trackings beforehand: %d" %
-        len(tracking_output.get_existing_trackings()))
+  print("Number of trackings beforehand: %d" % len(tracking_output.get_existing_trackings()))
   print("Number from sheet: %d" % len(all_trackings))
   tracking_output.save_trackings(all_trackings)
-  print("Number of trackings after: %d" %
-        len(tracking_output.get_existing_trackings()))
+  print("Number of trackings after: %d" % len(tracking_output.get_existing_trackings()))
 
 
 if __name__ == "__main__":

@@ -60,11 +60,10 @@ def get_order_ids_to_orders(args):
     date = EmailTrackingRetriever.get_date_from_msg(None, data)
     to_email = EmailTrackingRetriever.get_to_address(None, data)
 
-    raw_email = str(data[0][1]).replace("=3D",
-                                        "=").replace('=\\r\\n', '').replace(
-                                            '\\r\\n', '').replace('&amp;', '&')
-    order_ids = AmazonTrackingRetriever.get_order_ids_from_email(
-        AmazonTrackingRetriever, raw_email)
+    raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
+                                                            '').replace('\\r\\n',
+                                                                        '').replace('&amp;', '&')
+    order_ids = AmazonTrackingRetriever.get_order_ids_from_email(AmazonTrackingRetriever, raw_email)
     for order_id in order_ids:
       result[order_id] = Order(order_id, date, to_email, False)
   return result
@@ -72,8 +71,7 @@ def get_order_ids_to_orders(args):
 
 def get_orders_from_sheet(sheet_id):
   objects_to_sheet = ObjectsToSheet()
-  return objects_to_sheet.download_from_sheet(order_from_row, sheet_id,
-                                              'Non-Shipped Orders')
+  return objects_to_sheet.download_from_sheet(order_from_row, sheet_id, 'Non-Shipped Orders')
 
 
 def filter_orders(orders_list, config):

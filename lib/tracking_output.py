@@ -44,8 +44,7 @@ class TrackingOutput:
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
-  def merge_trackings(self, old_trackings: List[Tracking],
-                      trackings: List[Tracking],
+  def merge_trackings(self, old_trackings: List[Tracking], trackings: List[Tracking],
                       overwrite: bool) -> List[Tracking]:
     new_tracking_dict = {t.tracking_number: t for t in old_trackings}
     for tracking in trackings:
@@ -59,9 +58,7 @@ class TrackingOutput:
     if from_drive:
       return self._convert_to_list(from_drive)
 
-    print(
-        "Drive folder ID not present or we couldn't load from drive. Loading from local"
-    )
+    print("Drive folder ID not present or we couldn't load from drive. Loading from local")
     if not os.path.exists(TRACKINGS_FILE):
       return []
 

@@ -2,10 +2,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from typing import Any
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 
 def create_sheets() -> Any:
@@ -17,6 +14,5 @@ def create_drive() -> Any:
 
 
 def _create(service, version):
-  credentials = service_account.Credentials.from_service_account_file(
-      'creds.json', scopes=SCOPES)
+  credentials = service_account.Credentials.from_service_account_file('creds.json', scopes=SCOPES)
   return build(service, version, credentials=credentials)

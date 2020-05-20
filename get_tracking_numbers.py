@@ -42,8 +42,7 @@ def main():
   email_sender = EmailSender(email_config)
 
   print("Retrieving Amazon tracking numbers from email ...")
-  amazon_tracking_retriever = AmazonTrackingRetriever(config, args,
-                                                      driver_creator)
+  amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
   try:
     trackings = amazon_tracking_retriever.get_trackings()
   except:
@@ -51,8 +50,7 @@ def main():
     raise
 
   print("Retrieving Best Buy tracking numbers from email ...")
-  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args,
-                                                        driver_creator)
+  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
   try:
     trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:

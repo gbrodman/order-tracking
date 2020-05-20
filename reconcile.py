@@ -36,8 +36,7 @@ def fill_costs(all_clusters, config):
 def fill_email_ids(all_clusters, config):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
-  with tqdm(
-      desc='Fetching order costs', unit='order', total=total_orders) as pbar:
+  with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
     for cluster in all_clusters:
       cluster.expected_cost = 0.0
       cluster.email_ids = set()
@@ -168,8 +167,7 @@ def reconcile_new(config, args):
   driver_creator = DriverCreator()
   group_site_manager = GroupSiteManager(config, driver_creator)
 
-  trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(
-      config, group_site_manager, args)
+  trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(config, group_site_manager, args)
 
   clusters_by_tracking = map_clusters_by_tracking(all_clusters)
   merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clusters)

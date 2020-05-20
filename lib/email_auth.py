@@ -47,8 +47,7 @@ def send_email(recipients, message):
     raw = raw.decode()
     body = {'raw': raw}
     message = body
-    service.users().messages().send(
-        userId=EMAIL_CONFIG['username'], body=message).execute()
+    service.users().messages().send(userId=EMAIL_CONFIG['username'], body=message).execute()
 
 
 def get_oauth_credentials():

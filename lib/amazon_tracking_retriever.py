@@ -35,8 +35,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     return ''
 
   def get_subject_searches(self):
-    return [["Your AmazonSmile order", "has shipped"],
-            ["Your Amazon.com order", "has shipped"]]
+    return [["Your AmazonSmile order", "has shipped"], ["Your Amazon.com order", "has shipped"]]
 
   def get_merchant(self) -> str:
     return "Amazon"
@@ -44,9 +43,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_items_from_email(self, data):
     item_regex = r'(.*Qty: \d+)'
     soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]),
-        features="html.parser",
-        from_encoding="iso-8859-1")
+        quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
     order_prefix_span = soup.find("span", {"class": "orderIdPrefix"})
 
     if not order_prefix_span:
@@ -62,8 +59,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_number_from_email(self,
-                                     raw_email) -> Tuple[str, Optional[str]]:
+  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
       return None, None
@@ -72,15 +68,14 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_tracking_info(self, amazon_url) -> Tuple[str, Optional[str]]:
     driver = self.load_url(amazon_url)
     try:
-      element = driver.find_element_by_xpath(
-          "//*[contains(text(), 'Tracking ID')]")
+      element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
         return None, None
       tracking_number = match.group(1).upper()
-      shipping_status = driver.find_element_by_id(
-          "primaryStatus").get_attribute("textContent").strip(" \t\n\r")
+      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute(
+          "textContent").strip(" \t\n\r")
       return tracking_number, shipping_status
     except:
       # swallow this and continue on
@@ -90,17 +85,15 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   def get_delivery_date_from_email(self, data):
     soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]),
-        features="html.parser",
-        from_encoding="iso-8859-1")
+        quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
     text = self.get_date_text_from_soup(soup)
     if not text:
       return ''
     date_text = text.split(',')[-1].strip()
     date_text = ' '.join(date_text.split(' ')[0:2])
     try:
-      date = datetime.datetime.strptime(
-          date_text, "%B %d").replace(year=datetime.datetime.now().year)
+      date = datetime.datetime.strptime(date_text,
+                                        "%B %d").replace(year=datetime.datetime.now().year)
       return date.strftime('%Y-%m-%d')
     except:
       return ''
@@ -119,9 +112,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       return ''
     return arrival_date_elem.text
 
-  @retry(
-      stop=stop_after_attempt(7),
-      wait=wait_exponential(multiplier=1, min=2, max=120))
+  @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, url):
     driver = self.driver_creator.new()
     driver.get(url)
