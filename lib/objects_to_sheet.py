@@ -9,7 +9,6 @@ class ObjectsToSheet:
   def __init__(self) -> None:
     self.service = drive_service.create_sheets()
 
-
   @retry(
       stop=stop_after_attempt(3),
       wait=wait_exponential(multiplier=1, min=2, max=16),
@@ -32,7 +31,6 @@ class ObjectsToSheet:
       # Tab doesn't exist
       self._create_tab(base_sheet_id, tab_title)
       return []
-
 
   @retry(
       stop=stop_after_attempt(3),
@@ -67,12 +65,10 @@ class ObjectsToSheet:
       self.service.spreadsheets().batchUpdate(
           spreadsheetId=base_sheet_id, body=body).execute()
 
-
   def _extend_values_to_header(self, header, values) -> None:
     for value in values:
       while len(value) < len(header):
         value.append('')
-
 
   def _write_header(self, objects, base_sheet_id, tab_title) -> None:
     header = objects[0].get_header()
@@ -84,13 +80,11 @@ class ObjectsToSheet:
         valueInputOption="RAW",
         body=body).execute()
 
-
   def _clear_tab(self, base_sheet_id, tab_title) -> None:
     ranges = [tab_title]
     body = {"ranges": ranges}
     self.service.spreadsheets().values().batchClear(
         spreadsheetId=base_sheet_id, body=body).execute()
-
 
   def _create_tab(self, base_sheet_id, tab_title) -> None:
     batch_update_body = {

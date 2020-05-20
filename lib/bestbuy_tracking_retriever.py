@@ -24,7 +24,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
     return match.group(1), None
 
   def get_subject_searches(self):
-    return [["Your order #BBY01", "has shipped"], ["Your order #BBYTX", "has shipped"]]
+    return [["Your order #BBY01", "has shipped"],
+            ["Your order #BBYTX", "has shipped"]]
 
   def get_merchant(self) -> str:
     return "Best Buy"

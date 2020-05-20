@@ -19,7 +19,6 @@ class EmailTrackingRetriever(ABC):
     self.email_config = config['email']
     self.args = args
     self.driver_creator = driver_creator
-    self.failed_email_ids = []
     self.all_email_ids = []
 
   def back_out_of_all(self) -> None:
@@ -46,27 +45,31 @@ class EmailTrackingRetriever(ABC):
           "shipping emails in the dates we searched.")
     trackings = {}
     mail = self.get_all_mail_folder()
-    failed_email_ids = []
+    self.failed_email_ids = []
     try:
-      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
+      for email_id in tqdm(
+          self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           tracking = self.get_tracking(email_id, mail)
           if tracking:
             trackings[tracking.tracking_number] = tracking
         except Exception as e:
-          failed_email_ids.append(email_id)
-          tqdm.write(f"Error fetching tracking from email ID {email_id}: {str(e)}")
+          self.failed_email_ids.append(email_id)
+          tqdm.write(
+              f"Error fetching tracking from email ID {email_id}: {str(e)}")
     except:
       print("Unexpected error when parsing emails.")
       if not self.args.seen:
         print("Marking emails as unread.")
         self.back_out_of_all()
       raise
-    if len(failed_email_ids) > 0:
-      print(f"Failed retrieving trackings for the following email IDs: {failed_email_ids}.")
+    if len(self.failed_email_ids) > 0:
+      print(
+          f"Failed retrieving trackings for the following email IDs: {self.failed_email_ids}."
+      )
       if not self.args.seen:
         print("Marking these emails as unread.")
-        self.mark_emails_as_unread(failed_email_ids)
+        self.mark_emails_as_unread(self.failed_email_ids)
     return trackings
 
   def get_buying_group(self, raw_email) -> Tuple[str, bool]:
@@ -154,7 +157,6 @@ class EmailTrackingRetriever(ABC):
         f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}, Status: {shipping_status}"
     )
     if tracking_number == None:
-      self.failed_email_ids.append(email_id)
       tqdm.write(
           f"Could not find tracking number from email with order(s) {order_ids}"
       )
@@ -163,7 +165,6 @@ class EmailTrackingRetriever(ABC):
 
     items = self.get_items_from_email(data)
     if group == None:
-      self.failed_email_ids.append(email_id)
       tqdm.write(
           f"Could not find buying group for email with order(s) {order_ids}")
       self.mark_as_unread(email_id)
