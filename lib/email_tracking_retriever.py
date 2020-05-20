@@ -1,13 +1,14 @@
 import datetime
 import email
 import imaplib
-import lib.tracking
-import lib.email_auth as email_auth
 from abc import ABC, abstractmethod
-from tqdm import tqdm
-from lib.tracking import Tracking
+from typing import Any, Callable, Optional, Tuple, TypeVar, Dict
+
 from tenacity import retry, stop_after_attempt, wait_exponential
-from typing import Any, Callable, Optional, Tuple, TypeVar
+from tqdm import tqdm
+
+import lib.email_auth as email_auth
+from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
@@ -38,38 +39,55 @@ class EmailTrackingRetriever(ABC):
       mail = self.get_all_mail_folder()
       mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
-  def get_trackings(self) -> list:
+  def get_trackings(self) -> Dict[str, Tracking]:
+    """
+    Gets all shipping emails falling within the configured search parameters,
+    i.e. all unread or all read within the past N days, and parses them to find
+    tracking numbers.  Returns a dict of tracking number to full tracking info
+    for successes, and prints out failures.
+    """
     self.all_email_ids = self.get_email_ids()
     seen_adj = "read" if self.args.seen else "unread"
     print(f"Found {len(self.all_email_ids)} {seen_adj} {self.get_merchant()} "
           "shipping emails in the dates we searched.")
     trackings = {}
     mail = self.get_all_mail_folder()
-    self.failed_email_ids = []
+    # Emails that throw Exceptions and can't be parsed at all.
+    failed_email_ids = []
+    # Incomplete tracking information from emails with handled errors.
+    incomplete_trackings = []
+
     try:
-      for email_id in tqdm(
-          self.all_email_ids, desc="Fetching trackings", unit="email"):
+      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
-          tracking = self.get_tracking(email_id, mail)
-          if tracking:
+          success, tracking = self.get_tracking(email_id, mail)
+          if success:
             trackings[tracking.tracking_number] = tracking
+          else:
+            incomplete_trackings.append(tracking)
+            self.mark_as_unread(email_id)
         except Exception as e:
-          self.failed_email_ids.append(email_id)
-          tqdm.write(
-              f"Error fetching tracking from email ID {email_id}: {str(e)}")
-    except:
-      print("Unexpected error when parsing emails.")
+          failed_email_ids.append(email_id)
+          tqdm.write(f"Error fetching tracking from email ID {email_id}: {str(e)}")
+    except Exception as e:
       if not self.args.seen:
-        print("Marking emails as unread.")
+        print("Fatal error parsing emails; marking all as unread.")
         self.back_out_of_all()
-      raise
-    if len(self.failed_email_ids) > 0:
-      print(
-          f"Failed retrieving trackings for the following email IDs: {self.failed_email_ids}."
-      )
+      raise Exception("Unexpected fatal error when parsing emails") from e
+
+    if len(incomplete_trackings) > 0:
+      print("Couldn't find full tracking info/matching buying group for some emails.\n"
+            "Here's what we got:\n" + "\n".join([str(t) for t in incomplete_trackings]))
+      if not self.args.unseen:
+        print("They were already marked as unread.")
+
+    if len(failed_email_ids) > 0:
+      print(f"Errored out while retrieving {len(failed_email_ids)} trackings "
+            f"with email IDs: {failed_email_ids}.")
       if not self.args.seen:
         print("Marking these emails as unread.")
-        self.mark_emails_as_unread(self.failed_email_ids)
+        self.mark_emails_as_unread(failed_email_ids)
+
     return trackings
 
   def get_buying_group(self, raw_email) -> Tuple[str, bool]:
@@ -141,7 +159,13 @@ class EmailTrackingRetriever(ABC):
       stop=stop_after_attempt(3),
       wait=wait_exponential(multiplier=1, min=2, max=16),
       reraise=True)
-  def get_tracking(self, email_id, mail) -> Tracking:
+  def get_tracking(self, email_id, mail) -> Tuple[bool, Tracking]:
+    """
+    Returns a Tuple of boolean success status and tracking information for a
+    given email id. If success is True then the tracking info is complete and
+    should be used, otherwise if False then the tracking info is incomplete
+    and is only suitable for use as error output.
+    """
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
     raw_email = str(data[0][1]).replace("=3D",
                                         "=").replace('=\\r\\n', '').replace(
@@ -153,27 +177,24 @@ class EmailTrackingRetriever(ABC):
     group, reconcile = self.get_buying_group(raw_email)
     tracking_number, shipping_status = self.get_tracking_number_from_email(
         raw_email)
+    tracking = Tracking(tracking_number, group, order_ids, price, to_email, '',
+                        date, 0.0, reconcile=reconcile)
     tqdm.write(
-        f"Tracking: {tracking_number}, Order(s): {order_ids}, Group: {group}, Status: {shipping_status}"
+        f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+        f"Group: {group}, Status: {shipping_status}"
     )
-    if tracking_number == None:
-      tqdm.write(
-          f"Could not find tracking number from email with order(s) {order_ids}"
-      )
-      self.mark_as_unread(email_id)
-      return None
+    if tracking_number is None:
+      tqdm.write(f"Could not find tracking number from email; we got: {tracking}")
+      return False, tracking
 
-    items = self.get_items_from_email(data)
-    if group == None:
-      tqdm.write(
-          f"Could not find buying group for email with order(s) {order_ids}")
-      self.mark_as_unread(email_id)
-      return None
+    tracking.items = self.get_items_from_email(data)
+    if group is None:
+      tqdm.write(f"Could not find buying group from email; we got: {tracking}")
+      return False, tracking
 
-    merchant = self.get_merchant()
-    delivery_date = self.get_delivery_date_from_email(data)
-    return Tracking(tracking_number, group, order_ids, price, to_email, '',
-                    date, 0.0, items, merchant, reconcile, delivery_date)
+    tracking.merchant = self.get_merchant()
+    tracking.delivery_date = self.get_delivery_date_from_email(data)
+    return True, tracking
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = email_auth.email_authentication()
