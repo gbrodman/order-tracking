@@ -22,7 +22,6 @@ class EmailTrackingRetriever(ABC):
     self.driver_creator = driver_creator
     self.all_email_ids = []
 
-
   def back_out_of_all(self) -> None:
     """
     Called when an exception is received. If running in the (default) unseen
@@ -30,18 +29,15 @@ class EmailTrackingRetriever(ABC):
     """
     self.mark_emails_as_unread(self.all_email_ids)
 
-
   def mark_emails_as_unread(self, email_ids) -> None:
     if not self.args.seen:
       for email_id in email_ids:
         self.mark_as_unread(email_id)
 
-
   def mark_as_unread(self, email_id) -> None:
     if not self.args.seen:
       mail = self.get_all_mail_folder()
       mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
-
 
   def get_trackings(self) -> Dict[str, Tracking]:
     """
@@ -69,6 +65,7 @@ class EmailTrackingRetriever(ABC):
             trackings[tracking.tracking_number] = tracking
           else:
             incomplete_trackings.append(tracking)
+            self.mark_as_unread(email_id)
         except Exception as e:
           failed_email_ids.append(email_id)
           tqdm.write(f"Error fetching tracking from email ID {email_id}: {str(e)}")
@@ -93,7 +90,6 @@ class EmailTrackingRetriever(ABC):
 
     return trackings
 
-
   def get_buying_group(self, raw_email) -> Tuple[str, bool]:
     raw_email = raw_email.upper()
     for group in self.config['groups'].keys():
@@ -117,16 +113,13 @@ class EmailTrackingRetriever(ABC):
           return group, reconcile
     return None, True
 
-
   @abstractmethod
   def get_order_ids_from_email(self, raw_email) -> Any:
     pass
 
-
   @abstractmethod
   def get_price_from_email(self, raw_email) -> Any:
     pass
-
 
   @abstractmethod
   def get_tracking_number_from_email(self,
@@ -136,26 +129,21 @@ class EmailTrackingRetriever(ABC):
     """
     pass
 
-
   @abstractmethod
   def get_subject_searches(self) -> Any:
     pass
-
 
   @abstractmethod
   def get_merchant(self) -> str:
     pass
 
-
   @abstractmethod
   def get_items_from_email(self, data) -> Any:
     pass
 
-
   @abstractmethod
   def get_delivery_date_from_email(self, data) -> Any:
     pass
-
 
   def get_date_from_msg(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
@@ -163,11 +151,9 @@ class EmailTrackingRetriever(ABC):
     return datetime.datetime.strptime(
         msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
 
-
   def get_to_address(self, data) -> str:
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
-
 
   @retry(
       stop=stop_after_attempt(3),
@@ -199,25 +185,21 @@ class EmailTrackingRetriever(ABC):
     )
     if tracking_number is None:
       tqdm.write(f"Could not find tracking number from email; we got: {tracking}")
-      self.mark_as_unread(email_id)
       return False, tracking
 
     tracking.items = self.get_items_from_email(data)
     if group is None:
       tqdm.write(f"Could not find buying group from email; we got: {tracking}")
-      self.mark_as_unread(email_id)
       return False, tracking
 
     tracking.merchant = self.get_merchant()
     tracking.delivery_date = self.get_delivery_date_from_email(data)
     return True, tracking
 
-
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
-
 
   def get_email_ids(self) -> Any:
     date_to_search = self.get_date_to_search()
@@ -234,7 +216,6 @@ class EmailTrackingRetriever(ABC):
       result.update(email_ids.split())
 
     return result
-
 
   def get_date_to_search(self) -> str:
     if self.args.days:
