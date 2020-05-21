@@ -78,7 +78,7 @@ class EmailTrackingRetriever(ABC):
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
             "Here's what we got:\n" + "\n".join([str(t) for t in incomplete_trackings]))
-      if not self.args.unseen:
+      if not self.args.seen:
         print("They were already marked as unread.")
 
     if len(failed_email_ids) > 0:
