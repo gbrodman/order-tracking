@@ -1,5 +1,8 @@
 import datetime
 import email
+import socket
+
+from lib.util import Util
 import imaplib
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional, Tuple, TypeVar, Dict
@@ -60,20 +63,31 @@ class EmailTrackingRetriever(ABC):
     try:
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
-          success, tracking = self.get_tracking(email_id, mail)
-          if success:
-            trackings[tracking.tracking_number] = tracking
-          else:
-            incomplete_trackings.append(tracking)
-            self.mark_as_unread(email_id)
+          for attempt in range(1, 5):  # Make 4 attempts
+            try:
+              success, tracking = self.get_tracking(email_id, mail)
+            except (ConnectionError, socket.error, imaplib.IMAP4.abort):
+              tqdm.write(f"Connection lost; reconnecting (attempt {attempt}).")
+              # Re-initializing the IMAP connection and retrying should fix most
+              # connection-related errors.
+              # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
+              mail = self.get_all_mail_folder()
+              continue
+            if success:
+              trackings[tracking.tracking_number] = tracking
+            else:
+              incomplete_trackings.append(tracking)
+              self.mark_as_unread(email_id)
+            break
         except Exception as e:
           failed_email_ids.append(email_id)
-          tqdm.write(f"Error fetching tracking from email ID {email_id}: {str(e)}")
+          tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
+                     f"{e.__class__.__name__}: {str(e)}: {Util.get_traceback_lines()}")
     except Exception as e:
       if not self.args.seen:
-        print("Fatal error parsing emails; marking all as unread.")
+        print("Fatal unexpected error parsing emails; marking all as unread.")
         self.back_out_of_all()
-      raise Exception("Unexpected fatal error when parsing emails") from e
+      raise Exception("Fatal unexpected fatal error when parsing emails") from e
 
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
@@ -150,8 +164,6 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  @retry(
-      stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=16), reraise=True)
   def get_tracking(self, email_id, mail) -> Tuple[bool, Tracking]:
     """
     Returns a Tuple of boolean success status and tracking information for a
