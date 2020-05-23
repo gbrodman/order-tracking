@@ -1,23 +1,23 @@
-import aiohttp
 import asyncio
 import collections
 import email
-import imaplib
 import quopri
 import re
-import requests
 import sys
 import time
 import traceback
-import lib.email_auth as email_auth
+from typing import Any
 
+import aiohttp
+import requests
 from bs4 import BeautifulSoup
-from lib.archive_manager import ArchiveManager
-from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
-from typing import Any, Dict
+
+import lib.email_auth as email_auth
+from lib import util
+from lib.archive_manager import ArchiveManager
 
 LOGIN_EMAIL_FIELD = "fldEmail"
 LOGIN_PASSWORD_FIELD = "fldPassword"
@@ -77,12 +77,8 @@ class GroupSiteManager:
       try:
         return self.get_new_tracking_pos_costs_maps(group)
       except Exception as e:
-        print("Received exception when getting costs: " + str(e))
-        type, value, trace = sys.exc_info()
-        formatted_trace = traceback.format_tb(trace)
-        for line in formatted_trace:
-          print(line)
-        print("Retrying up to five times")
+        print(f"Received exception when getting costs: {str(e)}\n{util.get_traceback_lines()}\n"
+              "Retrying up to five times.")
         last_exc = e
     raise Exception("Exceeded retry limit", last_exc)
 

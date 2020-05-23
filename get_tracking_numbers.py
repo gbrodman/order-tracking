@@ -9,9 +9,8 @@
 #             value.
 
 import argparse
-import sys
-import traceback
 
+from lib import util
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.bestbuy_tracking_retriever import BestBuyTrackingRetriever
 from lib.config import open_config
@@ -23,10 +22,7 @@ from lib.tracking_uploader import TrackingUploader
 
 
 def send_error_email(email_sender, subject):
-  type, value, trace = sys.exc_info()
-  formatted_trace = traceback.format_tb(trace)
-  lines = [str(type), str(value)] + formatted_trace
-  email_sender.send_email_content(subject, "\n".join(lines))
+  email_sender.send_email_content(subject, util.get_traceback_lines())
 
 
 def main():

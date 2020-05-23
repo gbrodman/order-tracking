@@ -3,13 +3,15 @@
 # Combine standard login with option of OAuth2.0
 #
 
-import smtplib
 import base64
+import smtplib
+from imaplib import IMAP4_SSL
+
+from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
-from googleapiclient.discovery import build
+
 from lib.config import open_config
-from imaplib import IMAP4_SSL
 
 CONFIG = open_config()
 EMAIL_CONFIG = CONFIG['email']
