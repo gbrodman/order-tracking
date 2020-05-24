@@ -2,7 +2,6 @@ import sys
 import traceback
 
 
-@staticmethod
 def get_traceback_lines() -> str:
   """
   Call this from inside an except statement to get the full stack trace formatted
