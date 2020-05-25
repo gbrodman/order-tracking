@@ -305,13 +305,8 @@ class GroupSiteManager:
     time.sleep(3)
 
   def _upload_bfmr(self, numbers) -> None:
-    for batch in self.chunks(numbers, 30):
+    for batch in util.chunks(numbers, 30):
       self._upload_bfmr_batch(batch)
-
-  def chunks(self, lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-      yield lst[i:i + n]
 
   def _upload_bfmr_batch(self, numbers) -> None:
     group_config = self.config['groups']['bfmr']

@@ -12,3 +12,9 @@ def get_traceback_lines() -> str:
   formatted_trace = traceback.format_tb(trace)
   lines = [str(exc_type), str(value)] + formatted_trace
   return "\n".join(lines)
+
+
+def chunks(lst, n):
+  """Yield successive n-sized chunks from lst."""
+  for i in range(0, len(lst), n):
+    yield lst[i:i + n]
