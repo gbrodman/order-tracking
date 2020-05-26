@@ -1,7 +1,9 @@
+from datetime import timedelta, date
+
 from lib import clusters
 from functools import cmp_to_key
 from lib.objects_to_sheet import ObjectsToSheet
-from typing import Any, TypeVar
+from typing import Any, TypeVar, List
 
 _T = TypeVar('_T')
 
@@ -248,8 +250,13 @@ class ReconciliationUploader:
 
     all_clusters.sort(key=cmp_to_key(compare))
     print("Uploading new reconciliation to sheet")
-    self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id, "Reconciliation v2",
+    recent_clusters = self._only_recent_clusters(all_clusters)
+    self.objects_to_sheet.upload_to_sheet(recent_clusters, base_sheet_id, "Reconciliation v2",
                                           get_conditional_formatting_body)
+
+  def _only_recent_clusters(self, all_clusters) -> List[clusters.Cluster]:
+    six_months_ago = (date.today() - timedelta(weeks=26)).strftime("%Y-%m-%d")
+    return [cluster for cluster in all_clusters if cluster.last_ship_date > six_months_ago]
 
   def fill_adjustments(self, all_clusters, base_sheet_id, tab_title) -> None:
     print("Filling in cost adjustments if applicable")
