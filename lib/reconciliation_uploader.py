@@ -250,8 +250,9 @@ class ReconciliationUploader:
 
     all_clusters.sort(key=cmp_to_key(compare))
     print("Uploading new reconciliation to sheet")
-    recent_clusters = self._only_recent_clusters(all_clusters)
-    self.objects_to_sheet.upload_to_sheet(recent_clusters, base_sheet_id, "Reconciliation v2",
+    if self.config.get("onlyLastSixMonths", False):
+      all_clusters = self._only_recent_clusters(all_clusters)
+    self.objects_to_sheet.upload_to_sheet(all_clusters, base_sheet_id, "Reconciliation v2",
                                           get_conditional_formatting_body)
 
   def _only_recent_clusters(self, all_clusters) -> List[clusters.Cluster]:

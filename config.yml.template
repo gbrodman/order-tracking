@@ -66,6 +66,9 @@ reconciliation:
 # underscores.)
 driveFolderId:
 
+# If this is True, we will only upload the last six months of data to Sheets
+onlyLastSixMonths: False
+
 # A list of portals that use the same website template. This should be the
 # URL without the ".com" part
 melulPortals:

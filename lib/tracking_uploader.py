@@ -23,6 +23,7 @@ class TrackingUploader:
     self.upload_all_trackings(all_trackings)
 
   def upload_all_trackings(self, trackings: List[tracking.Tracking]) -> None:
-    six_months_ago = (date.today() - timedelta(weeks=26)).strftime("%Y-%m-%d")
-    recent_trackings = [t for t in trackings if t.ship_date > six_months_ago]
-    self.objects_to_sheet.upload_to_sheet(recent_trackings, self.base_spreadsheet_id, "Trackings")
+    if self.config.get("onlyLastSixMonths", False):
+      six_months_ago = (date.today() - timedelta(weeks=26)).strftime("%Y-%m-%d")
+      trackings = [t for t in trackings if t.ship_date > six_months_ago]
+    self.objects_to_sheet.upload_to_sheet(trackings, self.base_spreadsheet_id, "Trackings")
