@@ -33,13 +33,13 @@ class Tracking:
   def __setstate__(self, state) -> None:
     self.__init__(**state)
 
-  def __str__(self) -> str:
-    return (f"number: {self.tracking_number}, group: {self.group}, "
+  def __repr__(self) -> str:
+    return (f"{{number: {self.tracking_number}, group: {self.group}, "
             f"order(s): {self.order_ids}, price: {self.price}, "
             f"to_email: {self.to_email}, "
             f"ship_date: {self.ship_date}, items: {self.items}, "
             f"merchant: {self.merchant}, reconcile: {self.reconcile}, "
-            f"delivery_date: {self.delivery_date}")
+            f"delivery_date: {self.delivery_date}}}")
 
   def to_row(self) -> list:
     hyperlink = self._create_hyperlink()

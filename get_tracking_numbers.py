@@ -65,7 +65,19 @@ def main():
     # We only need to process new tracking numbers if there are any;
     # otherwise skip straight to processing existing locally stored data.
     if new_trackings:
-      email_sender.send_email(new_trackings)
+      try:
+        email_sender.send_email(new_trackings)
+      except Exception as e:
+        # When running --seen, we're often processing a very large number of emails that can
+        # take a long time, and the Tracking Numbers email isn't too important to us (but the
+        # upload to portals/Sheets definitely is). So don't fail after we've been running for
+        # a long time just on account of a failed email.
+        if args.seen:
+          print(f"Email sending failed with error: {str(e)}\n{util.get_traceback_lines()}")
+          print("New trackings are:\n" + "\n".join([str(nt) for nt in new_trackings]))
+          print("Continuing to portal/Sheet upload because email sending is non-essential.")
+        else:
+          raise e
 
     print("Uploading tracking numbers...")
     group_site_manager = GroupSiteManager(config, driver_creator)
