@@ -1,16 +1,14 @@
 import datetime
 import email
-import socket
-
-from lib.util import Util
 import imaplib
+import socket
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional, Tuple, TypeVar, Dict
 
-from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
 import lib.email_auth as email_auth
+from lib import util
 from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
@@ -82,7 +80,7 @@ class EmailTrackingRetriever(ABC):
         except Exception as e:
           failed_email_ids.append(email_id)
           tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
-                     f"{e.__class__.__name__}: {str(e)}: {Util.get_traceback_lines()}")
+                     f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
     except Exception as e:
       if not self.args.seen:
         print("Fatal unexpected error parsing emails; marking all as unread.")
