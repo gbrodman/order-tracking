@@ -4,7 +4,6 @@ SMILE_PREFIX = "https://smile.amazon.com/gp/aws/cart/add.html?"
 
 def create_url(asins, smile=True):
   url = SMILE_PREFIX if smile else PREFIX
-  for i in range(1, len(asins) + 1):
-    asin = asins[i - 1]
-    url += f"&ASIN.{i}={asin}&Quantity.{i}=10"
+  for i, asin in enumerate(asins):
+    url += f"&ASIN.{i+1}={asin}&Quantity.{i+1}=10"
   return url
