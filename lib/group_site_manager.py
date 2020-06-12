@@ -130,6 +130,7 @@ class GroupSiteManager:
       # show all trackings, not just non-paid
       driver.find_element_by_css_selector('button[title="Filters"]').click()
       time.sleep(2)
+      driver.find_element_by_css_selector('div.modal-body button.ButtonLink').click()
       select = Select(driver.find_element_by_tag_name('select'))
       select.select_by_visible_text('Any')
 
@@ -153,7 +154,7 @@ class GroupSiteManager:
           tracking_cost_map[(tracking,)] += value
           po_cost_map[tracking] += value
     finally:
-      driver.close()
+      driver.quit()
     return tracking_cost_map, po_cost_map
 
   def _get_usa_login_headers(self):
@@ -276,7 +277,7 @@ class GroupSiteManager:
 
         return (tracking_to_po_map, po_to_cost_map, trackings_to_cost_map)
     finally:
-      driver.close()
+      driver.quit()
 
   def _upload_to_group(self, numbers, group) -> None:
     last_ex = None
@@ -350,7 +351,7 @@ class GroupSiteManager:
           # Re-run this batch with only new numbers, if there are any
           self._upload_bfmr_batch(driver, new_numbers)
     finally:
-      driver.close()
+      driver.quit()
 
   def _upload_yrcw(self, numbers) -> None:
     driver = self._login_yrcw()
@@ -364,7 +365,7 @@ class GroupSiteManager:
       driver.find_element_by_xpath("//button[text() = 'Submit All']").click()
       time.sleep(2)
     finally:
-      driver.close()
+      driver.quit()
 
   def _upload_melul(self, numbers, group, username, password) -> None:
     driver = self._login_melul(group, username, password)
@@ -385,7 +386,7 @@ class GroupSiteManager:
       driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
       time.sleep(1)
     finally:
-      driver.close()
+      driver.quit()
 
   def _login_melul(self, group, username, password) -> Any:
     # Always use no-headless for Melul portals for CAPTCHA solving,

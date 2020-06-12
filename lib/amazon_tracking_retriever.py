@@ -81,7 +81,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       # swallow this and continue on
       return None, None
     finally:
-      driver.close()
+      driver.quit()
 
   def get_delivery_date_from_email(self, data):
     soup = BeautifulSoup(
