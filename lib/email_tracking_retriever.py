@@ -181,13 +181,15 @@ class EmailTrackingRetriever(ABC):
     tracking_number, shipping_status = self.get_tracking_number_from_email(raw_email)
     tracking = Tracking(
         tracking_number, group, order_ids, price, to_email, '', date, 0.0, reconcile=reconcile)
-    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-               f"Group: {group}, Status: {shipping_status}")
+
     if tracking_number is None:
       tqdm.write(f"Could not find tracking number from email; we got: {tracking}")
       return False, tracking
 
     tracking.items = self.get_items_from_email(data)
+    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+               f"Group: {group}, Status: {shipping_status}, Items: {tracking.items}")
+
     if group is None:
       tqdm.write(f"Could not find buying group from email; we got: {tracking}")
       return False, tracking
