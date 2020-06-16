@@ -102,7 +102,8 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clust
     for other_cluster in cluster_list[1:]:
       if not (other_cluster.trackings.issubset(first_cluster.trackings) and
               other_cluster.orders.issubset(first_cluster.orders)):
-        all_clusters.remove(other_cluster)
+        if other_cluster in all_clusters:
+          all_clusters.remove(other_cluster)
         first_cluster.merge_with(other_cluster)
     for tracking in trackings_tuple:
       clusters_by_tracking[tracking] = first_cluster
