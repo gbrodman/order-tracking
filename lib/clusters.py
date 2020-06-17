@@ -66,9 +66,7 @@ class Cluster:
         ", ".join(self.orders), ", ".join(self.trackings), self.to_email, self.expected_cost,
         self.tracked_cost, ", ".join(self.non_reimbursed_trackings), self.last_ship_date,
         self.last_delivery_date, "'" + ", ".join(self.purchase_orders), self.group, self.adjustment,
-        self.manual_override,
-        '=INDIRECT(CONCAT("D", ROW())) - INDIRECT(CONCAT("E", ROW())) - INDIRECT(CONCAT("K", ROW()))',
-        self.notes, ", ".join(self.cancelled_items)
+        self.manual_override, '=D:D - E:E - K:K', self.notes, ", ".join(self.cancelled_items)
     ]
 
   def merge_with(self, other) -> None:
