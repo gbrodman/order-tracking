@@ -3,6 +3,7 @@ import os.path
 import imaplib
 import re
 import quopri
+import lib.email_auth as email_auth
 from bs4 import BeautifulSoup
 from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, Union
@@ -41,9 +42,7 @@ class OrderInfoRetriever:
     self.mail = self.load_mail()
 
   def load_mail(self):
-    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
-    mail.login(self.config['email']['username'],
-               self.config['email']['password'])
+    mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
@@ -123,28 +122,19 @@ class OrderInfoRetriever:
         orders.append(order)
 
     # Sometimes it's been split into multiple orders. Find totals for each
-    pretax_totals = [
-        float(cost.replace(',', ''))
-        for cost in re.findall(regex_pretax, raw_email)
-    ]
+    pretax_totals = [float(cost.replace(',', '')) for cost in re.findall(regex_pretax, raw_email)]
 
     # personal emails might not have the regexes, need to do something different
     if not pretax_totals:
       return self.get_personal_amazon_totals(email_id, data, orders)
 
-    taxes = [
-        float(cost.replace(',', ''))
-        for cost in re.findall(regex_est_tax, raw_email)
-    ]
+    taxes = [float(cost.replace(',', '')) for cost in re.findall(regex_est_tax, raw_email)]
 
-    order_infos = [
-        OrderInfo(email_id, t[0] + t[1]) for t in zip(pretax_totals, taxes)
-    ]
+    order_infos = [OrderInfo(email_id, t[0] + t[1]) for t in zip(pretax_totals, taxes)]
     return dict(zip(orders, order_infos))
 
   def get_relevant_raw_email_data(self, order_id) -> Union[str, Optional[str]]:
-    status, search_result = self.mail.uid('SEARCH', None,
-                                          'BODY "%s"' % order_id)
+    status, search_result = self.mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
     email_id = search_result[0]
     if not email_id:
       return None, None
@@ -156,12 +146,9 @@ class OrderInfoRetriever:
     result, data = self.mail.uid("FETCH", email_ids[0], "(RFC822)")
     return email_ids[0], data
 
-  def get_personal_amazon_totals(self, email_id, data,
-                                 orders) -> Dict[str, OrderInfo]:
+  def get_personal_amazon_totals(self, email_id, data, orders) -> Dict[str, OrderInfo]:
     soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]),
-        features="html.parser",
-        from_encoding="iso-8859-1")
+        quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
     prices = [
         elem.getText().strip().replace(',', '').replace('$', '')
         for elem in soup.find_all('td', {"class": "price"})

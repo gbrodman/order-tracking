@@ -53,15 +53,15 @@ class DriverCreator:
 
   def _create_osx_driver(self, options, user_data_dir=None):
     url = "https://github.com/macchrome/chromium/releases/download/v78.0.3901.0-r692376-macOS/Chromium.78.0.3901.0.sync.app.zip"
-    return self._create_osx_windows_driver(
-        options, url, "/chrome/osx/", "Chromium.app/Contents/MacOS/Chromium",
-        "chromedriver", user_data_dir)
+    return self._create_osx_windows_driver(options, url, "/chrome/osx/",
+                                           "Chromium.app/Contents/MacOS/Chromium", "chromedriver",
+                                           user_data_dir)
 
   def _create_windows_driver(self, options, user_data_dir=None):
     url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v78.0.3901.0-r692535-win32/chrome.zip"
     return self._create_osx_windows_driver(options, url, "/chrome/windows/",
-                                           "chrome-win32/chrome.exe",
-                                           "chromedriver.exe", user_data_dir)
+                                           "chrome-win32/chrome.exe", "chromedriver.exe",
+                                           user_data_dir)
 
   def _new_chrome_driver(self, user_data_dir=None) -> Any:
     options = webdriver.chrome.options.Options()

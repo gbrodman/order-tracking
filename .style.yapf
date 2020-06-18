@@ -1,2 +1,4 @@
 [style]
-based_on_style = chromium
+based_on_style = yapf
+BLANK_LINE_BEFORE_NESTED_CLASS_OR_DEF = true
+COLUMN_LIMIT = 100

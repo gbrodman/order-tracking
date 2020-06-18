@@ -62,14 +62,12 @@ def run_delete(config):
   existing_trackings = tracking_output.get_existing_trackings()
 
   found_list = [
-      tracking for tracking in existing_trackings
-      if tracking.tracking_number == tracking_number
+      tracking for tracking in existing_trackings if tracking.tracking_number == tracking_number
   ]
   if found_list:
     to_delete = found_list[0]
     print("This is the Tracking object: %s" % to_delete)
-    submit = get_required_from_options(
-        "Are you sure you want to delete this tracking?", ['y', 'n'])
+    submit = get_required_from_options("Are you sure you want to delete this tracking?", ['y', 'n'])
     if submit == 'y':
       existing_trackings.remove(to_delete)
       tracking_output._write_merged(existing_trackings)
@@ -97,22 +95,21 @@ def run_add(config):
     tracking.order_ids = list(order_ids_set)
     tracking.price = ''  # Zero out price for reconcile to fix later.
   else:
-    ship_date = get_optional_with_default(
-        "Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY, TODAY)
+    ship_date = get_optional_with_default("Optional ship date, formatted YYYY-MM-DD [%s]: " % TODAY,
+                                          TODAY)
     group = get_required("Group, e.g. mysbuyinggroup: ")
     email = get_optional("Optional email address: ")
     order_url = get_optional("Optional order URL: ")
     merchant = get_optional("Optional merchant: ")
     description = get_optional("Optional item descriptions: ")
-    tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '',
-                        email, order_url, ship_date, 0.0, description, merchant)
+    tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '', email, order_url,
+                        ship_date, 0.0, description, merchant)
 
   print("Resulting tracking object: ")
   print(tracking)
   print("Order to cost map: ")
   print(orders_to_costs)
-  submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ",
-                                     ['y', 'n'])
+  submit = get_required_from_options("Submit? 'y' to submit, 'n' to quit: ", ['y', 'n'])
   if submit == 'y':
     tracking_output.save_trackings([tracking], overwrite=True)
     print("Wrote tracking")
@@ -128,8 +125,8 @@ def run_add(config):
 def main():
   with open(CONFIG_FILE, 'r') as config_file_stream:
     config = yaml.safe_load(config_file_stream)
-  action = get_required_from_options(
-      "Enter 'n' for new tracking, 'd' to delete existing", ["n", "d"])
+  action = get_required_from_options("Enter 'n' for new tracking, 'd' to delete existing",
+                                     ["n", "d"])
   if action == "n":
     run_add(config)
   elif action == "d":

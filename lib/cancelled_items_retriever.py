@@ -6,6 +6,7 @@ import quopri
 import re
 import sys
 import traceback
+import lib.email_auth as email_auth
 
 from bs4 import BeautifulSoup
 from enum import Enum
@@ -21,6 +22,7 @@ CANCELLATIONS_FILE = OUTPUT_FOLDER + "/" + CANCELLATIONS_FILENAME
 class CancFmt(Enum):
   VOLUNTARY = 1
   INVOLUNTARY = 2
+  IRRELEVANT = 3
 
 
 class CancQty(Enum):
@@ -44,8 +46,7 @@ class CancelledItemsRetriever:
     for email_id, canc_info in tqdm(
         all_email_ids.items(), desc="Fetching cancellations", unit="email"):
       if email_id not in self.email_id_dict:
-        email_result = self.get_cancellations_from_email(
-            mail, email_id, canc_info)
+        email_result = self.get_cancellations_from_email(mail, email_id, canc_info)
         if email_result:
           self.email_id_dict[email_id] = email_result
           self.flush()
@@ -62,20 +63,21 @@ class CancelledItemsRetriever:
 
   def get_all_email_ids(self, mail) -> Dict[str, Tuple[CancFmt, CancQty]]:
     subject_searches = {
+        ('Your Amazon.com order', 'has been canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
+        ('Your Amazon.com Order', 'Has Been Canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
+        ('Your Amazon.com Order', 'Has Been Cancelled'): (CancFmt.IRRELEVANT, CancQty.NO),
+        ('Your AmazonSmile order', 'has been canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
         (
             "Successful cancellation of",
             "from your Amazon.com order",
         ): (CancFmt.VOLUNTARY, CancQty.YES),
         ("Partial item(s) cancellation from your Amazon.com order",):
             (CancFmt.VOLUNTARY, CancQty.NO),
-        ("item has been canceled from your AmazonSmile order",):
-            (CancFmt.INVOLUNTARY, CancQty.NO),
+        ("item has been canceled from your AmazonSmile order",): (CancFmt.INVOLUNTARY, CancQty.NO),
         ("items have been canceled from your AmazonSmile order",):
             (CancFmt.INVOLUNTARY, CancQty.NO),
-        ("items have been canceled from your Amazon.com order",):
-            (CancFmt.INVOLUNTARY, CancQty.NO),
-        ("item has been canceled from your Amazon.com order",):
-            (CancFmt.INVOLUNTARY, CancQty.NO)
+        ("items have been canceled from your Amazon.com order",): (CancFmt.INVOLUNTARY, CancQty.NO),
+        ("item has been canceled from your Amazon.com order",): (CancFmt.INVOLUNTARY, CancQty.NO)
     }
     result_ids = dict()
     for search_terms, canc_info in subject_searches.items():
@@ -86,27 +88,29 @@ class CancelledItemsRetriever:
         result_ids[email_id] = canc_info
     return result_ids
 
-  def get_cancellations_from_email(
-      self, mail, email_id: str,
-      canc_info: Tuple[CancFmt, CancQty]) -> Dict[str, List[str]]:
+  def get_cancellations_from_email(self, mail, email_id: str,
+                                   canc_info: Tuple[CancFmt, CancQty]) -> Dict[str, List[str]]:
     try:
       result, data = mail.uid("FETCH", email_id, "(RFC822)")
     except Exception as e:
       raise Exception(f"Error retrieving email UID {email_id}") from e
     try:
       raw_email = data[0][1]
-      order = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))[0]
+      orders = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))
+      if not orders:
+        return {}
+      order = orders[0]
 
       cancelled_items = []
       soup = BeautifulSoup(
-          quopri.decodestring(raw_email),
-          features="html.parser",
-          from_encoding="iso-8859-1")
+          quopri.decodestring(raw_email), features="html.parser", from_encoding="iso-8859-1")
 
       if canc_info[0] == CancFmt.VOLUNTARY:
         cancelled_header = soup.find("h3", text="Canceled Items")
       elif canc_info[0] == CancFmt.INVOLUNTARY:
         cancelled_header = soup.find("span", text="Canceled Items")
+      elif canc_info[0] == CancFmt.IRRELEVANT:
+        return {order: []}
       else:
         raise Exception(f"Can't handle cancellation format {canc_info[0]}")
       parent = cancelled_header.parent.parent.parent
@@ -116,8 +120,7 @@ class CancelledItemsRetriever:
         canc_item = li.find('a').text.strip()
         # If cancellation email format contains quantity info, then use the string from
         # Amazon as-is, otherwise prepend with "??" to indicate indeterminate quantity.
-        cancelled_items.append(canc_item if canc_info[1] ==
-                               CancQty.YES else f"?? {canc_item}")
+        cancelled_items.append(canc_item if canc_info[1] == CancQty.YES else f"?? {canc_item}")
       return {order: cancelled_items}
     except Exception as e:
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
@@ -129,9 +132,7 @@ class CancelledItemsRetriever:
       return None
 
   def load_mail(self):
-    mail = imaplib.IMAP4_SSL(self.config['email']['imapUrl'])
-    mail.login(self.config['email']['username'],
-               self.config['email']['password'])
+    mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
@@ -143,8 +144,7 @@ class CancelledItemsRetriever:
       pickle.dump(self.email_id_dict, stream)
 
     objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, CANCELLATIONS_FILENAME,
-                          CANCELLATIONS_FILE)
+    objects_to_drive.save(self.config, CANCELLATIONS_FILENAME, CANCELLATIONS_FILE)
 
   def load_dict(self) -> Any:
     objects_to_drive = ObjectsToDrive()

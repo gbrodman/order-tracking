@@ -1,7 +1,7 @@
 import collections
 import datetime
-import smtplib
 from email.mime.text import MIMEText
+import lib.email_auth as email_auth
 
 TODAY = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -35,14 +35,9 @@ class EmailSender:
 
   def send_email_content(self, subject, content, recipients=[]) -> None:
     recipients = recipients if recipients else [self.email_config['username']]
-    s = smtplib.SMTP(self.email_config['smtpUrl'],
-                     self.email_config['smtpPort'])
-    s.starttls()
-    s.login(self.email_config['username'], self.email_config['password'])
 
     message = MIMEText(content)
     message['From'] = self.email_config['username']
     message['To'] = ", ".join(recipients)
     message['Subject'] = subject
-    s.sendmail(self.email_config['username'], recipients, message.as_string())
-    s.quit()
+    email_auth.send_email(recipients, message)

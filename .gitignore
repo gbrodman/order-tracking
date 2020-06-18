@@ -9,9 +9,13 @@ geckodriver.log
 
 # Google drive creds
 creds.json
+client_secret.json
+storage.json
 
 output/
 
 # Chrome things
 chrome/osx/Chromium.app
 chrome/windows/chrome-win32
+
+.idea/
