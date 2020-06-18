@@ -6,7 +6,7 @@ import re
 import sys
 import time
 import traceback
-from typing import Any
+from typing import Any, Tuple, Dict
 
 import aiohttp
 import requests
@@ -71,7 +71,8 @@ class GroupSiteManager:
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_new_tracking_pos_costs_maps_with_retry(self, group):
+  def get_new_tracking_pos_costs_maps_with_retry(
+      self, group: str) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
     last_exc = None
     for i in range(5):
       try:
@@ -82,15 +83,15 @@ class GroupSiteManager:
         last_exc = e
     raise Exception("Exceeded retry limit", last_exc)
 
-  # returns ((trackings) -> cost, po -> cost) maps
-  def get_new_tracking_pos_costs_maps(self, group):
+  def get_new_tracking_pos_costs_maps(
+      self, group: str) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
     if group == 'bfmr':
       print("Loading BFMR emails")
       _, costs_map = self._get_bfmr_costs()
       trackings_map = {}
       for tracking, cost in costs_map.items():
         trackings_map[(tracking,)] = cost
-      return (trackings_map, costs_map)
+      return trackings_map, costs_map
     elif group in self.melul_portal_groups:
       group_config = self.config['groups'][group]
       username = group_config['username']
@@ -202,8 +203,7 @@ class GroupSiteManager:
     pos_to_prices = {}
     all_entries = self._get_usa_tracking_entries(headers)
     for entry in all_entries:
-      po_id = entry['purchase_id']
-      pos_to_prices[po_id] = float(entry['purchase']['amount'])
+      pos_to_prices[entry['purchase_id']] = float(entry['purchase']['amount'])
     tracking_numbers = [entry['tracking_number'] for entry in all_entries]
     async with aiohttp.ClientSession(headers=headers) as session:
       tracking_tuples_to_prices = {}
@@ -219,14 +219,15 @@ class GroupSiteManager:
     data = {"trackings": ",".join(numbers)}
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
 
-  # hacks, return tracking->po, po->cost, (trackings)->cost
-  def _melul_get_tracking_pos_costs_maps(self, group, username, password):
+  def _melul_get_tracking_pos_costs_maps(
+      self, group: str, username: str,
+      password: str) -> Tuple[Dict[str, str], Dict[str, float], Dict[Tuple[str], float]]:
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
-      tracking_to_po_map = {}
-      po_to_cost_map = {}
-      trackings_to_cost_map = {}
+      tracking_to_po_map: Dict[str, str] = {}
+      po_to_cost_map: Dict[str, float] = {}
+      trackings_to_cost_map: Dict[Tuple[str], float] = {}
 
       # Clear the search field since it can cache results
       search_button = driver.find_element_by_class_name('pf-search-button')
@@ -275,7 +276,7 @@ class GroupSiteManager:
           else:
             break
 
-        return (tracking_to_po_map, po_to_cost_map, trackings_to_cost_map)
+        return tracking_to_po_map, po_to_cost_map, trackings_to_cost_map
     finally:
       driver.quit()
 
