@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+from typing import Dict, Tuple
+
 import lib.donations
 from lib import clusters
 import sys
@@ -55,7 +57,9 @@ def fill_email_ids(all_clusters, config):
         pbar.update()
 
 
-def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
+def get_new_tracking_pos_costs_maps(
+    config, group_site_manager: GroupSiteManager,
+    args) -> Tuple[Dict[Tuple[str], Tuple[str, float]], Dict[str, float]]:
   print("Loading tracked costs. This will take several minutes.")
   if args.groups:
     print("Only reconciling groups %s" % ",".join(args.groups))
@@ -63,15 +67,18 @@ def get_new_tracking_pos_costs_maps(config, group_site_manager, args):
   else:
     groups = config['groups'].keys()
 
-  trackings_to_costs_map = {}
-  po_to_cost_map = {}
+  trackings_to_costs_map: Dict[Tuple[str], Tuple[str, float]] = {}
+  po_to_cost_map: Dict[str, float] = {}
   for group in groups:
     group_trackings_to_po, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
         group)
-    trackings_to_costs_map.update(group_trackings_to_po)
+    trackings_to_costs_map.update({k: (
+        group,
+        v,
+    ) for (k, v) in group_trackings_to_po.items()})
     po_to_cost_map.update(group_po_to_cost)
 
-  return (trackings_to_costs_map, po_to_cost_map)
+  return trackings_to_costs_map, po_to_cost_map
 
 
 def map_clusters_by_tracking(all_clusters):
@@ -109,7 +116,8 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clust
       clusters_by_tracking[tracking] = first_cluster
 
 
-def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
+def fill_costs_new(clusters_by_tracking, trackings_to_cost: Dict[Tuple[str], Tuple[str, float]],
+                   po_to_cost: Dict[str, float], args):
   for cluster in clusters_by_tracking.values():
     # Reset the cluster if it's included in the groups
     if args.groups and cluster.group not in args.groups:
@@ -119,16 +127,16 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args):
 
   # We've already merged by tracking tuple (if multiple trackings are counted as the same price)
   # so only use the first tracking in each tuple
-  for trackings_tuple, cost in trackings_to_cost.items():
-    first_tracking = trackings_tuple[0]
+  for trackings_tuple, (group, cost) in trackings_to_cost.items():
+    first_tracking: str = trackings_tuple[0]
     if first_tracking in clusters_by_tracking:
       cluster = clusters_by_tracking[first_tracking]
       cluster.tracked_cost += cost
       for tracking in trackings_tuple:
         if tracking in cluster.non_reimbursed_trackings:
           cluster.non_reimbursed_trackings.remove(tracking)
-    else:
-      print(f"Unknown tracking: {first_tracking}")
+    elif args.print_unknowns:
+      print(f"Unknown tracking for group {group}: {first_tracking}")
 
   # Next, manual PO fixes
   for cluster in clusters_by_tracking.values():
@@ -150,7 +158,6 @@ def fill_cancellations(all_clusters, config):
 
 
 def reconcile_new(config, args):
-  print("New reconciliation!")
   reconciliation_uploader = ReconciliationUploader(config)
 
   tracking_output = TrackingOutput(config)
@@ -184,10 +191,15 @@ def reconcile_new(config, args):
 def main():
   parser = argparse.ArgumentParser(description='Reconciliation script')
   parser.add_argument("--groups", nargs="*")
+  parser.add_argument(
+      "--print-unknowns",
+      "-u",
+      action="store_true",
+      help="print unknown trackings found in BG portals")
   args, _ = parser.parse_known_args()
-
   config = open_config()
 
+  print("Reconciling ...")
   reconcile_new(config, args)
 
 
