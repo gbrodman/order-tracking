@@ -7,7 +7,6 @@ from typing import Tuple, Optional
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from lib.email_tracking_retriever import EmailTrackingRetriever
-from lib.tracking import Tracking
 
 
 class AmazonTrackingRetriever(EmailTrackingRetriever):
@@ -66,22 +65,20 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     return self.get_tracking_info(url)
 
   def get_tracking_info(self, amazon_url) -> Tuple[str, Optional[str]]:
-    driver = self.load_url(amazon_url)
+    self.load_url(amazon_url)
     try:
-      element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+      element = self.driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
         return None, None
       tracking_number = match.group(1).upper()
-      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute(
+      shipping_status = self.driver.find_element_by_id("primaryStatus").get_attribute(
           "textContent").strip(" \t\n\r")
       return tracking_number, shipping_status
     except:
       # swallow this and continue on
       return None, None
-    finally:
-      driver.quit()
 
   def get_delivery_date_from_email(self, data):
     soup = BeautifulSoup(
@@ -114,7 +111,5 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, url):
-    driver = self.driver_creator.new()
-    driver.get(url)
+    self.driver.get(url)
     time.sleep(1)  # wait for page load because the timeouts can be buggy
-    return driver
