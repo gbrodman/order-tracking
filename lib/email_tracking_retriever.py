@@ -191,11 +191,16 @@ class EmailTrackingRetriever(ABC):
       return False, tracking
 
     tracking.items = self.get_items_from_email(data)
-    tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-               f"Group: {group}, Status: {shipping_status}, Items: {tracking.items}")
+    try:
+      tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                 f"Group: {group}, Status: {shipping_status}, Items: {tracking.items}")
+    except UnicodeEncodeError:
+      # TQDM doesn't have great handling for some of the ways the item texts can be encoded, skip it if it fails
+      tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                 f"Group: {group}, Status: {shipping_status}")
 
     if group is None:
-      tqdm.write(f"Could not find buying group from email; we got: {tracking}")
+      tqdm.write(f"Could not find buying group from email with order ID(s) {tracking.order_ids}")
       return False, tracking
 
     tracking.merchant = self.get_merchant()
