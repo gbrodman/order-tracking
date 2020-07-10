@@ -3,7 +3,7 @@ import email
 import imaplib
 import socket
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, Tuple, TypeVar, Dict
+from typing import Any, Callable, Optional, Tuple, TypeVar, Dict, List
 
 from tqdm import tqdm
 
@@ -65,7 +65,7 @@ class EmailTrackingRetriever(ABC):
         try:
           for attempt in range(1, 5):  # Make 4 attempts
             try:
-              success, tracking = self.get_tracking(email_id, mail)
+              success, new_trackings = self.get_trackings_from_email(email_id, mail)
             except (ConnectionError, socket.error, imaplib.IMAP4.abort):
               tqdm.write(f"Connection lost; reconnecting (attempt {attempt}).")
               # Re-initializing the IMAP connection and retrying should fix most
@@ -74,9 +74,10 @@ class EmailTrackingRetriever(ABC):
               mail = self.get_all_mail_folder()
               continue
             if success:
-              trackings[tracking.tracking_number] = tracking
+              for new_tracking in new_trackings:
+                trackings[new_tracking.tracking_number] = new_tracking
             else:
-              incomplete_trackings.append(tracking)
+              incomplete_trackings.extend(new_trackings)
               self.mark_as_unread(email_id)
             break
         except Exception as e:
@@ -135,9 +136,10 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
+  def get_tracking_numbers_from_email(self, raw_email,
+                                      to_email: str) -> List[Tuple[str, Optional[str]]]:
     """
-    Returns a Tuple of [tracking number, optional shipping status].
+    Returns a potentially empty list of (tracking number, optional shipping status) tuples.
     """
     pass
 
@@ -166,7 +168,7 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     return str(msg['To']).replace('<', '').replace('>', '')
 
-  def get_tracking(self, email_id, mail) -> Tuple[bool, Tracking]:
+  def get_trackings_from_email(self, email_id, mail) -> Tuple[bool, List[Tracking]]:
     """
     Returns a Tuple of boolean success status and tracking information for a
     given email id. If success is True then the tracking info is complete and
@@ -182,30 +184,36 @@ class EmailTrackingRetriever(ABC):
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
     group, reconcile = self.get_buying_group(raw_email)
-    tracking_number, shipping_status = self.get_tracking_number_from_email(raw_email)
-    tracking = Tracking(
-        tracking_number, group, order_ids, price, to_email, '', date, 0.0, reconcile=reconcile)
+    tracking_nums = self.get_tracking_numbers_from_email(raw_email, to_email)
 
-    if tracking_number is None:
-      tqdm.write(f"Could not find tracking number from email; we got: {tracking}")
-      return False, tracking
+    if len(tracking_nums) == 0:
+      incomplete_tracking = Tracking(None, group, order_ids, price, to_email, '', date, 0.0)
+      tqdm.write(f"Could not find tracking number from email; we got: {incomplete_tracking}")
+      return False, [incomplete_tracking]
 
-    tracking.items = self.get_items_from_email(data)
+    # TODO: Ideally, handle this per-tracking.
+    items = self.get_items_from_email(data)
+
     try:
-      tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-                 f"Group: {group}, Status: {shipping_status}, Items: {tracking.items}")
+      for tracking_number, shipping_status in tracking_nums:
+        tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                   f"Group: {group}, Status: {shipping_status}, Items: {items}")
     except UnicodeEncodeError:
       # TQDM doesn't have great handling for some of the ways the item texts can be encoded, skip it if it fails
-      tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-                 f"Group: {group}, Status: {shipping_status}")
+      for tracking_number, shipping_status in tracking_nums:
+        tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                   f"Group: {group}, Status: {shipping_status}")
 
+    merchant = self.get_merchant()
+    delivery_date = self.get_delivery_date_from_email(data)
+    trackings = [
+        Tracking(tracking_number, group, order_ids, price, to_email, '', date, 0.0, items, merchant,
+                 reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
+    ]
     if group is None:
-      tqdm.write(f"Could not find buying group from email with order ID(s) {tracking.order_ids}")
-      return False, tracking
-
-    tracking.merchant = self.get_merchant()
-    tracking.delivery_date = self.get_delivery_date_from_email(data)
-    return True, tracking
+      tqdm.write(f"Could not find buying group from email with order ID(s) {order_ids}")
+      return False, trackings
+    return True, trackings
 
   def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
     mail = email_auth.email_authentication()

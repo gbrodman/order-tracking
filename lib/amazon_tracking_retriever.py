@@ -2,10 +2,11 @@ import datetime
 import quopri
 import re
 import time
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
 
@@ -58,27 +59,29 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_number_from_email(self, raw_email) -> Tuple[str, Optional[str]]:
+  def get_tracking_numbers_from_email(self, raw_email,
+                                      to_email: str) -> List[Tuple[str, Optional[str]]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
-      return None, None
-    return self.get_tracking_info(url)
+      return []
+    return self.get_tracking_info(url, to_email)
 
-  def get_tracking_info(self, amazon_url) -> Tuple[str, Optional[str]]:
+  def get_tracking_info(self, amazon_url: str, to_email: str) -> List[Tuple[str, Optional[str]]]:
+    # TODO: Use to_email to determine if we need to handle alternate format requiring login.
     self.load_url(amazon_url)
     try:
       element = self.driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
-        return None, None
+        return []
       tracking_number = match.group(1).upper()
       shipping_status = self.driver.find_element_by_id("primaryStatus").get_attribute(
           "textContent").strip(" \t\n\r")
-      return tracking_number, shipping_status
+      return [(tracking_number, shipping_status)]
     except:
       # swallow this and continue on
-      return None, None
+      return []
 
   def get_delivery_date_from_email(self, data):
     soup = BeautifulSoup(
