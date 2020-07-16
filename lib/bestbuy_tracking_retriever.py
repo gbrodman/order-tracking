@@ -9,7 +9,7 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   tracking_regex = r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>'
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
-  def get_order_ids_from_email(self, raw_email, to_email: str):
+  def get_order_ids_from_email(self, raw_email):
     result = set()
     result.add(self._get_order_id(raw_email))
     return result
