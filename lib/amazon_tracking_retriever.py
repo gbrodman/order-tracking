@@ -1,12 +1,15 @@
 import datetime
+import os
 import quopri
 import re
 import time
 from typing import Tuple, Optional, List
 
+from tqdm import tqdm
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from lib.driver_creator import DriverCreator
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
 
@@ -16,6 +19,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
   price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
   order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
+  li_regex = re.compile(r"\d+\.\s+")
 
   def get_order_url_from_email(self, raw_email):
     match = re.match(self.first_regex, str(raw_email))
@@ -59,15 +63,59 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_numbers_from_email(self, raw_email,
+  def get_tracking_numbers_from_email(self, raw_email, from_email: str,
                                       to_email: str) -> List[Tuple[str, Optional[str]]]:
     url = self.get_order_url_from_email(raw_email)
     if not url:
       return []
-    return self.get_tracking_info(url, to_email)
+    if "ship-confirm@amazon.com" in from_email and "profileBase" in self.config:
+      return self.get_tracking_info_logged_in(url, to_email)
+    else:
+      return self.get_tracking_info_logged_out(url)
 
-  def get_tracking_info(self, amazon_url: str, to_email: str) -> List[Tuple[str, Optional[str]]]:
-    # TODO: Use to_email to determine if we need to handle alternate format requiring login.
+  def get_tracking_info_logged_in(self, amazon_url: str,
+                                  to_email: str) -> List[Tuple[str, Optional[str]]]:
+    email_user = to_email.split("@")[0].lower()
+    profile_base = self.config["profileBase"]
+    driver = None
+    for profile_name in os.listdir(os.path.expanduser(profile_base)):
+      if email_user in profile_name.lower():
+        dc = DriverCreator()
+        dc.args.no_headless = True
+        driver = dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+        break
+    if driver is None:
+      tqdm.write(f"Couldn't find profile directory for email: {to_email}")
+      return []
+    try:
+      driver.get(amazon_url)
+      shipment_eles = driver.find_elements_by_css_selector("div.a-section-expander-container")
+      if len(shipment_eles) == 0:
+        return self.get_trackings_within_shipment(
+            driver,
+            driver.find_element_by_css_selector(
+                "div.a-col-left div.a-color-offset-background span.a-color-base").text.strip())
+      else:
+        trackings = []
+        for shipment_ele in shipment_eles:
+          delivery_status = shipment_ele.find_element_by_css_selector(
+              "span.a-color-base").text.strip()
+          shipment_ele.click()
+          trackings.extend(self.get_trackings_within_shipment(shipment_ele, delivery_status))
+        return trackings
+    finally:
+      driver.quit()
+
+  def get_trackings_within_shipment(self, shipment_ele, delivery_status):
+    trackings = []
+    for item in shipment_ele.find_elements_by_css_selector("span[data-action='asinclick']"):
+      item.click()
+      for tracking in shipment_ele.find_elements_by_css_selector(
+          "span[data-action='trackingidclick'] a.a-link-normal span.a-size-small"):
+        trackings.append((self.li_regex.sub("", tracking.text.strip()), delivery_status))
+    return trackings
+
+  def get_tracking_info_logged_out(self, amazon_url: str) -> List[Tuple[str, Optional[str]]]:
     self.load_url(amazon_url)
     try:
       element = self.driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")

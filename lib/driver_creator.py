@@ -58,7 +58,7 @@ class DriverCreator:
                                            user_data_dir)
 
   def _create_windows_driver(self, options, user_data_dir=None):
-    url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v78.0.3901.0-r692535-win32/chrome.zip"
+    url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v80.0.3982.0-r720336-win64/chrome.zip"
     return self._create_osx_windows_driver(options, url, "/chrome/windows/",
                                            "chrome-win32/chrome.exe", "chromedriver.exe",
                                            user_data_dir)
@@ -71,6 +71,9 @@ class DriverCreator:
     # no idea why, but it's a million times slower in headless mode in Windows without these lines
     options.add_argument("--proxy-server='direct://'")
     options.add_argument("--proxy-bypass-list=*")
+
+    # Always fully render browser windows, even when backgrounded.
+    options.add_argument("--disable-backgrounding-occluded-windows")
 
     # reduce Windows log spam
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
