@@ -59,7 +59,7 @@ class DriverCreator:
 
   def _create_windows_driver(self, options, user_data_dir=None):
     url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v80.0.3982.0-r720336-win64/chrome.zip"
-    return self._create_osx_windows_driver(options, url, "/chrome/windows/",
+    return self._create_osx_windows_driver(options, url, "/chrome/windows_v80/",
                                            "chrome-win32/chrome.exe", "chromedriver.exe",
                                            user_data_dir)
 

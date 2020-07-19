@@ -16,6 +16,6 @@ output/
 
 # Chrome things
 chrome/osx/Chromium.app
-chrome/windows/chrome-win32
+chrome/*/chrome-win32
 
 .idea/

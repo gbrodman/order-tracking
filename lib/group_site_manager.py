@@ -312,7 +312,10 @@ class GroupSiteManager:
 
   def _upload_bfmr_batch(self, numbers) -> None:
     group_config = self.config['groups']['bfmr']
+    former_headless = self.driver_creator.args.no_headless
+    self.driver_creator.args.no_headless = True
     driver = self.driver_creator.new()
+    self.driver_creator.args.no_headless = former_headless
     try:
       # load the login page first
       self._load_page(driver, "https://buyformeretail.com/login")
