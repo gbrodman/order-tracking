@@ -136,7 +136,7 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_tracking_numbers_from_email(self, raw_email,
+  def get_tracking_numbers_from_email(self, raw_email, from_email: str,
                                       to_email: str) -> List[Tuple[str, Optional[str]]]:
     """
     Returns a potentially empty list of (tracking number, optional shipping status) tuples.
@@ -159,15 +159,6 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, data) -> Any:
     pass
 
-  def get_date_from_msg(self, data) -> str:
-    msg = email.message_from_string(str(data[0][1], 'utf-8'))
-    msg_date = msg['Date']
-    return datetime.datetime.strptime(msg_date, '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
-
-  def get_to_address(self, data) -> str:
-    msg = email.message_from_string(str(data[0][1], 'utf-8'))
-    return str(msg['To']).replace('<', '').replace('>', '')
-
   def get_trackings_from_email(self, email_id, mail) -> Tuple[bool, List[Tracking]]:
     """
     Returns a Tuple of boolean success status and tracking information for a
@@ -179,12 +170,14 @@ class EmailTrackingRetriever(ABC):
     raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
                                                             '').replace('\\r\\n',
                                                                         '').replace('&amp;', '&')
-    to_email = self.get_to_address(data)
-    date = self.get_date_from_msg(data)
+    msg = email.message_from_string(str(data[0][1], 'utf-8'))
+    to_email = str(msg['To']).replace('<', '').replace('>', '')
+    from_email = str(msg['From']).replace('<', '').replace('>', '')  # Also contains display name.
+    date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
     price = self.get_price_from_email(raw_email)
     order_ids = self.get_order_ids_from_email(raw_email)
     group, reconcile = self.get_buying_group(raw_email)
-    tracking_nums = self.get_tracking_numbers_from_email(raw_email, to_email)
+    tracking_nums = self.get_tracking_numbers_from_email(raw_email, from_email, to_email)
 
     if len(tracking_nums) == 0:
       incomplete_tracking = Tracking(None, group, order_ids, price, to_email, '', date, 0.0)

@@ -17,7 +17,7 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   def get_price_from_email(self, raw_email):
     return None  # not implementable
 
-  def get_tracking_numbers_from_email(self, raw_email,
+  def get_tracking_numbers_from_email(self, raw_email, from_email: str,
                                       to_email: str) -> List[Tuple[str, Optional[str]]]:
     match = re.search(self.tracking_regex, raw_email)
     if not match:
