@@ -5,6 +5,7 @@ import re
 import quopri
 import lib.email_auth as email_auth
 from bs4 import BeautifulSoup
+from lib.debounce import debounce
 from lib.objects_to_drive import ObjectsToDrive
 from typing import Any, Dict, Optional, Union
 
@@ -46,6 +47,7 @@ class OrderInfoRetriever:
     mail.select('"[Gmail]/All Mail"')
     return mail
 
+  @debounce(5)
   def flush(self) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
