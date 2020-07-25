@@ -3,19 +3,16 @@
 import argparse
 from typing import Dict, Tuple
 
-import lib.donations
 from lib import clusters
-import sys
 from tqdm import tqdm
-import yaml
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
-from lib.order_info import OrderInfo, OrderInfoRetriever
+from lib.non_portal_reimbursements import NonPortalReimbursementsRetriever
+from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
-from lib.tracking_uploader import TrackingUploader
 
 
 def fill_costs(all_clusters, config):
@@ -77,6 +74,11 @@ def get_new_tracking_pos_costs_maps(
         v,
     ) for (k, v) in group_trackings_to_po.items()})
     po_to_cost_map.update(group_po_to_cost)
+
+  non_portal_reimbursements_retriever = NonPortalReimbursementsRetriever(config)
+  non_portal_reimbursements = non_portal_reimbursements_retriever.non_portal_reimbursements
+  trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
+  po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
 
   return trackings_to_costs_map, po_to_cost_map
 
