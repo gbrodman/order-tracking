@@ -3,19 +3,16 @@
 import argparse
 from typing import Dict, Tuple
 
-import lib.donations
 from lib import clusters
-import sys
 from tqdm import tqdm
-import yaml
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
-from lib.order_info import OrderInfo, OrderInfoRetriever
+from lib.non_portal_reimbursements import NonPortalReimbursements
+from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
-from lib.tracking_uploader import TrackingUploader
 
 
 def fill_costs(all_clusters, config):
@@ -57,6 +54,30 @@ def fill_email_ids(all_clusters, config):
         pbar.update()
 
 
+def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[str], Tuple[str,
+                                                                                           float]],
+                                    po_to_cost_map: Dict[str, float]) -> None:
+  non_portal_reimbursements = NonPortalReimbursements(config)
+  duplicate_tracking_tuples = set(non_portal_reimbursements.trackings_to_costs.keys()).intersection(
+      trackings_to_costs_map.keys())
+  if duplicate_tracking_tuples:
+    for duplicate in duplicate_tracking_tuples:
+      print(
+          f'Tracking {duplicate} in non-portal reimbursements also group {trackings_to_costs_map[duplicate][0]}'
+      )
+    raise Exception('Non-reimbursed trackings should not be duplicated in a portal')
+
+  duplicate_pos = set(non_portal_reimbursements.po_to_cost.keys()).intersection(
+      po_to_cost_map.keys())
+  if duplicate_pos:
+    for duplicate_po in duplicate_pos:
+      print(f'PO {duplicate_po} included in non-portal reimbursements but also found in a portal')
+    raise Exception('Non-reimbursed POs should not be duplicated in a portal')
+
+  trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
+  po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
+
+
 def get_new_tracking_pos_costs_maps(
     config, group_site_manager: GroupSiteManager,
     args) -> Tuple[Dict[Tuple[str], Tuple[str, float]], Dict[str, float]]:
@@ -78,6 +99,7 @@ def get_new_tracking_pos_costs_maps(
     ) for (k, v) in group_trackings_to_po.items()})
     po_to_cost_map.update(group_po_to_cost)
 
+  apply_non_portal_reimbursements(config, trackings_to_costs_map, po_to_cost_map)
   return trackings_to_costs_map, po_to_cost_map
 
 

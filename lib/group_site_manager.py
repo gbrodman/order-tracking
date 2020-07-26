@@ -53,13 +53,6 @@ class GroupSiteManager:
     self.melul_portal_groups = config['melulPortals']
     self.archive_manager = ArchiveManager(config)
 
-  def get_tracked_groups(self):
-    result = set(self.melul_portal_groups)
-    result.add('bfmr')
-    result.add('usa')
-    result.add('yrcw')
-    return result
-
   def upload(self, trackings) -> None:
     groups_dict = collections.defaultdict(list)
     for tracking in trackings:
