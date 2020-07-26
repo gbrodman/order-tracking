@@ -5,47 +5,45 @@ from lib.objects_to_drive import ObjectsToDrive
 from typing import Dict, Tuple
 
 OUTPUT_FOLDER = "output"
-NON_PORTAL_REIMBURSEMENTS_FILENAME = "non_portal_reimbursements.pickle"
-NON_PORTAL_REIMBURSEMENTS_FILE = OUTPUT_FOLDER + "/" + NON_PORTAL_REIMBURSEMENTS_FILENAME
+NON_PORTAL_TRACKINGS_FILENAME = "non_portal_trackings.pickle"
+NON_PORTAL_POS_FILENAME = "non_portal_pos.pickle"
 
 
 class NonPortalReimbursements:
-
-  def __init__(self, trackings_to_costs: Dict[Tuple[str], Tuple[str, float]], po_to_cost: Dict[str, float]):
-    # Dict from (trackings) -> (group, reimbursed-cost)
-    self.trackings_to_costs = trackings_to_costs
-    # Simple dict from po -> cost
-    self.po_to_cost = po_to_cost
-
-
-class NonPortalReimbursementsRetriever:
   """
   A class that stores and retrieves non-portal reimbursements. Used for groups that don't have web portals.
   """
 
   def __init__(self, config) -> None:
     self.config = config
-    self.non_portal_reimbursements = self.load_non_portal_reimbursements()
+    self.trackings_to_costs: Dict[Tuple[str],
+                                  Tuple[str, float]] = self._load(NON_PORTAL_TRACKINGS_FILENAME)
+    self.po_to_cost: Dict[str, float] = self._load(NON_PORTAL_POS_FILENAME)
 
   def flush(self) -> None:
+    self._flush(self.trackings_to_costs, NON_PORTAL_TRACKINGS_FILENAME)
+    self._flush(self.po_to_cost, NON_PORTAL_POS_FILENAME)
+
+  def _flush(self, obj, filename):
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
-    with open(NON_PORTAL_REIMBURSEMENTS_FILE, 'wb') as stream:
-      pickle.dump(self.non_portal_reimbursements, stream)
+    local_file = OUTPUT_FOLDER + "/" + filename
+    with open(local_file, 'wb') as stream:
+      pickle.dump(obj, stream)
 
     objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, NON_PORTAL_REIMBURSEMENTS_FILENAME,
-                          NON_PORTAL_REIMBURSEMENTS_FILE)
+    objects_to_drive.save(self.config, filename, local_file)
 
-  def load_non_portal_reimbursements(self) -> NonPortalReimbursements:
+  def _load(self, filename):
     objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, NON_PORTAL_REIMBURSEMENTS_FILENAME)
+    from_drive = objects_to_drive.load(self.config, filename)
     if from_drive:
       return from_drive
 
-    if not os.path.exists(NON_PORTAL_REIMBURSEMENTS_FILE):
-      return NonPortalReimbursements({}, {})
+    local_file = OUTPUT_FOLDER + "/" + filename
+    if not os.path.exists(local_file):
+      return {}
 
-    with open(NON_PORTAL_REIMBURSEMENTS_FILE, 'rb') as stream:
+    with open(local_file, 'rb') as stream:
       return pickle.load(stream)

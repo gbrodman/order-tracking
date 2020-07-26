@@ -7,7 +7,7 @@ from lib import clusters
 from tqdm import tqdm
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
-from lib.non_portal_reimbursements import NonPortalReimbursementsRetriever
+from lib.non_portal_reimbursements import NonPortalReimbursements
 from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
@@ -54,6 +54,23 @@ def fill_email_ids(all_clusters, config):
         pbar.update()
 
 
+def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[str], Tuple[str,float]],
+                                    po_to_cost_map: Dict[str, float]) -> None:
+  non_portal_reimbursements = NonPortalReimbursements(config)
+  for tracking_tuple in non_portal_reimbursements.trackings_to_costs.keys():
+    if tracking_tuple in trackings_to_costs_map:
+      group = trackings_to_costs_map[tracking_tuple][0]
+      raise Exception(
+          f'Tracking tuple {tracking_tuple} included in non-portal reimbursements but found for group {group}'
+      )
+  for po in non_portal_reimbursements.po_to_cost.keys():
+    if po in po_to_cost_map:
+      raise Exception(f'PO {po} included in non-portal reimbursements but also found in a portal')
+
+  trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
+  po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
+
+
 def get_new_tracking_pos_costs_maps(
     config, group_site_manager: GroupSiteManager,
     args) -> Tuple[Dict[Tuple[str], Tuple[str, float]], Dict[str, float]]:
@@ -75,11 +92,7 @@ def get_new_tracking_pos_costs_maps(
     ) for (k, v) in group_trackings_to_po.items()})
     po_to_cost_map.update(group_po_to_cost)
 
-  non_portal_reimbursements_retriever = NonPortalReimbursementsRetriever(config)
-  non_portal_reimbursements = non_portal_reimbursements_retriever.non_portal_reimbursements
-  trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
-  po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
-
+  apply_non_portal_reimbursements(config, trackings_to_costs_map, po_to_cost_map)
   return trackings_to_costs_map, po_to_cost_map
 
 
