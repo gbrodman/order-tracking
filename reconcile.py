@@ -54,18 +54,25 @@ def fill_email_ids(all_clusters, config):
         pbar.update()
 
 
-def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[str], Tuple[str,float]],
+def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[str], Tuple[str,
+                                                                                           float]],
                                     po_to_cost_map: Dict[str, float]) -> None:
   non_portal_reimbursements = NonPortalReimbursements(config)
-  for tracking_tuple in non_portal_reimbursements.trackings_to_costs.keys():
-    if tracking_tuple in trackings_to_costs_map:
-      group = trackings_to_costs_map[tracking_tuple][0]
-      raise Exception(
-          f'Tracking tuple {tracking_tuple} included in non-portal reimbursements but found for group {group}'
+  duplicate_tracking_tuples = set(non_portal_reimbursements.trackings_to_costs.keys()).intersection(
+      trackings_to_costs_map.keys())
+  if duplicate_tracking_tuples:
+    for duplicate in duplicate_tracking_tuples:
+      print(
+          f'Tracking {duplicate} in non-portal reimbursements also group {trackings_to_costs_map[duplicate][0]}'
       )
-  for po in non_portal_reimbursements.po_to_cost.keys():
-    if po in po_to_cost_map:
-      raise Exception(f'PO {po} included in non-portal reimbursements but also found in a portal')
+    raise Exception('Non-reimbursed trackings should not be duplicated in a portal')
+
+  duplicate_pos = set(non_portal_reimbursements.po_to_cost.keys()).intersection(
+      po_to_cost_map.keys())
+  if duplicate_pos:
+    for duplicate_po in duplicate_pos:
+      print(f'PO {duplicate_po} included in non-portal reimbursements but also found in a portal')
+    raise Exception('Non-reimbursed POs should not be duplicated in a portal')
 
   trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
   po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
