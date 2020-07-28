@@ -1,4 +1,6 @@
 import argparse
+import email
+
 import lib.email_auth as email_auth
 import datetime
 
@@ -57,9 +59,10 @@ def get_order_ids_to_orders(args):
   result = {}
   for email_id in tqdm(email_ids, desc="Fetching orders", unit="email"):
     _, data = mail.uid("FETCH", email_id, "(RFC822)")
-    date = EmailTrackingRetriever.get_date_from_msg(None, data)
-    to_email = EmailTrackingRetriever.get_to_address(None, data)
+    msg = email.message_from_string(str(data[0][1], 'utf-8'))
+    date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
 
+    to_email = str(msg['To']).replace('<', '').replace('>', '')
     raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
                                                             '').replace('\\r\\n',
                                                                         '').replace('&amp;', '&')
