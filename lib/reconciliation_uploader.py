@@ -27,11 +27,11 @@ def compare(cluster_one, cluster_two) -> int:
 
   # If both negative, return the ship date diff. If only one is
   # negative, that one should come first. If both are nonnegative, use the group
-  if diff_one < 0 and diff_two < 0:
+  if diff_one < -0.01 and diff_two < -0.01:
     return compare_ship_dates(cluster_one, cluster_two)
-  elif diff_one < 0:
+  elif diff_one < -0.01:
     return -1
-  elif diff_two < 0:
+  elif diff_two < -0.01:
     return 1
   elif cluster_one.group < cluster_two.group:
     return -1

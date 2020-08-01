@@ -300,7 +300,7 @@ class GroupSiteManager:
     time.sleep(3)
 
   def _upload_bfmr(self, numbers) -> None:
-    for batch in util.chunks(numbers, 30):
+    for batch in util.chunks(numbers, 100):
       self._upload_bfmr_batch(batch)
 
   def _upload_bfmr_batch(self, numbers) -> None:
