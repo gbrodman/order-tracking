@@ -15,24 +15,7 @@ from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
 
 
-def fill_costs(all_clusters, config):
-  print("Filling costs")
-  order_info_retriever = OrderInfoRetriever(config)
-  for cluster in all_clusters:
-    cluster.expected_cost = 0.0
-    for order_id in cluster.orders:
-      try:
-        order_info = order_info_retriever.get_order_info(order_id)
-      except Exception as e:
-        print(
-            f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
-        )
-        print(str(e))
-        continue
-      cluster.expected_cost += order_info.cost
-
-
-def fill_email_ids(all_clusters, config):
+def fill_costs(all_clusters, config, also_fill_email_ids: bool = False):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
   with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
@@ -42,10 +25,10 @@ def fill_email_ids(all_clusters, config):
       for order_id in cluster.orders:
         try:
           order_info = order_info_retriever.get_order_info(order_id)
-          # Only add the email ID if it's present; don't add Nones!
-          if order_info.email_id:
-            cluster.email_ids.add(order_info.email_id)
           cluster.expected_cost += order_info.cost
+          if also_fill_email_ids and order_info.email_id:
+            # Only add the email ID if it's present; don't add Nones!
+            cluster.email_ids.add(order_info.email_id)
         except Exception as e:
           tqdm.write(
               f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
@@ -189,7 +172,7 @@ def reconcile_new(config, args):
   all_clusters = []
   clusters.update_clusters(all_clusters, reconcilable_trackings)
 
-  fill_email_ids(all_clusters, config)
+  fill_costs(all_clusters, config, also_fill_email_ids=True)
   all_clusters = clusters.merge_orders(all_clusters)
   fill_costs(all_clusters, config)
 
