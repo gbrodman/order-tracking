@@ -15,37 +15,20 @@ from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
 
 
-def fill_costs(all_clusters, config):
-  print("Filling costs")
-  order_info_retriever = OrderInfoRetriever(config)
-  for cluster in all_clusters:
-    cluster.expected_cost = 0.0
-    for order_id in cluster.orders:
-      try:
-        order_info = order_info_retriever.get_order_info(order_id)
-      except Exception as e:
-        print(
-            f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
-        )
-        print(str(e))
-        continue
-      cluster.expected_cost += order_info.cost
-
-
-def fill_email_ids(all_clusters, config):
+def fill_costs(tqdm_msg: str, all_clusters, config, fetch_from_email: bool):
   order_info_retriever = OrderInfoRetriever(config)
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
-  with tqdm(desc='Fetching order costs', unit='order', total=total_orders) as pbar:
+  with tqdm(desc=tqdm_msg, unit='order', total=total_orders) as pbar:
     for cluster in all_clusters:
       cluster.expected_cost = 0.0
       cluster.email_ids = set()
       for order_id in cluster.orders:
         try:
-          order_info = order_info_retriever.get_order_info(order_id)
-          # Only add the email ID if it's present; don't add Nones!
-          if order_info.email_id:
-            cluster.email_ids.add(order_info.email_id)
+          order_info = order_info_retriever.get_order_info(order_id, fetch_from_email)
           cluster.expected_cost += order_info.cost
+          if order_info.email_id:
+            # Only add the email ID if it's present; don't add Nones!
+            cluster.email_ids.add(order_info.email_id)
         except Exception as e:
           tqdm.write(
               f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
@@ -189,9 +172,9 @@ def reconcile_new(config, args):
   all_clusters = []
   clusters.update_clusters(all_clusters, reconcilable_trackings)
 
-  fill_email_ids(all_clusters, config)
+  fill_costs('Fetching order costs', all_clusters, config, True)
   all_clusters = clusters.merge_orders(all_clusters)
-  fill_costs(all_clusters, config)
+  fill_costs('Filling merged order costs', all_clusters, config, False)
 
   # add manual PO entries (and only manual ones)
   reconciliation_uploader.override_pos_and_costs(all_clusters)
