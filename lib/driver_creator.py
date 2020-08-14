@@ -1,5 +1,7 @@
 import argparse
 import os
+import random
+import shutil
 import sys
 import urllib.request
 import zipfile
@@ -49,6 +51,14 @@ class DriverCreator:
 
     if user_data_dir:
       options.add_argument(f"user-data-dir={user_data_dir}")
+
+      # The Stability directory can get quite large; delete it occasionally
+      if random.random() < 0.005:
+        stability_dir = os.path.join(user_data_dir, 'Stability')
+        if os.path.exists(stability_dir):
+          shutil.rmtree(stability_dir)
+
+
     return webdriver.Chrome(base + chromedriver_filename, options=options)
 
   def _create_osx_driver(self, options, user_data_dir=None):
