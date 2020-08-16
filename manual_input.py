@@ -4,11 +4,11 @@
 # because a tracking email link isn't working. Just run it from the command-line
 # and it'll walk you through the data input process. The most important
 # information to enter is the tracking number, order number(s), and cost.
-
+import argparse
 import datetime
-import lib.donations
 from typing import Dict
 import yaml
+from lib.config import open_config
 from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
@@ -122,9 +122,35 @@ def run_add(config):
     print("Submission cancelled.")
 
 
+def run_auto(config, args):
+  if not args.tracking or not args.order or not args.group:
+    raise Exception('Must provide tracking, order, and group if doing auto')
+
+  orders = set()
+  orders.add(args.order)
+  tracking = Tracking(args.tracking, args.group, orders, '', '', '', TODAY, 0.0, '', '')
+  print(tracking)
+  tracking_output = TrackingOutput(config)
+  tracking_output.save_trackings([tracking], overwrite=True)
+
+
 def main():
-  with open(CONFIG_FILE, 'r') as config_file_stream:
-    config = yaml.safe_load(config_file_stream)
+  config = open_config()
+  parser = argparse.ArgumentParser(description='Adding a tracking number manually')
+  parser.add_argument(
+      '-a',
+      '--auto',
+      action="store_true",
+      help='Allows input of fields through the script invocation args')
+  parser.add_argument('-t', '--tracking', help='Tracking number in question')
+  parser.add_argument('-o', '--order', help='Order number to associate this tracking with')
+  parser.add_argument('-g', '--group', help='Buying group for this tracking')
+  args, _ = parser.parse_known_args()
+
+  if args.auto:
+    run_auto(config, args)
+    return
+
   action = get_required_from_options("Enter 'n' for new tracking, 'd' to delete existing",
                                      ["n", "d"])
   if action == "n":
