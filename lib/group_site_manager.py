@@ -124,12 +124,21 @@ class GroupSiteManager:
       # show all trackings, not just non-paid
       driver.find_element_by_css_selector('button[title="Filters"]').click()
       time.sleep(2)
+
+      # Clear the date filter (nb: this resets all filters so do it first)
       driver.find_element_by_css_selector('div.modal-body button.ButtonLink').click()
+      # 'Any' item status
       select = Select(driver.find_element_by_tag_name('select'))
       select.select_by_visible_text('Any')
-
+      # 'Any' PO status and approval status
+      show_any_filter_buttons = driver.find_elements_by_css_selector('input[value="Any"]')
+      for any_button in show_any_filter_buttons:
+        # we have to click the parent
+        any_button.find_element_by_xpath('..').click()
+      # Submit it
       driver.find_element_by_css_selector('div.modal-footer .btn-primary').click()
-      time.sleep(2)
+      # Give it time to load
+      time.sleep(10)
 
       # next load the actual data
       nav_home = driver.find_element_by_id('nav-home')
