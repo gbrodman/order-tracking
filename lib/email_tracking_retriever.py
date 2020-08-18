@@ -1,3 +1,4 @@
+import base64
 import datetime
 import email
 import imaplib
@@ -12,6 +13,8 @@ from lib import util
 from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
+
+BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 
 
 class EmailTrackingRetriever(ABC):
@@ -167,17 +170,26 @@ class EmailTrackingRetriever(ABC):
     and is only suitable for use as error output.
     """
     result, data = mail.uid("FETCH", email_id, "(RFC822)")
-    raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
-                                                            '').replace('\\r\\n',
-                                                                        '').replace('&amp;', '&')
+    email_str = data[0][1].decode('utf-8')
+    # sometimes it's base64 decoded and we need to handle that
+    if BASE_64_FLAG in email_str:
+      email_str = str(base64.b64decode(email_str.split(BASE_64_FLAG)[-1] + '==='))
+
+    email_str = email_str.replace('=3D', '=')
+    email_str = email_str.replace('=\r\n', '')
+    email_str = email_str.replace('\r\n', '')
+    email_str = email_str.replace('&amp;', '&')
+    email_str = email_str.replace(r'\r', '')
+    email_str = email_str.replace(r'\n', '')
+
     msg = email.message_from_string(str(data[0][1], 'utf-8'))
     to_email = str(msg['To']).replace('<', '').replace('>', '')
     from_email = str(msg['From']).replace('<', '').replace('>', '')  # Also contains display name.
     date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
-    price = self.get_price_from_email(raw_email)
-    order_ids = self.get_order_ids_from_email(raw_email)
-    group, reconcile = self.get_buying_group(raw_email)
-    tracking_nums = self.get_tracking_numbers_from_email(raw_email, from_email, to_email)
+    price = self.get_price_from_email(email_str)
+    order_ids = self.get_order_ids_from_email(email_str)
+    group, reconcile = self.get_buying_group(email_str)
+    tracking_nums = self.get_tracking_numbers_from_email(email_str, from_email, to_email)
 
     if len(tracking_nums) == 0:
       incomplete_tracking = Tracking(None, group, order_ids, price, to_email, '', date, 0.0)

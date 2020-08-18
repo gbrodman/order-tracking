@@ -15,7 +15,7 @@ from lib.email_tracking_retriever import EmailTrackingRetriever
 
 class AmazonTrackingRetriever(EmailTrackingRetriever):
 
-  first_regex = r'.*<a(?!href).*href="(http[^"]*ship-?track[^"]*)"'
+  first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
   price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
   order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
