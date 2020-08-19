@@ -53,11 +53,10 @@ class DriverCreator:
       options.add_argument(f"user-data-dir={user_data_dir}")
 
       # The Stability directory can get quite large; delete it occasionally
-      if random.random() < 0.005:
+      if random.random() < 0.02:
         stability_dir = os.path.join(user_data_dir, 'Stability')
         if os.path.exists(stability_dir):
           shutil.rmtree(stability_dir)
-
 
     return webdriver.Chrome(base + chromedriver_filename, options=options)
 
