@@ -250,7 +250,16 @@ def get_email_content(email_id, mail) -> str:
   email_str = data[0][1].decode('utf-8')
   # sometimes it's base64 decoded and we need to handle that
   if BASE_64_FLAG in email_str:
-    email_str = str(base64.b64decode(email_str.split(BASE_64_FLAG)[-1] + '==='))
+    # this is messy, but so is base64 / the email format so yeah
+    # '=' is padding in base64, so just keep trying until we get a valid length
+    for i in range(4):
+      repeated_equals = '=' * i
+      try:
+        email_str = str(base64.b64decode(email_str.split(BASE_64_FLAG)[-1] + repeated_equals))
+        break
+      except:
+        # possible encoding error (not sure error type), skip
+        pass
   return email_str
 
 
