@@ -38,7 +38,7 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
       return None
     return match.group(1)
 
-  def get_items_from_email(self, data):
+  def get_items_from_email(self, email_str):
     return ""
 
   def get_delivery_date_from_email(self, data):

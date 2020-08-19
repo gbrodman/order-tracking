@@ -1,6 +1,5 @@
 import datetime
 import os
-import quopri
 import re
 import time
 from typing import Tuple, Optional, List
@@ -44,10 +43,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def get_merchant(self) -> str:
     return "Amazon"
 
-  def get_items_from_email(self, data):
+  def get_items_from_email(self, email_str):
     item_regex = r'(.*Qty: \d+)'
-    soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
+    soup = BeautifulSoup(email_str, features="html.parser")
     order_prefix_span = soup.find("span", {"class": "orderIdPrefix"})
 
     if not order_prefix_span:
@@ -131,9 +129,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       # swallow this and continue on
       return []
 
-  def get_delivery_date_from_email(self, data):
-    soup = BeautifulSoup(
-        quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
+  def get_delivery_date_from_email(self, email_str):
+    soup = BeautifulSoup(email_str, features="html.parser")
     text = self.get_date_text_from_soup(soup)
     if not text:
       return ''

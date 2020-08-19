@@ -155,11 +155,11 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_items_from_email(self, data) -> Any:
+  def get_items_from_email(self, email_str) -> Any:
     pass
 
   @abstractmethod
-  def get_delivery_date_from_email(self, data) -> Any:
+  def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
   def get_trackings_from_email(self, email_id, mail) -> Tuple[bool, List[Tracking]]:
@@ -169,20 +169,11 @@ class EmailTrackingRetriever(ABC):
     should be used, otherwise if False then the tracking info is incomplete
     and is only suitable for use as error output.
     """
-    result, data = mail.uid("FETCH", email_id, "(RFC822)")
-    email_str = data[0][1].decode('utf-8')
-    # sometimes it's base64 decoded and we need to handle that
-    if BASE_64_FLAG in email_str:
-      email_str = str(base64.b64decode(email_str.split(BASE_64_FLAG)[-1] + '==='))
+    email_str = get_email_content(email_id, mail)
 
-    email_str = email_str.replace('=3D', '=')
-    email_str = email_str.replace('=\r\n', '')
-    email_str = email_str.replace('\r\n', '')
-    email_str = email_str.replace('&amp;', '&')
-    email_str = email_str.replace(r'\r', '')
-    email_str = email_str.replace(r'\n', '')
+    msg = email.message_from_string(email_str)
 
-    msg = email.message_from_string(str(data[0][1], 'utf-8'))
+    email_str = clean_email_content(email_str)
     to_email = str(msg['To']).replace('<', '').replace('>', '')
     from_email = str(msg['From']).replace('<', '').replace('>', '')  # Also contains display name.
     date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
@@ -197,7 +188,7 @@ class EmailTrackingRetriever(ABC):
       return False, [incomplete_tracking]
 
     # TODO: Ideally, handle this per-tracking.
-    items = self.get_items_from_email(data)
+    items = self.get_items_from_email(email_str)
 
     try:
       for tracking_number, shipping_status in tracking_nums:
@@ -210,7 +201,7 @@ class EmailTrackingRetriever(ABC):
                    f"Group: {group}, Status: {shipping_status}")
 
     merchant = self.get_merchant()
-    delivery_date = self.get_delivery_date_from_email(data)
+    delivery_date = self.get_delivery_date_from_email(email_str)
     trackings = [
         Tracking(tracking_number, group, order_ids, price, to_email, '', date, 0.0, items, merchant,
                  reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
@@ -252,3 +243,22 @@ class EmailTrackingRetriever(ABC):
     string_date = date.strftime("%d-%b-%Y")
     print("Searching for emails since %s" % string_date)
     return string_date
+
+
+def get_email_content(email_id, mail) -> str:
+  result, data = mail.uid("FETCH", email_id, "(RFC822)")
+  email_str = data[0][1].decode('utf-8')
+  # sometimes it's base64 decoded and we need to handle that
+  if BASE_64_FLAG in email_str:
+    email_str = str(base64.b64decode(email_str.split(BASE_64_FLAG)[-1] + '==='))
+  return email_str
+
+
+def clean_email_content(email_str) -> str:
+  email_str = email_str.replace('=3D', '=')
+  email_str = email_str.replace('=\r\n', '')
+  email_str = email_str.replace('\r\n', '')
+  email_str = email_str.replace('&amp;', '&')
+  email_str = email_str.replace(r'\r', '')
+  email_str = email_str.replace(r'\n', '')
+  return email_str

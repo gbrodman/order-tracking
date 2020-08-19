@@ -1,7 +1,6 @@
 import asyncio
 import collections
 import email
-import quopri
 import re
 import sys
 import time
@@ -16,7 +15,7 @@ from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
 
 import lib.email_auth as email_auth
-from lib import util
+from lib import util, email_tracking_retriever
 from lib.archive_manager import ArchiveManager
 
 LOGIN_EMAIL_FIELD = "fldEmail"
@@ -460,9 +459,9 @@ class GroupSiteManager:
     result = collections.defaultdict(float)
 
     for email_id in tqdm(email_ids, desc='Fetching BFMR check-ins', unit='email'):
-      fetch_result, data = mail.uid("FETCH", email_id, "(RFC822)")
-      soup = BeautifulSoup(
-          quopri.decodestring(data[0][1]), features="html.parser", from_encoding="iso-8859-1")
+      email_str = email_tracking_retriever.get_email_content(email_id, mail)
+      email_str = email_tracking_retriever.clean_email_content(email_str)
+      soup = BeautifulSoup(email_str, features="html.parser")
 
       body = soup.find('td', id='email_body')
       if not body:
@@ -484,4 +483,4 @@ class GroupSiteManager:
         result[tracking] += total
         tracking_map[tracking] = tracking
 
-    return (tracking_map, result)
+    return tracking_map, result

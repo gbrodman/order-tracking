@@ -1,5 +1,4 @@
 import email
-import imaplib
 import os
 import pickle
 import quopri
@@ -12,7 +11,7 @@ from bs4 import BeautifulSoup
 from enum import Enum
 from lib.objects_to_drive import ObjectsToDrive
 from tqdm import tqdm
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Tuple
 
 OUTPUT_FOLDER = "output"
 CANCELLATIONS_FILENAME = "cancellations.pickle"
