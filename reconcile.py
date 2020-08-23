@@ -37,8 +37,8 @@ def fill_costs(tqdm_msg: str, all_clusters, config, fetch_from_email: bool):
         pbar.update()
 
 
-def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[str], Tuple[str,
-                                                                                           float]],
+def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict[Tuple[str],
+                                                                                 Tuple[str, float]],
                                     po_to_cost_map: Dict[str, float]) -> None:
   non_portal_reimbursements = NonPortalReimbursements(config)
   duplicate_tracking_tuples = set(non_portal_reimbursements.trackings_to_costs.keys()).intersection(
@@ -57,7 +57,12 @@ def apply_non_portal_reimbursements(config, trackings_to_costs_map: Dict[Tuple[s
       print(f'PO {duplicate_po} included in non-portal reimbursements but also found in a portal')
     raise Exception('Non-reimbursed POs should not be duplicated in a portal')
 
-  trackings_to_costs_map.update(non_portal_reimbursements.trackings_to_costs)
+  filtered_non_portal_trackings = {
+      key: value
+      for (key, value) in non_portal_reimbursements.trackings_to_costs.items()
+      if value[0] in groups
+  }
+  trackings_to_costs_map.update(filtered_non_portal_trackings)
   po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
 
 
@@ -82,7 +87,7 @@ def get_new_tracking_pos_costs_maps(
     ) for (k, v) in group_trackings_to_po.items()})
     po_to_cost_map.update(group_po_to_cost)
 
-  apply_non_portal_reimbursements(config, trackings_to_costs_map, po_to_cost_map)
+  apply_non_portal_reimbursements(config, groups, trackings_to_costs_map, po_to_cost_map)
   return trackings_to_costs_map, po_to_cost_map
 
 
