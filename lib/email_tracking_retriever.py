@@ -15,6 +15,7 @@ from lib.tracking import Tracking
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
+TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
 class EmailTrackingRetriever(ABC):
@@ -174,9 +175,11 @@ class EmailTrackingRetriever(ABC):
     msg = email.message_from_string(email_str)
 
     email_str = clean_email_content(email_str)
-    to_email = str(msg['To']).replace('<', '').replace('>', '')
-    from_email = str(msg['From']).replace('<', '').replace('>', '')  # Also contains display name.
-    date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+    to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
+    from_email = str(msg['From']).replace('<', '').replace(
+        '>', '') if msg['From'] else ''  # Also has display name.
+    date = datetime.datetime.strptime(
+        msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
     price = self.get_price_from_email(email_str)
     order_ids = self.get_order_ids_from_email(email_str)
     group, reconcile = self.get_buying_group(email_str)
