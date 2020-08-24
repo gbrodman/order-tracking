@@ -16,7 +16,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
-  price_regex = r'.*Shipment total:(\$\d+\.\d{2})'
+  price_regex = r'.*Shipment [Tt]otal: ?(\$[\d,]+\.\d{2})'
   order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
   li_regex = re.compile(r"\d+\.\s+")
 
@@ -49,7 +49,8 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     order_prefix_span = soup.find("span", {"class": "orderIdPrefix"})
 
     if not order_prefix_span:
-      return ''
+      # grouped-order shipments don't have item breakdowns but they do have total-price, so use that
+      return self.get_price_from_email(email_str)
 
     all_lis = order_prefix_span.find_all('li')
 
