@@ -10,7 +10,7 @@ from lib.config import open_config
 from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
-from lib.portal_reimbursements import NonPortalReimbursements
+from lib.portal_reimbursements import NonPortalReimbursements, PortalReimbursements
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
 
@@ -69,26 +69,41 @@ def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict
 def get_new_tracking_pos_costs_maps(
     config, group_site_manager: GroupSiteManager,
     args) -> Tuple[Dict[Tuple[str], Tuple[str, float]], Dict[str, float]]:
-  print("Loading tracked costs. This will take several minutes.")
+  print("Loading tracked costs. This can take several minutes.")
   if args.groups:
     print("Only reconciling groups %s" % ",".join(args.groups))
     groups = args.groups
   else:
     groups = config['groups'].keys()
 
-  trackings_to_costs_map: Dict[Tuple[str], Tuple[str, float]] = {}
-  po_to_cost_map: Dict[str, float] = {}
+  portal_reimbursements = PortalReimbursements(config)
+  known_trackings = set(portal_reimbursements.trackings_to_costs.keys())
   for group in groups:
-    group_trackings_to_po, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
-        group)
-    trackings_to_costs_map.update({k: (
-        group,
-        v,
-    ) for (k, v) in group_trackings_to_po.items()})
-    po_to_cost_map.update(group_po_to_cost)
+    group_trackings_to_cost, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
+        group, known_trackings, args.full)
+    # Update the map (adding the group in to the value tuple)
+    portal_reimbursements.trackings_to_costs.update(
+        {k: (
+            group,
+            v,
+        ) for (k, v) in group_trackings_to_cost.items()})
+    portal_reimbursements.po_to_cost.update(group_po_to_cost)
 
-  apply_non_portal_reimbursements(config, groups, trackings_to_costs_map, po_to_cost_map)
-  return trackings_to_costs_map, po_to_cost_map
+  # Save the portal reimbursements for future use (before adding non-portal reimbursements)
+  portal_reimbursements.flush()
+
+  apply_non_portal_reimbursements(config, groups, portal_reimbursements.trackings_to_costs,
+                                  portal_reimbursements.po_to_cost)
+
+  # For now, filter out portal reimbursements that are not in the specified groups. The reason for this is that
+  # until we are sure that we have full data in portal_reimbursements, we can't change the behavior in fill_costs_new
+  # to fill the costs for all groups (rather than just the specified ones). This means that if you were to run
+  # `reconcile.py --groups A` but portal_reimbursements had data for groups A, B, and C, that we'd double-count
+  # the reimbursements for groups B and C.
+  portal_reimbursements.trackings_to_costs = {
+      k: v for (k, v) in portal_reimbursements.trackings_to_costs.items() if v[0] in groups
+  }
+  return portal_reimbursements.trackings_to_costs, portal_reimbursements.po_to_cost
 
 
 def map_clusters_by_tracking(all_clusters):
@@ -206,6 +221,12 @@ def main():
       "-u",
       action="store_true",
       help="print unknown trackings found in BG portals")
+  parser.add_argument(
+      '-f',
+      '--full',
+      action='store_true',
+      help='Run a full reconciliation, not stopping once we see trackings we\'ve already seen in the sites'
+  )
   args, _ = parser.parse_known_args()
   config = open_config()
 

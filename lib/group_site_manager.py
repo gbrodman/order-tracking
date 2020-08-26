@@ -5,7 +5,7 @@ import re
 import sys
 import time
 import traceback
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, Dict, Set, List
 
 import aiohttp
 import requests
@@ -64,11 +64,12 @@ class GroupSiteManager:
         self._upload_to_group(numbers, group)
 
   def get_new_tracking_pos_costs_maps_with_retry(
-      self, group: str) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
+      self, group: str, known_trackings: Set[Tuple[str]],
+      full: bool) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
     last_exc = None
     for i in range(5):
       try:
-        return self.get_new_tracking_pos_costs_maps(group)
+        return self.get_new_tracking_pos_costs_maps(group, known_trackings, full)
       except Exception as e:
         print(f"Received exception when getting costs: {str(e)}\n{util.get_traceback_lines()}\n"
               "Retrying up to five times.")
@@ -76,7 +77,8 @@ class GroupSiteManager:
     raise Exception("Exceeded retry limit", last_exc)
 
   def get_new_tracking_pos_costs_maps(
-      self, group: str) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
+      self, group: str, known_trackings: Set[Tuple[str]],
+      full: bool) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
     if group == 'bfmr':
       print("Loading BFMR emails")
       _, costs_map = self._get_bfmr_costs()
@@ -88,14 +90,14 @@ class GroupSiteManager:
       group_config = self.config['groups'][group]
       username = group_config['username']
       password = group_config['password']
-      _, po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(
-          group, username, password)
+      po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(
+          group, username, password, known_trackings, full)
 
       if 'archives' in group_config:
         for archive_group in group_config['archives']:
           print(f"Loading archive {archive_group}")
           if not self.archive_manager.has_archive(archive_group):
-            _, archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
+            archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
                 archive_group, username, password)
             self.archive_manager.put_archive(archive_group, archive_po_cost, archive_trackings_cost)
 
@@ -106,11 +108,11 @@ class GroupSiteManager:
       return trackings_cost, po_cost
     elif group == "usa":
       print("Loading group usa")
-      return asyncio.run(self._get_usa_tracking_pos_prices())
+      return asyncio.run(self._get_usa_tracking_pos_prices(known_trackings))
     elif group == "yrcw":
       print("Loading yrcw")
       return self._get_yrcw_tracking_pos_prices()
-    return (dict(), dict())
+    return dict(), dict()
 
   # returns ((trackings) -> cost, po -> cost) maps
   def _get_yrcw_tracking_pos_prices(self):
@@ -199,13 +201,14 @@ class GroupSiteManager:
       print(f"Error finding USA tracking cost for {tracking_number}")
       print(e)
 
-  async def _get_usa_tracking_pos_prices(self):
+  async def _get_usa_tracking_pos_prices(self, known_trackings: Set[Tuple[str]]):
     headers = self._get_usa_login_headers()
     pos_to_prices = {}
     all_entries = self._get_usa_tracking_entries(headers)
     for entry in all_entries:
       pos_to_prices[entry['purchase_id']] = float(entry['purchase']['amount'])
     tracking_numbers = [entry['tracking_number'] for entry in all_entries]
+    tracking_numbers = [t for t in tracking_numbers if (t,) not in known_trackings]
     async with aiohttp.ClientSession(headers=headers) as session:
       tracking_tuples_to_prices = {}
       tasks = []
@@ -221,12 +224,11 @@ class GroupSiteManager:
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
 
   def _melul_get_tracking_pos_costs_maps(
-      self, group: str, username: str,
-      password: str) -> Tuple[Dict[str, str], Dict[str, float], Dict[Tuple[str], float]]:
+      self, group: str, username: str, password: str, known_trackings: Set[Tuple[str]],
+      full: bool) -> Tuple[Dict[str, float], Dict[Tuple[str], float]]:
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
-      tracking_to_po_map: Dict[str, str] = {}
       po_to_cost_map: Dict[str, float] = {}
       trackings_to_cost_map: Dict[Tuple[str], float] = {}
 
@@ -257,14 +259,15 @@ class GroupSiteManager:
             verified = 'md-checked' in verified_checkbox.get_attribute('class')
             po = str(tds[5].text)
             cost = tds[13].text.replace('$', '').replace(',', '')
-            trackings = tds[14].text.replace('-', '').split(",")
+            trackings: List[str] = tds[14].text.replace('-', '').split(",")
 
             if trackings:
-              trackings = [tracking.strip() for tracking in trackings if tracking]
+              tracking_tuple = tuple([tracking.strip() for tracking in trackings if tracking])
+              # break out of we've seen this already and we're not running --full
+              if tracking_tuple in known_trackings and not full:
+                return po_to_cost_map, trackings_to_cost_map
               if cost:
-                trackings_to_cost_map[tuple(trackings)] = float(cost) if verified else 0.0
-              for tracking in trackings:
-                tracking_to_po_map[tracking] = po
+                trackings_to_cost_map[tracking_tuple] = float(cost) if verified else 0.0
             if cost and po:
               po_to_cost_map[po] = float(cost)
 
@@ -277,7 +280,7 @@ class GroupSiteManager:
           else:
             break
 
-        return tracking_to_po_map, po_to_cost_map, trackings_to_cost_map
+        return po_to_cost_map, trackings_to_cost_map
     finally:
       driver.quit()
 
