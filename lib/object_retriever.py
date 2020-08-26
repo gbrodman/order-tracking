@@ -2,29 +2,20 @@ import pickle
 import os.path
 
 from lib.objects_to_drive import ObjectsToDrive
-from typing import Dict, Tuple
+from typing import Any
 
 OUTPUT_FOLDER = "output"
-NON_PORTAL_TRACKINGS_FILENAME = "non_portal_trackings.pickle"
-NON_PORTAL_POS_FILENAME = "non_portal_pos.pickle"
 
 
-class NonPortalReimbursements:
+class ObjectRetriever:
   """
-  A class that stores and retrieves non-portal reimbursements. Used for groups that don't have web portals.
+  A class that stores and retrieves files from Drive (if possible) and locally otherwise.
   """
 
   def __init__(self, config) -> None:
     self.config = config
-    self.trackings_to_costs: Dict[Tuple[str],
-                                  Tuple[str, float]] = self._load(NON_PORTAL_TRACKINGS_FILENAME)
-    self.po_to_cost: Dict[str, float] = self._load(NON_PORTAL_POS_FILENAME)
 
-  def flush(self) -> None:
-    self._flush(self.trackings_to_costs, NON_PORTAL_TRACKINGS_FILENAME)
-    self._flush(self.po_to_cost, NON_PORTAL_POS_FILENAME)
-
-  def _flush(self, obj, filename):
+  def flush(self, obj, filename) -> None:
     if not os.path.exists(OUTPUT_FOLDER):
       os.mkdir(OUTPUT_FOLDER)
 
@@ -35,7 +26,7 @@ class NonPortalReimbursements:
     objects_to_drive = ObjectsToDrive()
     objects_to_drive.save(self.config, filename, local_file)
 
-  def _load(self, filename):
+  def load(self, filename) -> Any:
     objects_to_drive = ObjectsToDrive()
     from_drive = objects_to_drive.load(self.config, filename)
     if from_drive:

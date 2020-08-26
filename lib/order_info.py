@@ -1,17 +1,13 @@
-import pickle
-import os.path
 import re
 import lib.email_auth as email_auth
 from bs4 import BeautifulSoup
 
 from lib import email_tracking_retriever
 from lib.debounce import debounce
-from lib.objects_to_drive import ObjectsToDrive
-from typing import Any, Dict, Optional, Union, Tuple
+from lib.object_retriever import ObjectRetriever
+from typing import Dict, Optional, Tuple
 
-OUTPUT_FOLDER = "output"
 ORDERS_FILENAME = "orders.pickle"
-ORDERS_FILE = OUTPUT_FOLDER + "/" + ORDERS_FILENAME
 
 
 class OrderInfo:
@@ -38,8 +34,8 @@ class OrderInfoRetriever:
   """
 
   def __init__(self, config) -> None:
-    self.config = config
-    self.orders_dict = self.load_dict()
+    self.retriever = ObjectRetriever(config)
+    self.orders_dict = self.retriever.load(ORDERS_FILENAME)
     self.mail = self.load_mail()
 
   def load_mail(self):
@@ -49,26 +45,7 @@ class OrderInfoRetriever:
 
   @debounce(5)
   def flush(self) -> None:
-    if not os.path.exists(OUTPUT_FOLDER):
-      os.mkdir(OUTPUT_FOLDER)
-
-    with open(ORDERS_FILE, 'wb') as stream:
-      pickle.dump(self.orders_dict, stream)
-
-    objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, ORDERS_FILENAME, ORDERS_FILE)
-
-  def load_dict(self) -> Any:
-    objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, ORDERS_FILENAME)
-    if from_drive:
-      return from_drive
-
-    if not os.path.exists(ORDERS_FILE):
-      return {}
-
-    with open(ORDERS_FILE, 'rb') as stream:
-      return pickle.load(stream)
+    self.retriever.flush(self.orders_dict, ORDERS_FILENAME)
 
   def get_order_info(self, order_id, fetch_from_email: bool = True) -> OrderInfo:
     # Fetch the order from email if it's new or if we attempted to fetch it

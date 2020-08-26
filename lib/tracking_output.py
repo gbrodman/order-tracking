@@ -1,19 +1,16 @@
 import collections
-import pickle
 from typing import List, Optional
-import os.path
-from lib.objects_to_drive import ObjectsToDrive
+
+from lib.object_retriever import ObjectRetriever
 from lib.tracking import Tracking
 
-OUTPUT_FOLDER = "output"
 TRACKINGS_FILENAME = "trackings.pickle"
-TRACKINGS_FILE = OUTPUT_FOLDER + "/" + TRACKINGS_FILENAME
 
 
 class TrackingOutput:
 
   def __init__(self, config) -> None:
-    self.config = config
+    self.retriever = ObjectRetriever(config)
 
   def save_trackings(self, trackings, overwrite=False) -> None:
     old_trackings = self.get_existing_trackings()
@@ -33,14 +30,7 @@ class TrackingOutput:
     for tracking in merged_trackings:
       groups_dict[tracking.group].append(tracking)
 
-    if not os.path.exists(OUTPUT_FOLDER):
-      os.mkdir(OUTPUT_FOLDER)
-
-    with open(TRACKINGS_FILE, 'wb') as output:
-      pickle.dump(groups_dict, output)
-
-    objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, TRACKINGS_FILENAME, TRACKINGS_FILE)
+    self.retriever.flush(groups_dict, TRACKINGS_FILENAME)
 
   # Adds each Tracking object to the appropriate group
   # if there isn't already an entry for that tracking number
@@ -53,17 +43,7 @@ class TrackingOutput:
     return list(new_tracking_dict.values())
 
   def get_existing_trackings(self) -> List[Tracking]:
-    objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, TRACKINGS_FILENAME)
-    if from_drive:
-      return self._convert_to_list(from_drive)
-
-    print("Drive folder ID not present or we couldn't load from drive. Loading from local")
-    if not os.path.exists(TRACKINGS_FILE):
-      return []
-
-    with open(TRACKINGS_FILE, 'rb') as tracking_file_stream:
-      trackings_dict = pickle.load(tracking_file_stream)
+    trackings_dict = self.retriever.load(TRACKINGS_FILENAME)
     return self._convert_to_list(trackings_dict)
 
   def _convert_to_list(self, trackings_dict):
@@ -73,7 +53,3 @@ class TrackingOutput:
     for tracking in result:
       tracking.tracking_number = tracking.tracking_number.upper()
     return result
-
-  def clear(self) -> None:
-    # self.write_merged([])
-    pass

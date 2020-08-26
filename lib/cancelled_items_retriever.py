@@ -1,6 +1,4 @@
 import email
-import os
-import pickle
 import quopri
 import re
 import sys
@@ -9,13 +7,12 @@ import lib.email_auth as email_auth
 
 from bs4 import BeautifulSoup
 from enum import Enum
-from lib.objects_to_drive import ObjectsToDrive
-from tqdm import tqdm
-from typing import Any, Dict, List, Tuple
 
-OUTPUT_FOLDER = "output"
+from lib.object_retriever import ObjectRetriever
+from tqdm import tqdm
+from typing import Dict, List, Tuple
+
 CANCELLATIONS_FILENAME = "cancellations.pickle"
-CANCELLATIONS_FILE = OUTPUT_FOLDER + "/" + CANCELLATIONS_FILENAME
 
 
 class CancFmt(Enum):
@@ -32,9 +29,9 @@ class CancQty(Enum):
 class CancelledItemsRetriever:
 
   def __init__(self, config):
-    self.config = config
+    self.retriever = ObjectRetriever(config)
     # map of {email_id: {order_id: cancelled_items}}
-    self.email_id_dict = self.load_dict()
+    self.email_id_dict = self.retriever.load(CANCELLATIONS_FILENAME)
 
   # returns map of order_id ->
   def get_cancelled_items(self) -> Dict[str, List[str]]:
@@ -136,23 +133,4 @@ class CancelledItemsRetriever:
     return mail
 
   def flush(self) -> None:
-    if not os.path.exists(OUTPUT_FOLDER):
-      os.mkdir(OUTPUT_FOLDER)
-
-    with open(CANCELLATIONS_FILE, 'wb') as stream:
-      pickle.dump(self.email_id_dict, stream)
-
-    objects_to_drive = ObjectsToDrive()
-    objects_to_drive.save(self.config, CANCELLATIONS_FILENAME, CANCELLATIONS_FILE)
-
-  def load_dict(self) -> Any:
-    objects_to_drive = ObjectsToDrive()
-    from_drive = objects_to_drive.load(self.config, CANCELLATIONS_FILENAME)
-    if from_drive:
-      return from_drive
-
-    if not os.path.exists(CANCELLATIONS_FILE):
-      return {}
-
-    with open(CANCELLATIONS_FILE, 'rb') as stream:
-      return pickle.load(stream)
+    self.retriever.flush(self.email_id_dict, CANCELLATIONS_FILENAME)
