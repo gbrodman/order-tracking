@@ -263,8 +263,10 @@ class GroupSiteManager:
 
             if trackings:
               tracking_tuple = tuple([tracking.strip() for tracking in trackings if tracking])
-              # break out of we've seen this already and we're not running --full
-              if tracking_tuple in known_trackings and not full:
+              # break out of this if we've seen this already, we're past a month, and we're not running --full
+              modified_date = str(tds[15].text)
+              not_recent = 'month' in modified_date or 'year' in modified_date
+              if tracking_tuple in known_trackings and not full and not_recent:
                 return po_to_cost_map, trackings_to_cost_map
               if cost:
                 trackings_to_cost_map[tracking_tuple] = float(cost) if verified else 0.0
