@@ -165,9 +165,33 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title, num_objec
           }
       },
       {
-          # Yellow if overcompensated
+          # Blue if within 5% amount billed
           "addConditionalFormatRule": {
               "index": 1,
+              "rule": {
+                  "ranges": [total_diff_range],
+                  "booleanRule": {
+                      "condition": {
+                          "type": "CUSTOM_FORMULA",
+                          "values": [{
+                              'userEnteredValue': '=AND(M2:M<=D2:D*0.05, M2:M>=0)'
+                          }]
+                      },
+                      "format": {
+                          'backgroundColor': {
+                              'red': 0.596,
+                              'green': 0.71,
+                              'blue': 0.816
+                          }
+                      }
+                  }
+              }
+          }
+      },
+      {
+          # Yellow if overcompensated
+          "addConditionalFormatRule": {
+              "index": 2,
               "rule": {
                   "ranges": [total_diff_range],
                   "booleanRule": {
@@ -191,7 +215,7 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title, num_objec
       {
           # Red if undercompensated
           "addConditionalFormatRule": {
-              "index": 2,
+              "index": 3,
               "rule": {
                   "ranges": [total_diff_range],
                   "booleanRule": {
