@@ -155,6 +155,8 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost: Dict[Tuple[str], Tup
   # We've already merged by tracking tuple (if multiple trackings are counted as the same price)
   # so only use the first tracking in each tuple
   for trackings_tuple, (group, cost) in trackings_to_cost.items():
+    if not trackings_tuple:
+      continue
     first_tracking: str = trackings_tuple[0]
     if first_tracking in clusters_by_tracking:
       cluster = clusters_by_tracking[first_tracking]

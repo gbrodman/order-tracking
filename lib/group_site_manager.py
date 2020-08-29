@@ -275,7 +275,7 @@ class GroupSiteManager:
 
           next_page_buttons = driver.find_elements_by_xpath(
               "//button[@ng-click='$pagination.next()']")
-          if next_page_buttons and next_page_buttons[0].get_property("disabled") == False:
+          if next_page_buttons and not next_page_buttons[0].get_property("disabled"):
             next_page_buttons[0].click()
             time.sleep(3)
             pbar.update()
