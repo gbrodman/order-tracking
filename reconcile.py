@@ -3,7 +3,7 @@
 import argparse
 from typing import Dict, Tuple
 
-from lib import clusters
+from lib import clusters, util
 from tqdm import tqdm
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
@@ -34,6 +34,7 @@ def fill_costs(tqdm_msg: str, all_clusters, config, fetch_from_email: bool):
               f"Exception when getting order info for {order_id}. Please check the oldest email associated with that order. Skipping..."
           )
           tqdm.write(str(e))
+          tqdm.write(util.get_traceback_lines())
         pbar.update()
 
 

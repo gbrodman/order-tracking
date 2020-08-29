@@ -66,19 +66,18 @@ class OrderInfoRetriever:
       return self.load_order_total_amazon(order_id)
 
   def load_order_total_bb(self, order_id: str) -> Dict[str, OrderInfo]:
-    email_id, data = self.get_relevant_raw_email_data(order_id)
-    if not data:
+    email_id, email_str = self.get_relevant_raw_email_data(order_id)
+    if not email_str:
       print("Could not find email for order ID %s" % order_id)
       return {}
 
-    raw_email = str(data[0][1])
     regex_subtotal = r'Subtotal[^\$]*\$([\d,]+\.[\d]{2})'
     regex_tax = r'Tax[^\$]*\$([\d,]+\.[\d]{2})'
-    subtotal_match = re.search(regex_subtotal, raw_email)
+    subtotal_match = re.search(regex_subtotal, email_str)
     if not subtotal_match:
       return {}
     subtotal = float(subtotal_match.group(1).replace(',', ''))
-    tax_match = re.search(regex_tax, raw_email)
+    tax_match = re.search(regex_tax, email_str)
     if not tax_match:
       return {}
     tax = float(tax_match.group(1).replace(',', ''))
@@ -131,7 +130,9 @@ class OrderInfoRetriever:
     if not email_ids:
       return None, None
 
-    return email_ids[0], email_tracking_retriever.get_email_content(email_ids[0], self.mail)
+    email_str = email_tracking_retriever.get_email_content(email_ids[0], self.mail)
+    email_str = email_str.replace('\r\n', '')
+    return email_ids[0], email_str
 
   def get_personal_amazon_totals(self, email_id, email_str, orders) -> Dict[str, OrderInfo]:
     soup = BeautifulSoup(email_str, features="html.parser")
