@@ -262,7 +262,7 @@ class GroupSiteManager:
             trackings: List[str] = tds[14].text.replace('-', '').split(",")
 
             if trackings:
-              tracking_tuple = tuple([tracking.strip() for tracking in trackings if tracking])
+              tracking_tuple = tuple([tracking.strip() for tracking in trackings if tracking and tracking.strip()])
               # break out of this if we've seen this already, we're past a month, and we're not running --full
               modified_date = str(tds[15].text)
               not_recent = 'month' in modified_date or 'year' in modified_date
