@@ -48,10 +48,10 @@ class OrderInfoRetriever:
     self.retriever.flush(self.orders_dict, ORDERS_FILENAME)
 
   def get_order_info(self, order_id, fetch_from_email: bool = True) -> OrderInfo:
-    # Fetch the order from email if it's new or if we attempted to fetch it
-    # previously but weren't able to find a cost (i.e. cost is still 0).
-    if fetch_from_email and (order_id not in self.orders_dict or
-                             self.orders_dict[order_id].cost == 0):
+    # Always fetch if we've never seen this order before, additionally fetch iff
+    # we found a 0 cost before and we want to retry
+    if order_id not in self.orders_dict or (fetch_from_email and
+                                            self.orders_dict[order_id].cost == 0):
       from_email = self.load_order_total(order_id)
       if not from_email:
         from_email = {order_id: OrderInfo(None, 0.0)}

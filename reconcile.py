@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from lib import clusters, util
 from tqdm import tqdm
 from lib.cancelled_items_retriever import CancelledItemsRetriever
+from lib.clusters import Cluster
 from lib.config import open_config
 from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
@@ -15,8 +16,8 @@ from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
 
 
-def fill_costs(tqdm_msg: str, all_clusters, config, fetch_from_email: bool):
-  order_info_retriever = OrderInfoRetriever(config)
+def fill_billed_costs(tqdm_msg: str, all_clusters: List[Cluster],
+                      order_info_retriever: OrderInfoRetriever, fetch_from_email: bool):
   total_orders = sum([len(cluster.orders) for cluster in all_clusters])
   with tqdm(desc=tqdm_msg, unit='order', total=total_orders) as pbar:
     for cluster in all_clusters:
@@ -193,9 +194,10 @@ def reconcile_new(config, args):
   all_clusters = []
   clusters.update_clusters(all_clusters, reconcilable_trackings)
 
-  fill_costs('Fetching order costs', all_clusters, config, True)
+  order_info_retriever = OrderInfoRetriever(config)
+  fill_billed_costs('Fetching order costs', all_clusters, order_info_retriever, True)
   all_clusters = clusters.merge_orders(all_clusters)
-  fill_costs('Filling merged order costs', all_clusters, config, False)
+  fill_billed_costs('Filling merged order costs', all_clusters, order_info_retriever, False)
 
   # add manual PO entries (and only manual ones)
   reconciliation_uploader.override_pos_and_costs(all_clusters)
