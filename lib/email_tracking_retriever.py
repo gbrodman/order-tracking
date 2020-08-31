@@ -16,6 +16,7 @@ _FuncT = TypeVar('_FuncT', bound=Callable)
 
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
+MAX_ATTEMPTS = 4
 
 
 class EmailTrackingRetriever(ABC):
@@ -67,11 +68,11 @@ class EmailTrackingRetriever(ABC):
     try:
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
-          for attempt in range(1, 5):  # Make 4 attempts
+          for attempt in range(MAX_ATTEMPTS):
             try:
-              success, new_trackings = self.get_trackings_from_email(email_id, mail)
+              success, new_trackings = self.get_trackings_from_email(email_id, mail, attempt)
             except (ConnectionError, socket.error, imaplib.IMAP4.abort):
-              tqdm.write(f"Connection lost; reconnecting (attempt {attempt}).")
+              tqdm.write(f"Connection lost; reconnecting (attempt {attempt + 1}).")
               # Re-initializing the IMAP connection and retrying should fix most
               # connection-related errors.
               # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
@@ -80,10 +81,12 @@ class EmailTrackingRetriever(ABC):
             if success:
               for new_tracking in new_trackings:
                 trackings[new_tracking.tracking_number] = new_tracking
-            else:
+              break
+            elif attempt >= MAX_ATTEMPTS:
+              tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries;"
+                         f" we got: {new_trackings}")
               incomplete_trackings.extend(new_trackings)
               self.mark_as_unread(email_id)
-            break
         except Exception as e:
           failed_email_ids.append(email_id)
           tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
@@ -163,7 +166,7 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
-  def get_trackings_from_email(self, email_id, mail) -> Tuple[bool, List[Tracking]]:
+  def get_trackings_from_email(self, email_id, mail, attempt: int) -> Tuple[bool, List[Tracking]]:
     """
     Returns a Tuple of boolean success status and tracking information for a
     given email id. If success is True then the tracking info is complete and
@@ -187,7 +190,7 @@ class EmailTrackingRetriever(ABC):
 
     if len(tracking_nums) == 0:
       incomplete_tracking = Tracking(None, group, order_ids, price, to_email, '', date, 0.0)
-      tqdm.write(f"Could not find tracking number from email; we got: {incomplete_tracking}")
+      tqdm.write(f"Could not find tracking number from email {email_id} (attempt {attempt + 1}).")
       return False, [incomplete_tracking]
 
     # TODO: Ideally, handle this per-tracking.
@@ -210,7 +213,8 @@ class EmailTrackingRetriever(ABC):
                  reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
     ]
     if group is None:
-      tqdm.write(f"Could not find buying group from email with order ID(s) {order_ids}")
+      tqdm.write(f"Could not find buying group from email with order ID(s) {order_ids} "
+                 f"(attempt {attempt + 1}).")
       return False, trackings
     return True, trackings
 
