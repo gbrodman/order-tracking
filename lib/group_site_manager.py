@@ -348,7 +348,8 @@ class GroupSiteManager:
       textarea = form.find_element_by_class_name("textarea-control")
       textarea.send_keys("\n".join(numbers))
       form.find_element_by_xpath("//button[text() = 'Submit']").click()
-      time.sleep(1)
+      # TODO: This needs to wait for the success dialog to be displayed.
+      time.sleep(5)
 
       # If there are some dupes, we need to remove the dupes and submit again
       modal = driver.find_element_by_class_name("modal-body")
@@ -373,7 +374,7 @@ class GroupSiteManager:
       driver.find_element_by_xpath("//button[text() = 'Add']").click()
       time.sleep(0.5)
       driver.find_element_by_xpath("//button[text() = 'Submit All']").click()
-      time.sleep(2)
+      time.sleep(5)
     finally:
       driver.quit()
 
@@ -391,10 +392,15 @@ class GroupSiteManager:
         if not textareas:
           raise Exception("Could not find order management for group %s" % group)
 
-      textarea = textareas[0]
-      textarea.send_keys('\n'.join(numbers))
+      # driver.send_keys() is way too slow; this is instant.
+      js_input = '\\n'.join(numbers)
+      driver.execute_script(
+        f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
+      textareas[0].send_keys("\n")  # Trigger blur to enable Submit button.
       driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
-      time.sleep(1)
+      # TODO: This needs to wait for the success dialog to be displayed and then print the number
+      #       of new trackings from that to the command line.
+      time.sleep(5)
     finally:
       driver.quit()
 
