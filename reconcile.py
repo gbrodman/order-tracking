@@ -64,6 +64,11 @@ def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict
       for (key, value) in non_portal_reimbursements.trackings_to_costs.items()
       if value[0] in groups
   }
+  if len(non_portal_reimbursements.trackings_to_costs) != len(filtered_non_portal_trackings):
+    print(f"Potential error! There were {len(non_portal_reimbursements.trackings_to_costs)} "
+          f"non-portal reimbursements, but only {len(filtered_non_portal_trackings)} matched "
+          f"group names specified in config file.")
+  print(f"Importing {len(filtered_non_portal_trackings)} non-portal reimbursements.")
   trackings_to_costs_map.update(filtered_non_portal_trackings)
   po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
 
