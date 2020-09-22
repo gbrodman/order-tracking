@@ -35,13 +35,15 @@ def from_amazon_row(header, row) -> Tracking:
                                                           '').replace('$',
                                                                       '').replace('N/A', '0.0'))
   to_email = row[header.index("Account User Email")]
-  url = ''
   original_ship_date = str(row[header.index("Shipment Date")])
   try:
     ship_date = datetime.datetime.strptime(
         original_ship_date, "%m/%d/%Y").strftime("%Y-%m-%d") if original_ship_date != 'N/A' else ''
   except:
-    ship_date = "n/a"
+    try:
+      ship_date = datetime.date(year=1899, day=29, month=12) + datetime.timedelta(days=int(original_ship_date))
+    except:
+      ship_date = "n/a"
   group = get_group(header, row)
   if group is None:
     return None
