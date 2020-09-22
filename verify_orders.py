@@ -1,5 +1,6 @@
 import argparse
 import email
+from typing import List, Dict
 
 import lib.email_auth as email_auth
 import datetime
@@ -9,12 +10,15 @@ from functools import cmp_to_key
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
-from lib.email_tracking_retriever import EmailTrackingRetriever
+from lib.debounce import debounce
+from lib.object_retriever import ObjectRetriever
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import convert_int_to_date
 from lib.tracking_output import TrackingOutput
 
 from tqdm import tqdm
+
+EMAIL_TO_ORDERS_FILENAME = "email_to_orders.pickle"
 
 
 class Order:
@@ -30,6 +34,31 @@ class Order:
 
   def get_header(self):
     return ['Order ID', 'Date', 'To Email', 'Manually Verified']
+
+
+class EmailToOrders:
+
+  def __init__(self, config):
+    self.retriever = ObjectRetriever(config)
+    self.email_to_orders: Dict[str, List[Order]] = self.retriever.load(EMAIL_TO_ORDERS_FILENAME)
+
+  @debounce(1)
+  def flush(self):
+    self.retriever.flush(self.email_to_orders, EMAIL_TO_ORDERS_FILENAME)
+
+  def get_orders(self, mail, email_id):
+    if email_id not in self.email_to_orders:
+      _, data = mail.uid("FETCH", email_id, "(RFC822)")
+      msg = email.message_from_string(str(data[0][1], 'utf-8'))
+      date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+      to_email = str(msg['To']).replace('<', '').replace('>', '')
+      raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
+                                                            '').replace('\\r\\n',
+                                                                        '').replace('&amp;', '&')
+      order_ids = AmazonTrackingRetriever.get_order_ids_from_email(AmazonTrackingRetriever, raw_email)
+      self.email_to_orders[email_id] = [Order(order_id, date, to_email, False) for order_id in order_ids]
+      self.flush()
+    return self.email_to_orders[email_id]
 
 
 def order_from_row(header, row):
@@ -56,19 +85,13 @@ def get_order_ids_to_orders(args):
   mail.select('"[Gmail]/All Mail"')
   email_ids = get_email_ids(mail, args)
 
+  config = open_config()
+  email_to_orders = EmailToOrders(config)
   result = {}
   for email_id in tqdm(email_ids, desc="Fetching orders", unit="email"):
-    _, data = mail.uid("FETCH", email_id, "(RFC822)")
-    msg = email.message_from_string(str(data[0][1], 'utf-8'))
-    date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+    for order in email_to_orders.get_orders(mail, email_id):
+      result[order.order_id] = order
 
-    to_email = str(msg['To']).replace('<', '').replace('>', '')
-    raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
-                                                            '').replace('\\r\\n',
-                                                                        '').replace('&amp;', '&')
-    order_ids = AmazonTrackingRetriever.get_order_ids_from_email(AmazonTrackingRetriever, raw_email)
-    for order_id in order_ids:
-      result[order_id] = Order(order_id, date, to_email, False)
   return result
 
 
