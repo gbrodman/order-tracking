@@ -4,6 +4,7 @@ import re
 import sys
 import traceback
 import lib.email_auth as email_auth
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from bs4 import BeautifulSoup
 from enum import Enum
@@ -57,6 +58,7 @@ class CancelledItemsRetriever:
 
     return result
 
+  @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
   def get_all_email_ids(self, mail) -> Dict[str, Tuple[CancFmt, CancQty]]:
     subject_searches = {
         ('Your Amazon.com order', 'has been canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
@@ -85,6 +87,7 @@ class CancelledItemsRetriever:
         result_ids[email_id] = canc_info
     return result_ids
 
+  @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
   def get_cancellations_from_email(self, mail, email_id: str,
                                    canc_info: Tuple[CancFmt, CancQty]) -> Dict[str, List[str]]:
     try:
@@ -128,10 +131,12 @@ class CancelledItemsRetriever:
       print("Continuing...")
       return None
 
+  @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_mail(self):
     mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
+  @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
   def flush(self) -> None:
     self.retriever.flush(self.email_id_dict, CANCELLATIONS_FILENAME)
