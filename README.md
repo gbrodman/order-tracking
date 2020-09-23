@@ -128,7 +128,14 @@ Each row on this sheet corresponds to a tracking number. It contains order(s) fo
 
 ## Amazon Report Import
 
-TODO
+First, export an Amazon business shipments report as CSV (through the Business Analytics section of the site). Then,
+upload that CSV file to Google Drive and open it as a Sheets file. Note the sheet ID, which can be retrieved from the
+sheet URL the same way as before, i.e. "https://docs.google.com/spreadsheets/d/SHEET_ID". Also note the tab name.
+
+Then, run `python import_report.py`. It will ask you for the aforementioned sheet ID and tab name -- put them in. It
+will print out information about the trackings it is importing, and it will also print any rows for which it could not
+find a valid group (note: the address is not formatted like "City, STATE" so for this section I recommend using the
+beginnings of addresses as your group keys, e.g. '123 Fake St' (without the quotes) in your group config).
 
 ## Manual Order Import
 
