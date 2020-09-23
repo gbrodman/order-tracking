@@ -68,6 +68,10 @@ class CancelledItemsRetriever:
         ('Item canceled for your Amazon.com order',): (CancFmt.IRRELEVANT, CancQty.NO),
         (
             "Successful cancellation of",
+            "from your AmazonSmile order",
+        ): (CancFmt.VOLUNTARY, CancQty.YES),
+        (
+            "Successful cancellation of",
             "from your Amazon.com order",
         ): (CancFmt.VOLUNTARY, CancQty.YES),
         ("Partial item(s) cancellation from your Amazon.com order",):

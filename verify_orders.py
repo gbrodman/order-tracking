@@ -50,13 +50,17 @@ class EmailToOrders:
     if email_id not in self.email_to_orders:
       _, data = mail.uid("FETCH", email_id, "(RFC822)")
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
-      date = datetime.datetime.strptime(msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+      date = datetime.datetime.strptime(msg['Date'],
+                                        '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
       to_email = str(msg['To']).replace('<', '').replace('>', '')
       raw_email = str(data[0][1]).replace("=3D", "=").replace('=\\r\\n',
-                                                            '').replace('\\r\\n',
-                                                                        '').replace('&amp;', '&')
-      order_ids = AmazonTrackingRetriever.get_order_ids_from_email(AmazonTrackingRetriever, raw_email)
-      self.email_to_orders[email_id] = [Order(order_id, date, to_email, False) for order_id in order_ids]
+                                                              '').replace('\\r\\n',
+                                                                          '').replace('&amp;', '&')
+      order_ids = AmazonTrackingRetriever.get_order_ids_from_email(AmazonTrackingRetriever,
+                                                                   raw_email)
+      self.email_to_orders[email_id] = [
+          Order(order_id, date, to_email, False) for order_id in order_ids
+      ]
       self.flush()
     return self.email_to_orders[email_id]
 

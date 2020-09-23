@@ -262,7 +262,8 @@ class GroupSiteManager:
             trackings: List[str] = tds[14].text.replace('-', '').split(",")
 
             if trackings:
-              tracking_tuple = tuple([tracking.strip() for tracking in trackings if tracking and tracking.strip()])
+              tracking_tuple = tuple(
+                  [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
               # break out of this if we've seen this already, we're past a month, and we're not running --full
               modified_date = str(tds[15].text)
               not_recent = 'month' in modified_date or 'year' in modified_date
@@ -394,8 +395,7 @@ class GroupSiteManager:
 
       # driver.send_keys() is way too slow; this is instant.
       js_input = '\\n'.join(numbers)
-      driver.execute_script(
-        f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
+      driver.execute_script(f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
       textareas[0].send_keys("\n")  # Trigger blur to enable Submit button.
       driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
       # TODO: This needs to wait for the success dialog to be displayed and then print the number
