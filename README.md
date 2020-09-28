@@ -139,7 +139,19 @@ beginnings of addresses as your group keys, e.g. '123 Fake St' (without the quot
 
 ## Manual Order Import
 
-TODO
+Sometimes, one may wish to manually add a tracking object to the datastore. To do so, run the `manual_input.py` script.
+If you run it without arguments, it will ask you for a series of inputs (it also allows you to delete existing tracking
+objects). Most arguments are optional and it will try to fill out sane defaults, but the tracking number, order number,
+and group fields are required.
+
+If you wish to run the input all in one step adding a new tracking object in the simplest form, simply run as one
+command: 
+
+```python manual_input.py -a -t TRACKING_NUMBER -g GROUP -o ORDER_NUMBER```
+
+e.g.
+
+```python manual_input.py -a -t TBA1234567890 -g mysbuyinggroup -o 123-1234567-1234567```
 
 ## Donations
 
