@@ -9,6 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from bs4 import BeautifulSoup
 from enum import Enum
 
+from lib.debounce import debounce
 from lib.object_retriever import ObjectRetriever
 from tqdm import tqdm
 from typing import Dict, List, Tuple
@@ -142,5 +143,6 @@ class CancelledItemsRetriever:
     return mail
 
   @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
+  @debounce(2)
   def flush(self) -> None:
     self.retriever.flush(self.email_id_dict, CANCELLATIONS_FILENAME)
