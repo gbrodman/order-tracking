@@ -82,7 +82,7 @@ class EmailTrackingRetriever(ABC):
               for new_tracking in new_trackings:
                 trackings[new_tracking.tracking_number] = new_tracking
               break
-            elif attempt >= MAX_ATTEMPTS:
+            elif attempt >= MAX_ATTEMPTS - 1:
               tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries;"
                          f" we got: {new_trackings}")
               incomplete_trackings.extend(new_trackings)
