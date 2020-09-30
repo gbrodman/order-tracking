@@ -258,14 +258,14 @@ class GroupSiteManager:
             verified_checkbox = tds[4].find_element_by_tag_name('md-checkbox')
             verified = 'md-checked' in verified_checkbox.get_attribute('class')
             po = str(tds[5].text)
-            cost = tds[13].text.replace('$', '').replace(',', '')
-            trackings: List[str] = tds[14].text.replace('-', '').split(",")
+            cost = tds[14].text.replace('$', '').replace(',', '')
+            trackings: List[str] = tds[15].text.replace('-', '').split(",")
 
             if trackings:
               tracking_tuple = tuple(
                   [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
               # break out of this if we've seen this already, we're past a month, and we're not running --full
-              modified_date = str(tds[15].text)
+              modified_date = str(tds[17].text)
               not_recent = 'month' in modified_date or 'year' in modified_date
               if tracking_tuple in known_trackings and not full and not_recent:
                 return po_to_cost_map, trackings_to_cost_map
