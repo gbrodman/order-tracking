@@ -9,7 +9,7 @@ from typing import Any, Tuple, Dict, Set, List
 
 import aiohttp
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
@@ -42,6 +42,33 @@ USA_API_TRACKINGS_URL = "https://api.usabuying.group/index.php/buyers/trackings"
 YRCW_URL = "https://app.yrcwtech.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
+
+
+def fill_busted_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, str], table: Tag):
+  trs = table.find_all('tr')
+  # busted-ass html doesn't close the <tr> tags until the end
+  tds = trs[1].find_all('td')
+  # shave out the "total amount" tds
+  tds = tds[:-2]
+
+  for i in range(len(tds) // 5):
+    tracking = tds[i * 5].getText().upper().strip()
+    total_text = tds[i * 5 + 4].getText()
+    total = float(total_text.replace(',', '').replace('$', ''))
+    result[tracking] += total
+    tracking_map[tracking] = tracking
+
+
+def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, str], table: Tag):
+  rows = table.find_all('tr')[1:]  # skip the header
+  for row in rows:
+    tds = row.find_all('td')
+    if len(tds) != 5:
+      continue
+    tracking = tds[0].getText().upper().strip()
+    total = float(tds[4].getText().strip().replace(',', '').replace('$', ''))
+    result[tracking] += total
+    tracking_map[tracking] = tracking
 
 
 class GroupSiteManager:
@@ -481,17 +508,7 @@ class GroupSiteManager:
       if not tables or len(tables) < 2:
         continue
       table = tables[1]
-      trs = table.find_all('tr')
-      # busted-ass html doesn't close the <tr> tags until the end
-      tds = trs[1].find_all('td')
-      # shave out the "total amount" tds
-      tds = tds[:-2]
-
-      for i in range(len(tds) // 5):
-        tracking = tds[i * 5].getText().upper()
-        total_text = tds[i * 5 + 4].getText()
-        total = float(total_text.replace(',', '').replace('$', ''))
-        result[tracking] += total
-        tracking_map[tracking] = tracking
+      fill_busted_bfmr_costs(result, tracking_map, table)
+      fill_standard_bfmr_costs(result, tracking_map, table)
 
     return tracking_map, result
