@@ -55,8 +55,32 @@ def input_orders() -> Dict[str, OrderInfo]:
   return result
 
 
+def run_add(config):
+  print("Add tracking to existing tracking/order cluster.")
+  existing_tracking_num = get_required("Enter a tracking number of the existing cluster: ")
+  tracking_output = TrackingOutput(config)
+  tracking = tracking_output.get_tracking(existing_tracking_num)
+  if not tracking:
+    print("Error: Tracking does not exist. Aborting.")
+    return
+  print("Existing tracking data is:")
+  print(tracking)
+  new_tracking_num = get_optional("Enter new tracking number (or blank to abort): ")
+  if not new_tracking_num:
+    print("Aborting.")
+    return
+  tracking.tracking_number = new_tracking_num
+  print("New tracking data is:")
+  print(tracking)
+  submit = get_required_from_options("Save?", ['y', 'n'])
+  if submit:
+    tracking_output.save_trackings([tracking])
+    print("Saved.")
+  else:
+    print("Cancelled.")
+
 def run_delete(config):
-  print("Manual deletion of Tracking object")
+  print("Manual deletion of Tracking object.")
   tracking_number = get_required("Tracking number: ")
   tracking_output = TrackingOutput(config)
   existing_trackings = tracking_output.get_existing_trackings()
@@ -77,7 +101,7 @@ def run_delete(config):
     print("Could not find that tracking number.")
 
 
-def run_add(config):
+def run_new(config):
   print("Manual input of Tracking object.")
   print("Optional fields will display a default in brackets if one exists.")
   print("")
@@ -151,10 +175,13 @@ def main():
     run_auto(config, args)
     return
 
-  action = get_required_from_options("Enter 'n' for new tracking, 'd' to delete existing",
-                                     ["n", "d"])
-  if action == "n":
+  action = get_required_from_options("Enter 'a' to add a tracking number to an existing cluster, "
+                                     "'n' for a new tracking, or 'd' to delete a tracking",
+                                     ["a", "n", "d"])
+  if action == "a":
     run_add(config)
+  elif action == "n":
+    run_new(config)
   elif action == "d":
     run_delete(config)
 
