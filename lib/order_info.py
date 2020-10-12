@@ -9,6 +9,8 @@ from typing import Dict, Optional, Tuple
 
 ORDERS_FILENAME = "orders.pickle"
 
+MISSING_COST_SENTINEL = 123456.78
+
 
 class OrderInfo:
   """
@@ -49,12 +51,13 @@ class OrderInfoRetriever:
 
   def get_order_info(self, order_id, fetch_from_email: bool = True) -> OrderInfo:
     # Always fetch if we've never seen this order before, additionally fetch iff
-    # we found a 0 cost before and we want to retry
-    if order_id not in self.orders_dict or (fetch_from_email and
-                                            self.orders_dict[order_id].cost == 0):
+    # we found a 0 or MISSING_COST_SENTINEL cost before and we want to retry.
+    if order_id not in self.orders_dict or (
+        fetch_from_email and (self.orders_dict[order_id].cost == 0 or
+                              self.orders_dict[order_id].cost == MISSING_COST_SENTINEL)):
       from_email = self.load_order_total(order_id)
       if not from_email:
-        from_email = {order_id: OrderInfo(None, 0.0)}
+        from_email = {order_id: OrderInfo(None, MISSING_COST_SENTINEL)}
       self.orders_dict.update(from_email)
       self.flush()
     return self.orders_dict[order_id]
