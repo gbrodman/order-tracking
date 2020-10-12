@@ -297,9 +297,10 @@ class GroupSiteManager:
               if tracking_tuple in known_trackings and not full and not_recent:
                 return po_to_cost_map, trackings_to_cost_map
               if cost:
-                trackings_to_cost_map[tracking_tuple] = float(cost) if verified else 0.0
+                trackings_to_cost_map[tracking_tuple] = trackings_to_cost_map.get(
+                    tracking_tuple, 0.0) + float(cost) if verified else 0.0
             if cost and po:
-              po_to_cost_map[po] = float(cost)
+              po_to_cost_map[po] = po_to_cost_map.get(po, 0.0) + float(cost)
 
           next_page_buttons = driver.find_elements_by_xpath(
               "//button[@ng-click='$pagination.next()']")

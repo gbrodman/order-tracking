@@ -79,6 +79,7 @@ def run_add(config):
   else:
     print("Cancelled.")
 
+
 def run_delete(config):
   print("Manual deletion of Tracking object.")
   tracking_number = get_required("Tracking number: ")
@@ -175,9 +176,9 @@ def main():
     run_auto(config, args)
     return
 
-  action = get_required_from_options("Enter 'a' to add a tracking number to an existing cluster, "
-                                     "'n' for a new tracking, or 'd' to delete a tracking",
-                                     ["a", "n", "d"])
+  action = get_required_from_options(
+      "Enter 'a' to add a tracking number to an existing cluster, "
+      "'n' for a new tracking, or 'd' to delete a tracking", ["a", "n", "d"])
   if action == "a":
     run_add(config)
   elif action == "n":
