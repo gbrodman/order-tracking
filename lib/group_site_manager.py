@@ -32,6 +32,8 @@ MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 
 RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
 
+OAKS_URL = "http://hso-tech.com"
+
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
 USA_PO_URL = "https://usabuying.group/purchase-orders"
@@ -329,6 +331,8 @@ class GroupSiteManager:
           return self._upload_yrcw(numbers)
         elif group == "bfmr":
           return self._upload_bfmr(numbers)
+        elif group == 'oaks':
+          return self._upload_oaks(numbers)
         else:
           raise Exception("Unknown group: " + group)
       except Exception as e:
@@ -340,6 +344,34 @@ class GroupSiteManager:
   def _load_page(self, driver, url) -> None:
     driver.get(url)
     time.sleep(3)
+
+  def _login_oaks(self) -> Any: # fix later, webdriver
+    group_config = self.config['groups']['oaks']
+    username = group_config['username']
+    password = group_config['password']
+    driver = self.driver_creator.new()
+    self._load_page(driver, OAKS_URL)
+    # spanglish
+    driver.find_element_by_id('txtUsuario').send_keys(username)
+    driver.find_element_by_id('txtContrasenia').send_keys(password)
+    driver.find_element_by_id('btnIngresar').click()
+    time.sleep(5)
+    return driver
+
+
+  def _upload_oaks(self, numbers) -> None:
+    driver = self._login_oaks()
+    try:
+      driver.find_element_by_id('ContentPlaceHolder1_btnUpload').click()
+      time.sleep(1)
+      # driver.send_keys() is way too slow; this is instant.
+      js_input = '\\n'.join(numbers)
+      driver.execute_script(f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
+      driver.find_element_by_id('ContentPlaceHolder1_btnGrabar').click()
+      time.sleep(2)
+    finally:
+      driver.quit()
+
 
   def _upload_bfmr(self, numbers) -> None:
     for batch in util.chunks(numbers, 100):
