@@ -11,6 +11,7 @@ import aiohttp
 import requests
 from bs4 import BeautifulSoup, Tag
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
 
@@ -141,7 +142,40 @@ class GroupSiteManager:
     elif group == "yrcw":
       print("Loading yrcw")
       return self._get_yrcw_tracking_pos_prices()
+    elif group == "oaks":
+      print("Loading oaks")
+      return self._get_oaks_tracking_pos_prices()
     return dict(), dict()
+
+  def _get_oaks_tracking_pos_prices(self) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
+    tracking_cost_map = {}
+    driver = self._login_oaks()
+    try:
+      elem = driver.find_element_by_id('ContentPlaceHolder1_ddlReportes')
+      elem.click()
+      select = Select(elem)
+      select.select_by_visible_text('Resume')
+      time.sleep(5)
+
+      while True:
+        table = driver.find_elements_by_tag_name('table')[-1]
+        rows = table.find_elements_by_tag_name('tr')
+        for row in rows:
+          tds = row.find_elements_by_tag_name('td')
+          if len(tds) < 6:
+            continue
+          tracking = tds[1].text.upper().strip()
+          if not tracking or tracking.startswith("TRACKING"):
+            continue
+          cost = tds[5].text.replace('$', '').replace(',', '').strip()
+          tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + float(cost)
+        next_page_button = driver.find_element_by_css_selector('input[title="Next Page"]')
+        if not next_page_button.is_displayed():
+          return tracking_cost_map, {}
+        next_page_button.click()
+        time.sleep(5)
+    finally:
+      driver.quit()
 
   # returns ((trackings) -> cost, po -> cost) maps
   def _get_yrcw_tracking_pos_prices(self):
@@ -345,19 +379,22 @@ class GroupSiteManager:
     driver.get(url)
     time.sleep(3)
 
-  def _login_oaks(self) -> Any: # fix later, webdriver
+  def _login_oaks(self) -> WebDriver:
     group_config = self.config['groups']['oaks']
     username = group_config['username']
     password = group_config['password']
     driver = self.driver_creator.new()
+    # the website is terrible, give it leeway
+    driver.set_page_load_timeout(30)
+    driver.set_script_timeout(30)
+    driver.implicitly_wait(30)
     self._load_page(driver, OAKS_URL)
     # spanglish
     driver.find_element_by_id('txtUsuario').send_keys(username)
     driver.find_element_by_id('txtContrasenia').send_keys(password)
     driver.find_element_by_id('btnIngresar').click()
-    time.sleep(5)
+    time.sleep(3)
     return driver
-
 
   def _upload_oaks(self, numbers) -> None:
     driver = self._login_oaks()
@@ -371,7 +408,6 @@ class GroupSiteManager:
       time.sleep(2)
     finally:
       driver.quit()
-
 
   def _upload_bfmr(self, numbers) -> None:
     for batch in util.chunks(numbers, 100):
