@@ -12,6 +12,18 @@ from lib.driver_creator import DriverCreator
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
 
+def _parse_date(text):
+  if not text:
+    return ''
+  date_text = text.split(',')[-1].strip()
+  date_text = ' '.join(date_text.split(' ')[0:2])
+  try:
+    date = datetime.datetime.strptime(date_text, "%B %d").replace(year=datetime.datetime.now().year)
+    return date.strftime('%Y-%m-%d')
+  except:
+    return ''
+
+
 class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
@@ -132,31 +144,20 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   def get_delivery_date_from_email(self, email_str):
     soup = BeautifulSoup(email_str, features="html.parser")
-    text = self.get_date_text_from_soup(soup)
-    if not text:
-      return ''
-    date_text = text.split(',')[-1].strip()
-    date_text = ' '.join(date_text.split(' ')[0:2])
-    try:
-      date = datetime.datetime.strptime(date_text,
-                                        "%B %d").replace(year=datetime.datetime.now().year)
-      return date.strftime('%Y-%m-%d')
-    except:
-      return ''
-
-  def get_date_text_from_soup(self, soup):
     critical_info = soup.find(id='criticalInfo')
     # biz email
     if critical_info:
       tds = critical_info.find_all('td')
-      if len(tds) < 2:
-        return ''
-      return tds[1].text
+      for i in range(max(2, len(tds))):
+        date = _parse_date(tds[i].text)
+        if date:
+          return date
+      return ''
     # personal email
     arrival_date_elem = soup.find(class_='arrivalDate')
     if not arrival_date_elem:
       return ''
-    return arrival_date_elem.text
+    return _parse_date(arrival_date_elem.text)
 
   @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, url):
