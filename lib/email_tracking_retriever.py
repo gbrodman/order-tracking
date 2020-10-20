@@ -58,6 +58,9 @@ class EmailTrackingRetriever(ABC):
     print(f"Found {len(self.all_email_ids)} {seen_adj} {self.get_merchant()} "
           "shipping emails in the dates we searched.")
     trackings = {}
+    if not self.all_email_ids:
+      return trackings
+
     mail = self.get_all_mail_folder()
     # Emails that throw Exceptions and can't be parsed at all.
     failed_email_ids = []

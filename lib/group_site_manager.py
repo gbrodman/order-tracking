@@ -138,7 +138,7 @@ class GroupSiteManager:
       return trackings_cost, po_cost
     elif group == "usa":
       print("Loading group usa")
-      return asyncio.run(self._get_usa_tracking_pos_prices(known_trackings))
+      return asyncio.run(self._get_usa_tracking_pos_prices(known_trackings, full))
     elif group == "yrcw":
       print("Loading yrcw")
       return self._get_yrcw_tracking_pos_prices()
@@ -264,14 +264,15 @@ class GroupSiteManager:
       print(f"Error finding USA tracking cost for {tracking_number}")
       print(e)
 
-  async def _get_usa_tracking_pos_prices(self, known_trackings: Set[Tuple[str]]):
+  async def _get_usa_tracking_pos_prices(self, known_trackings: Set[Tuple[str]], full: bool):
     headers = self._get_usa_login_headers()
     pos_to_prices = {}
     all_entries = self._get_usa_tracking_entries(headers)
     for entry in all_entries:
       pos_to_prices[entry['purchase_id']] = float(entry['purchase']['amount'])
     tracking_numbers = [entry['tracking_number'] for entry in all_entries]
-    tracking_numbers = [t for t in tracking_numbers if (t,) not in known_trackings]
+    if not full:
+      tracking_numbers = [t for t in tracking_numbers if (t,) not in known_trackings]
     async with aiohttp.ClientSession(headers=headers) as session:
       tracking_tuples_to_prices = {}
       tasks = []
