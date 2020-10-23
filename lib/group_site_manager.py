@@ -167,8 +167,9 @@ class GroupSiteManager:
           tracking = tds[1].text.upper().strip()
           if not tracking or tracking.startswith("TRACKING"):
             continue
-          cost = tds[5].text.replace('$', '').replace(',', '').strip()
-          tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + float(cost)
+          cost = tds[5].text.replace('$', '').replace(',', '').replace('-', '').strip()
+          cost_value = float(cost) if cost else 0.0
+          tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + cost_value
         next_page_button = driver.find_element_by_css_selector('input[title="Next Page"]')
         if not next_page_button.is_displayed():
           return tracking_cost_map, {}
