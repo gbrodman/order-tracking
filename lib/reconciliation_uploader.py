@@ -1,7 +1,11 @@
+import datetime
+
 from lib import clusters
 from functools import cmp_to_key
+
+from lib.clusters import Cluster
 from lib.objects_to_sheet import ObjectsToSheet
-from typing import Any, TypeVar, List
+from typing import Any, TypeVar, List, Dict
 
 _T = TypeVar('_T')
 
@@ -240,6 +244,25 @@ def get_conditional_formatting_body(service, base_sheet_id, tab_title, num_objec
   return {"requests": requests}
 
 
+def compute_tracking_to_cluster(downloaded_clusters: List[Cluster]) -> Dict[str, Cluster]:
+  result = {}
+  for cluster in downloaded_clusters:
+    for tracking in cluster.trackings:
+      result[tracking] = cluster
+  return result
+
+
+def find_candidate_downloads(cluster: Cluster, tracking_to_cluster: Dict[str,
+                                                                         Cluster]) -> List[Cluster]:
+  result = []
+  for tracking in cluster.trackings:
+    if tracking in tracking_to_cluster:
+      candidate = tracking_to_cluster[tracking]
+      if candidate not in result:
+        result.append(candidate)
+  return result
+
+
 class ReconciliationUploader:
 
   def __init__(self, config) -> None:
@@ -252,9 +275,10 @@ class ReconciliationUploader:
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(clusters.from_row,
                                                                     base_sheet_id,
                                                                     "Reconciliation v2")
-
+    downloaded_tracking_to_cluster = compute_tracking_to_cluster(downloaded_clusters)
+    start = datetime.datetime.now()
     for cluster in all_clusters:
-      candidate_downloads = self.find_candidate_downloads(cluster, downloaded_clusters)
+      candidate_downloads = find_candidate_downloads(cluster, downloaded_tracking_to_cluster)
       pos = set()
       non_reimbursed_trackings = set()
       total_tracked_cost = 0.0
@@ -265,6 +289,7 @@ class ReconciliationUploader:
       cluster.purchase_orders = pos
       cluster.non_reimbursed_trackings = non_reimbursed_trackings
       cluster.tracked_cost = total_tracked_cost
+    print(f"Filling adjustments {datetime.datetime.now() - start}")
 
   def download_upload_clusters_new(self, all_clusters) -> None:
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
@@ -279,9 +304,10 @@ class ReconciliationUploader:
     print("Filling in cost adjustments if applicable")
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(clusters.from_row,
                                                                     base_sheet_id, tab_title)
-
+    downloaded_tracking_to_cluster = compute_tracking_to_cluster(downloaded_clusters)
+    start = datetime.datetime.now()
     for cluster in all_clusters:
-      candidate_downloads = self.find_candidate_downloads(cluster, downloaded_clusters)
+      candidate_downloads = find_candidate_downloads(cluster, downloaded_tracking_to_cluster)
       cluster.adjustment = sum([candidate.adjustment for candidate in candidate_downloads])
       cluster.notes = "; ".join(
           [candidate.notes for candidate in candidate_downloads if candidate.notes.strip()])
@@ -294,10 +320,4 @@ class ReconciliationUploader:
         if (sheet_cluster.trackings == cluster.trackings and
             sheet_cluster.orders == cluster.orders):
           cluster.manual_override = sheet_cluster.manual_override
-
-  def find_candidate_downloads(self, cluster, downloaded_clusters) -> list:
-    result = []
-    for downloaded_cluster in downloaded_clusters:
-      if downloaded_cluster.trackings.intersection(cluster.trackings):
-        result.append(downloaded_cluster)
-    return result
+    print(f"Filling adjustments {datetime.datetime.now() - start}")

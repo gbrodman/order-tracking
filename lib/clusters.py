@@ -1,7 +1,6 @@
-import pickle
-import os.path
-from lib.objects_to_drive import ObjectsToDrive
-from typing import Any, List
+from typing import Any, List, Dict, Tuple, Optional
+
+from lib.tracking import Tracking
 
 OUTPUT_FOLDER = "output"
 CLUSTERS_FILENAME = "clusters.pickle"
@@ -93,19 +92,24 @@ class Cluster:
     self.cancelled_items.extend(other.cancelled_items)
 
 
-def find_cluster(all_clusters, tracking) -> Any:
-  for cluster in all_clusters:
-    if cluster.orders.intersection(set(tracking.order_ids)):
-      return cluster
+def find_cluster(order_to_cluster: Dict[str, Cluster], tracking: Tracking) -> Optional[Cluster]:
+  for order in tracking.order_ids:
+    if order in order_to_cluster:
+      return order_to_cluster[order]
   return None
 
 
-def update_clusters(all_clusters, trackings) -> None:
+def update_clusters(all_clusters: List[Cluster], trackings: List[Tracking]) -> None:
+  order_to_cluster = {}
   for tracking in trackings:
-    cluster = find_cluster(all_clusters, tracking)
+    cluster = find_cluster(order_to_cluster, tracking)
     if cluster is None:
       cluster = Cluster(tracking.group)
       all_clusters.append(cluster)
+
+    # map order -> cluster for quick combine-by-order operations
+    for order in tracking.order_ids:
+      order_to_cluster[order] = cluster
 
     # If we are adding a new tracking or order ID, unset the manual override
     # status of the cluster.
@@ -136,31 +140,37 @@ def merge_orders(clusters) -> list:
   return clusters
 
 
-def run_merge_iteration(clusters) -> list:
+def fill_email_po_group_maps(cluster: Cluster, email_to_cluster: Dict[str, Cluster],
+                             po_group_to_cluster: Dict[Tuple[str, str], Cluster]) -> None:
+  for po in cluster.purchase_orders:
+    po_group_to_cluster[(po, cluster.group)] = cluster
+  for email in cluster.email_ids:
+    email_to_cluster[email] = cluster
+
+
+def run_merge_iteration(clusters: List[Cluster]) -> list:
   result = []
+  email_to_cluster: Dict[str, Cluster] = {}
+  po_group_to_cluster: Dict[Tuple[str, str], Cluster] = {}
   for cluster in clusters:
-    to_merge = find_by_shared_attr(cluster, result)
+    to_merge = find_by_shared_attr(cluster, email_to_cluster, po_group_to_cluster)
     if to_merge:
       to_merge.merge_with(cluster)
+      fill_email_po_group_maps(to_merge, email_to_cluster, po_group_to_cluster)
     else:
       result.append(cluster)
+      fill_email_po_group_maps(cluster, email_to_cluster, po_group_to_cluster)
   return result
 
 
-def find_by_shared_attr(cluster, all_clusters) -> Any:
-  if not cluster.purchase_orders and not cluster.email_ids:
-    return None
-
-  for candidate in all_clusters:
-    if candidate.group == cluster.group:
-      common_pos = candidate.purchase_orders.intersection(cluster.purchase_orders)
-      if common_pos:
-        print(f'Merged orders {cluster.orders} and {candidate.orders} by common POs {common_pos}')
-        return candidate
-      common_emails = candidate.email_ids.intersection(cluster.email_ids)
-      if common_emails:
-        return candidate
-
+def find_by_shared_attr(cluster: Cluster, email_to_cluster: Dict[str, Cluster],
+                        po_group_to_cluster: Dict[Tuple[str, str], Cluster]) -> Optional[Cluster]:
+  for po in cluster.purchase_orders:
+    if (po, cluster.group) in po_group_to_cluster:
+      return po_group_to_cluster[(po, cluster.group)]
+  for email in cluster.email_ids:
+    if email in email_to_cluster:
+      return email_to_cluster[email]
   return None
 
 
