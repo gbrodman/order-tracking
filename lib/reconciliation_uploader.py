@@ -1,5 +1,3 @@
-import datetime
-
 from lib import clusters
 from functools import cmp_to_key
 
@@ -276,7 +274,6 @@ class ReconciliationUploader:
                                                                     base_sheet_id,
                                                                     "Reconciliation v2")
     downloaded_tracking_to_cluster = compute_tracking_to_cluster(downloaded_clusters)
-    start = datetime.datetime.now()
     for cluster in all_clusters:
       candidate_downloads = find_candidate_downloads(cluster, downloaded_tracking_to_cluster)
       pos = set()
@@ -289,7 +286,6 @@ class ReconciliationUploader:
       cluster.purchase_orders = pos
       cluster.non_reimbursed_trackings = non_reimbursed_trackings
       cluster.tracked_cost = total_tracked_cost
-    print(f"Filling adjustments {datetime.datetime.now() - start}")
 
   def download_upload_clusters_new(self, all_clusters) -> None:
     base_sheet_id = self.config['reconciliation']['baseSpreadsheetId']
@@ -305,7 +301,6 @@ class ReconciliationUploader:
     downloaded_clusters = self.objects_to_sheet.download_from_sheet(clusters.from_row,
                                                                     base_sheet_id, tab_title)
     downloaded_tracking_to_cluster = compute_tracking_to_cluster(downloaded_clusters)
-    start = datetime.datetime.now()
     for cluster in all_clusters:
       candidate_downloads = find_candidate_downloads(cluster, downloaded_tracking_to_cluster)
       cluster.adjustment = sum([candidate.adjustment for candidate in candidate_downloads])
@@ -320,4 +315,3 @@ class ReconciliationUploader:
         if (sheet_cluster.trackings == cluster.trackings and
             sheet_cluster.orders == cluster.orders):
           cluster.manual_override = sheet_cluster.manual_override
-    print(f"Filling adjustments {datetime.datetime.now() - start}")
