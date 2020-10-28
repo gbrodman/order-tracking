@@ -6,7 +6,9 @@ from lib.email_tracking_retriever import EmailTrackingRetriever
 
 class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
-  tracking_regex = r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>'
+  tracking_regexes = [
+      r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>', r'Tracking #: ([A-Z0-9]+)'
+  ]
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
   def get_order_ids_from_email(self, raw_email):
@@ -19,12 +21,13 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   def get_tracking_numbers_from_email(self, raw_email, from_email: str,
                                       to_email: str) -> List[Tuple[str, Optional[str]]]:
-    match = re.search(self.tracking_regex, raw_email)
-    if not match:
-      return []
-    # The second part of the tuple here is the shipping status, which would need
-    # to be retrieved from a shipping status web page (like it is for Amazon).
-    return [(match.group(1), None)]
+    for regex in self.tracking_regexes:
+      match = re.search(regex, raw_email)
+      if match:
+        # The second part of the tuple here is the shipping status, which would need
+        # to be retrieved from a shipping status web page (like it is for Amazon).
+        return [(match.group(1), None)]
+    return []
 
   def get_subject_searches(self):
     return [["Your order #BBY01", "has shipped"], ["Your order #BBYTX", "has shipped"]]
