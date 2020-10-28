@@ -143,7 +143,6 @@ class GroupSiteManager:
       print("Loading yrcw")
       return self._get_yrcw_tracking_pos_prices()
     elif group == "oaks":
-      print("Loading oaks")
       return self._get_oaks_tracking_pos_prices()
     return dict(), dict()
 
@@ -151,30 +150,32 @@ class GroupSiteManager:
     tracking_cost_map = {}
     driver = self._login_oaks()
     try:
-      elem = driver.find_element_by_id('ContentPlaceHolder1_ddlReportes')
-      elem.click()
-      select = Select(elem)
-      select.select_by_visible_text('Resume')
-      time.sleep(5)
-
-      while True:
-        table = driver.find_elements_by_tag_name('table')[-1]
-        rows = table.find_elements_by_tag_name('tr')
-        for row in rows:
-          tds = row.find_elements_by_tag_name('td')
-          if len(tds) < 6:
-            continue
-          tracking = tds[1].text.upper().strip()
-          if not tracking or tracking.startswith("TRACKING"):
-            continue
-          cost = tds[5].text.replace('$', '').replace(',', '').replace('-', '').strip()
-          cost_value = float(cost) if cost else 0.0
-          tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + cost_value
-        next_page_button = driver.find_element_by_css_selector('input[title="Next Page"]')
-        if not next_page_button.is_displayed():
-          return tracking_cost_map, {}
-        next_page_button.click()
+      with tqdm(desc=f"Fetching oaks check-ins", unit='page') as pbar:
+        elem = driver.find_element_by_id('ContentPlaceHolder1_ddlReportes')
+        elem.click()
+        select = Select(elem)
+        select.select_by_visible_text('Resume')
         time.sleep(5)
+
+        while True:
+          table = driver.find_elements_by_tag_name('table')[-1]
+          rows = table.find_elements_by_tag_name('tr')
+          for row in rows:
+            tds = row.find_elements_by_tag_name('td')
+            if len(tds) < 6:
+              continue
+            tracking = tds[1].text.upper().strip()
+            if not tracking or tracking.startswith("TRACKING"):
+              continue
+            cost = tds[5].text.replace('$', '').replace(',', '').replace('-', '').strip()
+            cost_value = float(cost) if cost else 0.0
+            tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + cost_value
+          next_page_button = driver.find_element_by_css_selector('input[title="Next Page"]')
+          if not next_page_button.is_displayed():
+            return tracking_cost_map, {}
+          next_page_button.click()
+          time.sleep(2)
+          pbar.update()
     finally:
       driver.quit()
 
