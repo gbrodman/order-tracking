@@ -7,7 +7,8 @@ from lib.email_tracking_retriever import EmailTrackingRetriever
 class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   tracking_regexes = [
-      r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>', r'Tracking #: ([A-Z0-9]+)'
+      r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]+)<\/a>',
+      r'color:[^>]+>([0-9][0-9A-Z]+)<\/a>'
   ]
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
