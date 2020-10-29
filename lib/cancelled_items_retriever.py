@@ -66,6 +66,7 @@ class CancelledItemsRetriever:
         ('Your Amazon.com Order', 'Has Been Canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
         ('Your Amazon.com Order', 'Has Been Cancelled'): (CancFmt.IRRELEVANT, CancQty.NO),
         ('Your AmazonSmile order', 'has been canceled'): (CancFmt.IRRELEVANT, CancQty.NO),
+        ('Your AmazonSmile order', 'has been cancelled'): (CancFmt.IRRELEVANT, CancQty.NO),
         ('Item canceled for your Amazon.com order',): (CancFmt.IRRELEVANT, CancQty.NO),
         (
             "Successful cancellation of",
