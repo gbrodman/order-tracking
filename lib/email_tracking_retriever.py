@@ -16,7 +16,7 @@ _FuncT = TypeVar('_FuncT', bound=Callable)
 
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
-MAX_ATTEMPTS = 4
+MAX_ATTEMPTS = 2
 
 
 class EmailTrackingRetriever(ABC):

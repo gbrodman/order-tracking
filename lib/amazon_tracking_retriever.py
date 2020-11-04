@@ -25,6 +25,12 @@ def _parse_date(text):
     return ''
 
 
+def new_driver(profile_base: str, profile_name: str) -> WebDriver:
+  dc = DriverCreator()
+  dc.args.no_headless = True
+  return dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+
+
 class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
@@ -103,11 +109,14 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def find_login(self, to_email: str) -> Optional[WebDriver]:
     email_user = to_email.split("@")[0].lower()
     profile_base = self.config["profileBase"]
+    # attempt exact matches first
+    for profile_name in os.listdir(os.path.expanduser(profile_base)):
+      if email_user == profile_name.lower():
+        return new_driver(profile_base, profile_name)
+    # then go to substrings
     for profile_name in os.listdir(os.path.expanduser(profile_base)):
       if email_user in profile_name.lower():
-        dc = DriverCreator()
-        dc.args.no_headless = True
-        return dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+        return new_driver(profile_base, profile_name)
     return None
 
   def get_tracking_info_logged_in(self, amazon_url: str,
@@ -174,7 +183,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       return ''
     return _parse_date(arrival_date_elem.text)
 
-  @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
+  @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_url(self, driver, url):
     driver.get(url)
     time.sleep(1)  # wait for page load because the timeouts can be buggy
