@@ -4,6 +4,7 @@ import re
 import time
 from typing import Tuple, Optional, List
 
+from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -79,25 +80,38 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     url = self.get_order_url_from_email(raw_email)
     if not url:
       return []
-    if "ship-confirm@amazon.com" in from_email and "profileBase" in self.config:
-      return self.get_tracking_info_logged_in(url, to_email)
-    else:
-      return self.get_tracking_info_logged_out(url)
+    # First, attempt with the pre-existing not-logged-in driver
+    attempt = self.get_tracking_info_logged_out(url, self.driver)
+    if attempt or "profileBase" not in self.config:
+      return attempt
 
-  def get_tracking_info_logged_in(self, amazon_url: str,
-                                  to_email: str) -> List[Tuple[str, Optional[str]]]:
+    # If that fails, attempt to log in
+    driver = self.find_login(to_email)
+    if not driver:
+      tqdm.write(f"Couldn't find profile directory for email: {to_email}")
+      return []
+
+    # Bulk ordering (from ship-confirm) or standard page (otherwise)
+    if "ship-confirm@amazon.com" in from_email:
+      return self.get_tracking_info_logged_in(url, driver)
+    else:
+      try:
+        return self.get_tracking_info_logged_out(url, driver)
+      finally:
+        driver.quit()
+
+  def find_login(self, to_email: str) -> Optional[WebDriver]:
     email_user = to_email.split("@")[0].lower()
     profile_base = self.config["profileBase"]
-    driver = None
     for profile_name in os.listdir(os.path.expanduser(profile_base)):
       if email_user in profile_name.lower():
         dc = DriverCreator()
         dc.args.no_headless = True
-        driver = dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
-        break
-    if driver is None:
-      tqdm.write(f"Couldn't find profile directory for email: {to_email}")
-      return []
+        return dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+    return None
+
+  def get_tracking_info_logged_in(self, amazon_url: str,
+                                  driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
     try:
       driver.get(amazon_url)
       shipment_eles = driver.find_elements_by_css_selector("div.a-section-expander-container")
@@ -126,16 +140,17 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         trackings.append((self.li_regex.sub("", tracking.text.strip()), delivery_status))
     return trackings
 
-  def get_tracking_info_logged_out(self, amazon_url: str) -> List[Tuple[str, Optional[str]]]:
-    self.load_url(amazon_url)
+  def get_tracking_info_logged_out(self, amazon_url: str,
+                                   driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
+    self.load_url(driver, amazon_url)
     try:
-      element = self.driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+      element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
         return []
       tracking_number = match.group(1).upper()
-      shipping_status = self.driver.find_element_by_id("primaryStatus").get_attribute(
+      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute(
           "textContent").strip(" \t\n\r")
       return [(tracking_number, shipping_status)]
     except:
@@ -160,6 +175,6 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     return _parse_date(arrival_date_elem.text)
 
   @retry(stop=stop_after_attempt(7), wait=wait_exponential(multiplier=1, min=2, max=120))
-  def load_url(self, url):
-    self.driver.get(url)
+  def load_url(self, driver, url):
+    driver.get(url)
     time.sleep(1)  # wait for page load because the timeouts can be buggy
