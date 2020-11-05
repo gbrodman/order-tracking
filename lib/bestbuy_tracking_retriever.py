@@ -1,6 +1,8 @@
 import re
 from typing import Tuple, Optional, List
 
+from selenium.webdriver.chrome.webdriver import WebDriver
+
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
 
@@ -20,8 +22,9 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   def get_price_from_email(self, raw_email):
     return None  # not implementable
 
-  def get_tracking_numbers_from_email(self, raw_email, from_email: str,
-                                      to_email: str) -> List[Tuple[str, Optional[str]]]:
+  def get_tracking_numbers_from_email(
+      self, raw_email, from_email: str, to_email: str,
+      driver: Optional[WebDriver]) -> List[Tuple[str, Optional[str]]]:
     for regex in self.tracking_regexes:
       match = re.search(regex, raw_email)
       if match:

@@ -1,17 +1,15 @@
 import datetime
-import re
-from typing import Any, List
+from typing import Any, List, Collection
 
 
 class Tracking:
 
   def __init__(self,
-               tracking_number,
-               group,
-               order_ids,
+               tracking_number: str,
+               group: str,
+               order_ids: Collection[str],
                price,
-               to_email,
-               url='',
+               to_email: str,
                ship_date='0',
                tracked_cost=0.0,
                items='',
@@ -56,7 +54,7 @@ class Tracking:
 
   def _create_hyperlink(self) -> Any:
     link = self._get_tracking_url()
-    if link == None:
+    if link is None:
       return self.tracking_number
     return '=HYPERLINK("%s", "%s")' % (link, self.tracking_number)
 

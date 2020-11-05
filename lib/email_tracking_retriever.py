@@ -1,22 +1,43 @@
 import base64
+import collections
+import concurrent
 import datetime
 import email
 import imaplib
+import os
 import socket
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional, Tuple, TypeVar, Dict, List
+from concurrent.futures.thread import ThreadPoolExecutor
+from typing import Any, Callable, Optional, Tuple, TypeVar, Dict, List, Set
 
+from selenium.webdriver.chrome.webdriver import WebDriver
+from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
 import lib.email_auth as email_auth
 from lib import util
+from lib.driver_creator import DriverCreator
 from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
+DEFAULT_PROFILE_BASE = '.profiles'
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 MAX_ATTEMPTS = 2
+DEFAULT_NUM_WORKERS = 10
+
+
+def find_login(email_profile_name: str, profile_base: str) -> Optional[WebDriver]:
+  # attempt exact matches first
+  for profile_name in os.listdir(os.path.expanduser(profile_base)):
+    if email_profile_name == profile_name.lower():
+      return new_driver(profile_base, profile_name)
+  # then go to substrings
+  for profile_name in os.listdir(os.path.expanduser(profile_base)):
+    if email_profile_name in profile_name.lower():
+      return new_driver(profile_base, profile_name)
+  return None
 
 
 class EmailTrackingRetriever(ABC):
@@ -43,7 +64,7 @@ class EmailTrackingRetriever(ABC):
 
   def mark_as_unread(self, email_id) -> None:
     if not self.args.seen:
-      mail = self.get_all_mail_folder()
+      mail = get_all_mail_folder()
       mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
   def get_trackings(self) -> Dict[str, Tracking]:
@@ -61,52 +82,34 @@ class EmailTrackingRetriever(ABC):
     if not self.all_email_ids:
       return trackings
 
-    mail = self.get_all_mail_folder()
+    mail = get_all_mail_folder()
     # Emails that throw Exceptions and can't be parsed at all.
     failed_email_ids = []
-    # Incomplete tracking information from emails with handled errors.
-    incomplete_trackings = []
 
-    self.driver = self.driver_creator.new()
     try:
-      for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
-        try:
-          for attempt in range(MAX_ATTEMPTS):
-            try:
-              success, new_trackings = self.get_trackings_from_email(email_id, mail, attempt)
-            except (ConnectionError, socket.error, imaplib.IMAP4.abort):
-              tqdm.write(f"Connection lost; reconnecting (attempt {attempt + 1}).")
-              # Re-initializing the IMAP connection and retrying should fix most
-              # connection-related errors.
-              # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
-              mail = self.get_all_mail_folder()
-              continue
-            if success:
-              for new_tracking in new_trackings:
-                trackings[new_tracking.tracking_number] = new_tracking
-              break
-            elif attempt >= MAX_ATTEMPTS - 1:
-              tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries;"
-                         f" we got: {new_trackings}")
-              incomplete_trackings.extend(new_trackings)
-              self.mark_as_unread(email_id)
-        except Exception as e:
-          failed_email_ids.append(email_id)
-          tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
-                     f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      profiles_to_email_infos = retrieve_email_infos(self.all_email_ids, mail)
     except Exception as e:
-      if not self.args.seen:
-        print("Fatal unexpected error parsing emails; marking all as unread.")
-        self.back_out_of_all()
-      raise Exception("Fatal unexpected fatal error when parsing emails") from e
-    finally:
-      self.driver.quit()
+      print(f"Unexpected error retrieving email infos: "
+            f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      self.mark_emails_as_unread(self.all_email_ids)
+      return trackings
 
-    if len(incomplete_trackings) > 0:
-      print("Couldn't find full tracking info/matching buying group for some emails.\n"
-            "Here's what we got:\n" + "\n".join([str(t) for t in incomplete_trackings]))
-      if not self.args.seen:
-        print("They were already marked as unread.")
+    num_workers = self.config['numWorkers'] if 'numWorkers' in self.config else DEFAULT_NUM_WORKERS
+    with ThreadPoolExecutor(num_workers) as executor:
+      tasks = []
+      for email_profile_name, email_dict in profiles_to_email_infos.items():
+        tasks.append(
+            executor.submit(self.get_trackings_with_profile, email_profile_name, email_dict))
+      for task in tqdm(
+          concurrent.futures.as_completed(tasks),
+          desc="Processing profiles ...",
+          unit="profile",
+          total=len(tasks),
+          maxinterval=3):
+        new_trackings, new_failed_email_ids = task.result()
+        for tracking in new_trackings:
+          trackings[tracking.tracking_number] = tracking
+        failed_email_ids.extend(new_failed_email_ids)
 
     if len(failed_email_ids) > 0:
       print(f"Errored out while retrieving {len(failed_email_ids)} trackings "
@@ -117,7 +120,7 @@ class EmailTrackingRetriever(ABC):
 
     return trackings
 
-  def get_buying_group(self, raw_email) -> Tuple[str, bool]:
+  def get_buying_group(self, raw_email) -> Tuple[Optional[str], bool]:
     raw_email = raw_email.upper()
     for group in self.config['groups'].keys():
       group_conf = self.config['groups'][group]
@@ -146,8 +149,9 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_tracking_numbers_from_email(self, raw_email, from_email: str,
-                                      to_email: str) -> List[Tuple[str, Optional[str]]]:
+  def get_tracking_numbers_from_email(
+      self, raw_email, from_email: str, to_email: str,
+      driver: Optional[WebDriver]) -> List[Tuple[str, Optional[str]]]:
     """
     Returns a potentially empty list of (tracking number, optional shipping status) tuples.
     """
@@ -169,18 +173,64 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
-  def get_trackings_from_email(self, email_id, mail, attempt: int) -> Tuple[bool, List[Tracking]]:
+  def get_trackings_with_profile(self, email_profile_name: str,
+                                 email_dict: Dict[str, str]) -> Tuple[List[Tracking], List[str]]:
+    result: List[Tracking] = []
+    failed_email_ids: List[str] = []
+    profile_base = self.config[
+        'profileBase'] if 'profileBase' in self.config else DEFAULT_PROFILE_BASE
+    try:
+      driver = find_login(email_profile_name, profile_base)
+    except Exception as e:
+      # If driver creation fails, it might be in use or something. Reset entirely.
+      print(f"Unexpected error creating driver for profile {email_profile_name}: "
+            f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      failed_email_ids.extend(email_dict.keys())
+      return result, failed_email_ids
+    try:
+      for email_id, email_content in email_dict.items():
+        try:
+          for attempt in range(MAX_ATTEMPTS):
+            try:
+              success, new_trackings = self.get_trackings_from_email(email_id, email_content,
+                                                                     attempt, driver)
+            except (ConnectionError, socket.error, imaplib.IMAP4.abort):
+              print(f"Connection lost; reconnecting (attempt {attempt + 1}).")
+              # Re-initializing the IMAP connection and retrying should fix most
+              # connection-related errors.
+              # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
+              mail = get_all_mail_folder()
+              continue
+            if success:
+              result.extend(new_trackings)
+              break
+            elif attempt >= MAX_ATTEMPTS - 1:
+              print(
+                  f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; we got: {new_trackings}"
+              )
+              self.mark_as_unread(email_id)
+        except Exception as e:
+          failed_email_ids.append(email_id)
+          print(f"Unexpected error fetching tracking from email ID {email_id}: "
+                f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      return result, failed_email_ids
+    except Exception as e:
+      raise Exception("Fatal unexpected fatal error when parsing emails") from e
+    finally:
+      if driver:
+        driver.quit()
+
+  def get_trackings_from_email(self, email_id, email_content: str, attempt: int,
+                               driver: Optional[WebDriver]) -> Tuple[bool, List[Tracking]]:
     """
     Returns a Tuple of boolean success status and tracking information for a
     given email id. If success is True then the tracking info is complete and
     should be used, otherwise if False then the tracking info is incomplete
     and is only suitable for use as error output.
     """
-    email_str = get_email_content(email_id, mail)
+    msg = email.message_from_string(email_content)
 
-    msg = email.message_from_string(email_str)
-
-    email_str = clean_email_content(email_str)
+    email_str = clean_email_content(email_content)
     to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
     from_email = str(msg['From']).replace('<', '').replace(
         '>', '') if msg['From'] else ''  # Also has display name.
@@ -189,10 +239,10 @@ class EmailTrackingRetriever(ABC):
     price = self.get_price_from_email(email_str)
     order_ids = self.get_order_ids_from_email(email_str)
     group, reconcile = self.get_buying_group(email_str)
-    tracking_nums = self.get_tracking_numbers_from_email(email_str, from_email, to_email)
+    tracking_nums = self.get_tracking_numbers_from_email(email_str, from_email, to_email, driver)
 
     if len(tracking_nums) == 0:
-      incomplete_tracking = Tracking(None, group, order_ids, price, to_email, '', date, 0.0)
+      incomplete_tracking = Tracking(None, group, order_ids, price, to_email, date, 0.0)
       tqdm.write(f"Could not find tracking number from email {email_id} (attempt {attempt + 1}).")
       return False, [incomplete_tracking]
 
@@ -212,7 +262,7 @@ class EmailTrackingRetriever(ABC):
     merchant = self.get_merchant()
     delivery_date = self.get_delivery_date_from_email(email_str)
     trackings = [
-        Tracking(tracking_number, group, order_ids, price, to_email, '', date, 0.0, items, merchant,
+        Tracking(tracking_number, group, order_ids, price, to_email, date, 0.0, items, merchant,
                  reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
     ]
     if group is None:
@@ -221,14 +271,9 @@ class EmailTrackingRetriever(ABC):
       return False, trackings
     return True, trackings
 
-  def get_all_mail_folder(self) -> imaplib.IMAP4_SSL:
-    mail = email_auth.email_authentication()
-    mail.select('"[Gmail]/All Mail"')
-    return mail
-
-  def get_email_ids(self) -> Any:
+  def get_email_ids(self) -> Set[str]:
     date_to_search = self.get_date_to_search()
-    mail = self.get_all_mail_folder()
+    mail = get_all_mail_folder()
     subject_searches = self.get_subject_searches()
 
     result = set()
@@ -255,6 +300,7 @@ class EmailTrackingRetriever(ABC):
     return string_date
 
 
+@retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=120))
 def get_email_content(email_id, mail) -> str:
   result, data = mail.uid("FETCH", email_id, "(RFC822)")
   email_str = data[0][1].decode('utf-8')
@@ -281,3 +327,29 @@ def clean_email_content(email_str) -> str:
   email_str = email_str.replace(r'\r', '')
   email_str = email_str.replace(r'\n', '')
   return email_str
+
+
+# Returns Dict[profile_name, Dict[email_id, email_content]]
+def retrieve_email_infos(all_email_ids: Set[str],
+                         mail: imaplib.IMAP4_SSL) -> Dict[str, Dict[str, str]]:
+  result: Dict[str, Dict[str, str]] = collections.defaultdict(dict)
+  for email_id in tqdm(
+      all_email_ids, desc="Retrieving email information", unit="email", total=len(all_email_ids)):
+    email_str = get_email_content(email_id, mail)
+    msg = email.message_from_string(email_str)
+    to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
+    profile_name = to_email.split("@")[0].lower()
+    result[profile_name][email_id] = email_str
+  return result
+
+
+def new_driver(profile_base: str, profile_name: str) -> WebDriver:
+  dc = DriverCreator()
+  dc.args.no_headless = True
+  return dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+
+
+def get_all_mail_folder() -> imaplib.IMAP4_SSL:
+  mail = email_auth.email_authentication()
+  mail.select('"[Gmail]/All Mail"')
+  return mail

@@ -7,7 +7,6 @@
 import argparse
 import datetime
 from typing import Dict
-import yaml
 from lib.config import open_config
 from lib.order_info import OrderInfo, OrderInfoRetriever
 from lib.tracking import Tracking
@@ -124,11 +123,10 @@ def run_new(config):
                                           TODAY)
     group = get_required("Group, e.g. mysbuyinggroup: ")
     email = get_optional("Optional email address: ")
-    order_url = get_optional("Optional order URL: ")
     merchant = get_optional("Optional merchant: ")
     description = get_optional("Optional item descriptions: ")
-    tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '', email, order_url,
-                        ship_date, 0.0, description, merchant)
+    tracking = Tracking(tracking_number, group, set(orders_to_costs.keys()), '', email, ship_date,
+                        0.0, description, merchant)
 
   print("Resulting tracking object: ")
   print(tracking)
@@ -153,7 +151,7 @@ def run_auto(config, args):
 
   orders = set()
   orders.add(args.order)
-  tracking = Tracking(args.tracking, args.group, orders, '', '', '', TODAY, 0.0, '', '')
+  tracking = Tracking(args.tracking, args.group, orders, '', '', TODAY, 0.0, '', '')
   print(tracking)
   tracking_output = TrackingOutput(config)
   tracking_output.save_trackings([tracking], overwrite=True)
