@@ -4,6 +4,9 @@ import datetime
 import lib.donations
 import sys
 import yaml
+
+from lib.driver_creator import DriverCreator
+from lib.group_site_manager import GroupSiteManager
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
@@ -123,7 +126,7 @@ def main():
   all_trackings = dedupe_trackings(all_trackings)
   print(f'Filtered {base_len_trackings - len(all_trackings)} duplicate trackings from the sheet')
 
-  print('Uploading trackings...')
+  print('Uploading trackings to Sheets...')
   tracking_uploader = TrackingUploader(config)
   tracking_uploader.upload_trackings(all_trackings)
 
@@ -132,6 +135,10 @@ def main():
   print("Number from sheet: %d" % len(all_trackings))
   tracking_output.save_trackings(all_trackings)
   print("Number of trackings after: %d" % len(tracking_output.get_existing_trackings()))
+
+  print("Uploading to the group(s)' site(s)...")
+  group_site_manager = GroupSiteManager(config, DriverCreator())
+  group_site_manager.upload(all_trackings)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ from tqdm import tqdm
 import lib.email_auth as email_auth
 from lib import util, email_tracking_retriever
 from lib.archive_manager import ArchiveManager
+from lib.tracking import Tracking
 
 LOGIN_EMAIL_FIELD = "fldEmail"
 LOGIN_PASSWORD_FIELD = "fldPassword"
@@ -82,8 +83,8 @@ class GroupSiteManager:
     self.melul_portal_groups = config['melulPortals']
     self.archive_manager = ArchiveManager(config)
 
-  def upload(self, trackings) -> None:
-    groups_dict = collections.defaultdict(list)
+  def upload(self, trackings: List[Tracking]) -> None:
+    groups_dict: Dict[str, List[Tracking]] = collections.defaultdict(list)
     for tracking in trackings:
       groups_dict[tracking.group].append(tracking)
 
@@ -354,7 +355,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _upload_to_group(self, numbers, group) -> None:
+  def _upload_to_group(self, numbers: List[str], group: str) -> None:
     last_ex = None
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
