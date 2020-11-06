@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
-
+import argparse
+import csv
 import datetime
-import lib.donations
-import sys
-import yaml
 
+from lib.config import open_config
 from lib.driver_creator import DriverCreator
 from lib.group_site_manager import GroupSiteManager
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
-from typing import Any
+from typing import Any, List, Optional
 
 from lib.tracking_uploader import TrackingUploader
 
-CONFIG_FILE = "config.yml"
-with open(CONFIG_FILE, 'r') as config_file_stream:
-  config = yaml.safe_load(config_file_stream)
+config = open_config()
 
 
 def get_group(header, row) -> Any:
@@ -36,7 +33,7 @@ def get_group(header, row) -> Any:
   return None, True
 
 
-def from_amazon_row(header, row) -> Tracking:
+def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
   tracking = str(row[header.index('Carrier Tracking #')]).upper()
   orders = {row[header.index('Order ID')].upper()}
   price = float(
@@ -73,14 +70,14 @@ def from_amazon_row(header, row) -> Tracking:
       reconcile=reconcile)
 
 
-def find_candidate(tracking, candidates) -> Any:
+def find_candidate(tracking, candidates) -> Optional[Tracking]:
   for candidate in candidates:
     if tracking.tracking_number == candidate.tracking_number:
       return candidate
   return None
 
 
-def dedupe_trackings(trackings) -> list:
+def dedupe_trackings(trackings: List[Tracking]) -> List[Tracking]:
   result = []
   for tracking in trackings:
     candidate = find_candidate(tracking, result)
@@ -102,11 +99,27 @@ def get_required(prompt):
   return result
 
 
+def read_trackings_from_file(file) -> List[Tracking]:
+  with open(file, 'r') as f:
+    header = f.readline().strip().split(',')
+    rows = csv.reader(f.readlines(), quotechar='"', delimiter=',')
+    return [from_amazon_row(header, row) for row in rows]
+
+
 def main():
-  sheet_id = get_required("Enter Google Sheet ID: ")
-  tab_name = get_required("Enter the name of the tab within the sheet: ")
-  objects_to_sheet = ObjectsToSheet()
-  all_trackings = objects_to_sheet.download_from_sheet(from_amazon_row, sheet_id, tab_name)
+  parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
+  parser.add_argument("files", nargs="*")
+  args, _ = parser.parse_known_args()
+
+  all_trackings = []
+  if args.files:
+    for file in args.files:
+      all_trackings.extend(read_trackings_from_file(file))
+  else:
+    sheet_id = get_required("Enter Google Sheet ID: ")
+    tab_name = get_required("Enter the name of the tab within the sheet: ")
+    objects_to_sheet = ObjectsToSheet()
+    all_trackings.extend(objects_to_sheet.download_from_sheet(from_amazon_row, sheet_id, tab_name))
 
   num_n_a_trackings = len(
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == 'N/A'])
