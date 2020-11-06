@@ -36,10 +36,9 @@ def get_group(header, row) -> Any:
 def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
   tracking = str(row[header.index('Carrier Tracking #')]).upper()
   orders = {row[header.index('Order ID')].upper()}
-  price = float(
-      str(row[header.index('Shipment Subtotal')]).replace(',',
-                                                          '').replace('$',
-                                                                      '').replace('N/A', '0.0'))
+  price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
+      'N/A', '0.0')
+  price = float(price_str) if price_str else 0.0
   to_email = row[header.index("Account User Email")]
   original_ship_date = str(row[header.index("Shipment Date")])
   try:
