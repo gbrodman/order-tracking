@@ -33,6 +33,20 @@ def get_group(header, row) -> Any:
   return None, True
 
 
+def get_ship_date(ship_date_str: str) -> str:
+  for date_format in ['%m/%d/%Y', '%m/%d/%y']:
+    try:
+      ship_date = datetime.datetime.strptime(ship_date_str, date_format)
+      return ship_date.strftime('%Y-%m-%d')
+    except:
+      pass
+  try:
+    return (datetime.date(year=1899, day=29, month=12) +
+            datetime.timedelta(days=int(ship_date_str))).strftime('%Y-%m-%d')
+  except:
+    return 'n/a'
+
+
 def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
   tracking = str(row[header.index('Carrier Tracking #')]).upper()
   orders = {row[header.index('Order ID')].upper()}
@@ -40,16 +54,7 @@ def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
       'N/A', '0.0')
   price = float(price_str) if price_str else 0.0
   to_email = row[header.index("Account User Email")]
-  original_ship_date = str(row[header.index("Shipment Date")])
-  try:
-    ship_date = datetime.datetime.strptime(
-        original_ship_date, "%m/%d/%Y").strftime("%Y-%m-%d") if original_ship_date != 'N/A' else ''
-  except:
-    try:
-      ship_date = (datetime.date(year=1899, day=29, month=12) +
-                   datetime.timedelta(days=int(original_ship_date))).strftime('%Y-%m-%d')
-    except:
-      ship_date = "n/a"
+  ship_date = get_ship_date(str(row[header.index("Shipment Date")]))
   group, reconcile = get_group(header, row)
   if group is None:
     return None
