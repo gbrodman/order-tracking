@@ -2,6 +2,7 @@
 import argparse
 import csv
 import datetime
+import glob
 
 from lib.config import open_config
 from lib.driver_creator import DriverCreator
@@ -112,13 +113,15 @@ def read_trackings_from_file(file) -> List[Tracking]:
 
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
-  parser.add_argument("files", nargs="*")
+  parser.add_argument("globs", nargs="*")
   args, _ = parser.parse_known_args()
 
   all_trackings = []
-  if args.files:
-    for file in args.files:
-      all_trackings.extend(read_trackings_from_file(file))
+  if args.globs:
+    for glob_input in args.globs:
+      files = glob.glob(glob_input)
+      for file in files:
+        all_trackings.extend(read_trackings_from_file(file))
   else:
     sheet_id = get_required("Enter Google Sheet ID: ")
     tab_name = get_required("Enter the name of the tab within the sheet: ")
