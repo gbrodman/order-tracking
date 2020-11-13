@@ -49,7 +49,7 @@ def get_ship_date(ship_date_str: str) -> str:
 
 
 def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
-  tracking = str(row[header.index('Carrier Tracking #')]).upper()
+  tracking = str(row[header.index('Carrier Tracking #')]).upper().replace('"', '')
   orders = {row[header.index('Order ID')].upper()}
   price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
       'N/A', '0.0')
