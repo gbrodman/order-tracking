@@ -18,7 +18,7 @@ class Tracking:
                merchant='',
                reconcile: bool = True,
                delivery_date="") -> None:
-    self.tracking_number = tracking_number
+    self.tracking_number = str(tracking_number)
     self.group = group
     self.order_ids = order_ids
     self.price = price
@@ -78,7 +78,7 @@ def convert_int_to_date(i):
 
 
 def from_row(header, row) -> Tracking:
-  tracking = row[header.index('Tracking Number')]
+  tracking = str(row[header.index('Tracking Number')])
   orders = set([s.strip() for s in str(row[header.index('Order Number(s)')]).split(',')])
   price_str = str(row[header.index('Price')]).replace(',', '').replace(
       '$', '') if 'Price' in header else ''
