@@ -299,15 +299,6 @@ class GroupSiteManager:
       po_to_cost_map: Dict[str, float] = {}
       trackings_to_cost_map: Dict[Tuple[str], float] = {}
 
-      # Clear the search field since it can cache results
-      search_button = driver.find_element_by_class_name('pf-search-button')
-      search_button.click()
-      time.sleep(1)
-      driver.find_element_by_xpath('//button[@title="Clear filters"]').click()
-      time.sleep(1)
-      driver.find_element_by_xpath('//md-icon[text()="last_page"]').click()
-      time.sleep(4)
-
       # go to the first page (page selection can get a bit messed up with the multiple sites)
       # use a list to avoid throwing an exception (don't fail if there's only one page)
       first_page_buttons = driver.find_elements_by_xpath(
