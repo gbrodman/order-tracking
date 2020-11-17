@@ -39,7 +39,7 @@ class DriverCreator:
                                  base_dir,
                                  binary_location,
                                  chromedriver_filename,
-                                 user_data_dir=None):
+                                 user_data_dir=None) -> WebDriver:
     current_working_dir = os.getcwd()
     base = current_working_dir + base_dir
     download_location = base + "Chrome.zip"
@@ -68,19 +68,19 @@ class DriverCreator:
 
     return webdriver.Chrome(base + chromedriver_filename, options=options)
 
-  def _create_osx_driver(self, options, user_data_dir=None):
+  def _create_osx_driver(self, options, user_data_dir=None) -> WebDriver:
     url = "https://github.com/macchrome/chromium/releases/download/v78.0.3901.0-r692376-macOS/Chromium.78.0.3901.0.sync.app.zip"
     return self._create_osx_windows_driver(options, url, "/chrome/osx/",
                                            "Chromium.app/Contents/MacOS/Chromium", "chromedriver",
                                            user_data_dir)
 
-  def _create_windows_driver(self, options, user_data_dir=None):
+  def _create_windows_driver(self, options, user_data_dir=None) -> WebDriver:
     url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v80.0.3982.0-r720336-win64/chrome.zip"
     return self._create_osx_windows_driver(options, url, "/chrome/windows_v80/",
                                            "chrome-win32/chrome.exe", "chromedriver.exe",
                                            user_data_dir)
 
-  def _new_chrome_driver(self, wait, page_load, user_data_dir=None) -> Any:
+  def _new_chrome_driver(self, wait, page_load, user_data_dir=None) -> WebDriver:
     options = webdriver.chrome.options.Options()
     options.headless = not self.args.no_headless
     options.add_argument("--log-level=3")
@@ -103,7 +103,6 @@ class DriverCreator:
       from webdriver_manager.chrome import ChromeDriverManager
       driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
-    driver.set_window_size(2000, 1600)
     driver.implicitly_wait(wait)
     driver.set_page_load_timeout(page_load)
     return driver

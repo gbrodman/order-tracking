@@ -19,3 +19,4 @@ chrome/osx/Chromium.app
 chrome/*/chrome-win32
 
 .idea/
+.profiles/

@@ -5,7 +5,7 @@ import re
 import sys
 import time
 import traceback
-from typing import Any, Tuple, Dict, Set, List
+from typing import Any, Tuple, Dict, Set, List, Iterable
 
 import aiohttp
 import requests
@@ -83,7 +83,7 @@ class GroupSiteManager:
     self.melul_portal_groups = config['melulPortals']
     self.archive_manager = ArchiveManager(config)
 
-  def upload(self, trackings: List[Tracking]) -> None:
+  def upload(self, trackings: Iterable[Tracking]) -> None:
     groups_dict: Dict[str, List[Tracking]] = collections.defaultdict(list)
     for tracking in trackings:
       groups_dict[tracking.group].append(tracking)

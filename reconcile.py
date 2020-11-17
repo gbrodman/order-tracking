@@ -8,6 +8,7 @@ from tqdm import tqdm
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.clusters import Cluster
 from lib.config import open_config
+from lib.et import et
 from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager
 from lib.driver_creator import DriverCreator
@@ -220,6 +221,7 @@ def reconcile_new(config, args):
   fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args)
 
   fill_cancellations(all_clusters, config)
+  et(config, all_clusters)
   reconciliation_uploader.download_upload_clusters_new(all_clusters)
 
 

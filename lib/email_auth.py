@@ -22,8 +22,7 @@ SMTPPORT = "587"
 USERNAME = EMAIL_CONFIG["username"]
 
 
-def email_authentication():
-
+def email_authentication() -> IMAP4_SSL:
   mail = IMAP4_SSL(IMAPURL)
   if "password" in EMAIL_CONFIG and EMAIL_CONFIG["password"]:
     mail.login(EMAIL_CONFIG['username'], EMAIL_CONFIG['password'])
