@@ -425,8 +425,7 @@ class GroupSiteManager:
 
       # hope there's a button to submit tracking numbers -- it doesn't matter which one
       try:
-        submit_button = driver.find_element_by_xpath("//button[text() = \"Submit tracking #'s\"]")
-        submit_button.click()
+        driver.find_element_by_class_name('btn-bf-submit-track').click()
       except NoSuchElementException:
         raise Exception(
             "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
