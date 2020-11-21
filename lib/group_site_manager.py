@@ -18,6 +18,7 @@ from tqdm import tqdm
 import lib.email_auth as email_auth
 from lib import util, email_tracking_retriever
 from lib.archive_manager import ArchiveManager
+from lib.driver_creator import DriverCreator
 from lib.tracking import Tracking
 
 LOGIN_EMAIL_FIELD = "fldEmail"
@@ -77,9 +78,9 @@ def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, s
 
 class GroupSiteManager:
 
-  def __init__(self, config, driver_creator) -> None:
+  def __init__(self, config) -> None:
     self.config = config
-    self.driver_creator = driver_creator
+    self.driver_creator = DriverCreator()
     self.melul_portal_groups = config['melulPortals']
     self.archive_manager = ArchiveManager(config)
 

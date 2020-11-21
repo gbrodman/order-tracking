@@ -30,6 +30,14 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
   li_regex = re.compile(r"\d+\.\s+")
 
+  def get_address_info_with_webdriver(self, email_str: str, driver: Optional[WebDriver]) -> str:
+    url = self.get_order_url_from_email(email_str)
+    if not url:
+      return ''
+    self.load_url(driver, url)
+    shipping_address_container = driver.find_element_by_id('shippingAddress-container')
+    return shipping_address_container.text
+
   def get_order_url_from_email(self, raw_email):
     match = re.match(self.first_regex, str(raw_email))
     if not match:
@@ -90,24 +98,21 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   def get_bulk_trackings(self, amazon_url: str,
                          driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
-    try:
-      driver.get(amazon_url)
-      shipment_eles = driver.find_elements_by_css_selector("div.a-section-expander-container")
-      if len(shipment_eles) == 0:
-        return self.get_trackings_within_shipment(
-            driver,
-            driver.find_element_by_css_selector(
-                "div.a-col-left div.a-color-offset-background span.a-color-base").text.strip())
-      else:
-        trackings = []
-        for shipment_ele in shipment_eles:
-          delivery_status = shipment_ele.find_element_by_css_selector(
-              "span.a-color-base").text.strip()
-          shipment_ele.click()
-          trackings.extend(self.get_trackings_within_shipment(shipment_ele, delivery_status))
-        return trackings
-    finally:
-      driver.quit()
+    driver.get(amazon_url)
+    shipment_eles = driver.find_elements_by_css_selector("div.a-section-expander-container")
+    if len(shipment_eles) == 0:
+      return self.get_trackings_within_shipment(
+          driver,
+          driver.find_element_by_css_selector(
+              "div.a-col-left div.a-color-offset-background span.a-color-base").text.strip())
+    else:
+      trackings = []
+      for shipment_ele in shipment_eles:
+        delivery_status = shipment_ele.find_element_by_css_selector(
+            "span.a-color-base").text.strip()
+        shipment_ele.click()
+        trackings.extend(self.get_trackings_within_shipment(shipment_ele, delivery_status))
+      return trackings
 
   def get_trackings_within_shipment(self, shipment_ele, delivery_status):
     trackings = []

@@ -42,12 +42,10 @@ def find_login(email_profile_name: str, profile_base: str) -> Optional[WebDriver
 
 class EmailTrackingRetriever(ABC):
 
-  def __init__(self, config, args, driver_creator) -> None:
+  def __init__(self, config, args) -> None:
     self.config = config
     self.email_config = config['email']
     self.args = args
-    self.driver_creator = driver_creator
-    self.driver = None
     self.all_email_ids = []
 
   def back_out_of_all(self) -> None:
@@ -94,12 +92,19 @@ class EmailTrackingRetriever(ABC):
       self.mark_emails_as_unread(self.all_email_ids)
       return trackings
 
-    num_workers = self.config['numWorkers'] if 'numWorkers' in self.config else DEFAULT_NUM_WORKERS
+    if 'profileBase' in self.config or self.config.get('useProfiles', False):
+      num_workers = self.config.get('numWorkers', DEFAULT_NUM_WORKERS)
+      base_driver = None
+    else:
+      num_workers = 1
+      base_driver = DriverCreator().new()
+
     with ThreadPoolExecutor(num_workers) as executor:
       tasks = []
       for email_profile_name, email_dict in profiles_to_email_infos.items():
         tasks.append(
-            executor.submit(self.get_trackings_with_profile, email_profile_name, email_dict))
+            executor.submit(self.get_trackings_with_profile, base_driver, email_profile_name,
+                            email_dict))
       for task in tqdm(
           concurrent.futures.as_completed(tasks),
           desc="Processing profiles ...",
@@ -120,15 +125,17 @@ class EmailTrackingRetriever(ABC):
 
     return trackings
 
-  def get_buying_group(self, raw_email) -> Tuple[Optional[str], bool]:
-    raw_email = raw_email.upper()
+  def get_buying_group_from_string(self, string_in_question: str) -> Tuple[Optional[str], bool]:
+    string_in_question = string_in_question.upper()
     for group in self.config['groups'].keys():
       group_conf = self.config['groups'][group]
       # An optional "except" list in the config indicates terms that we wish to avoid for this
       # group. If a term is found that's in this list, we will not include this email as part of
       # the group in question. This is useful when two groups share the same address.
-      if any(
-          [str(except_elem).upper() in raw_email for except_elem in group_conf.get('except', [])]):
+      if any([
+          str(except_elem).upper() in string_in_question
+          for except_elem in group_conf.get('except', [])
+      ]):
         continue
 
       reconcile = bool(group_conf['reconcile']) if 'reconcile' in group_conf else True
@@ -136,9 +143,22 @@ class EmailTrackingRetriever(ABC):
       if isinstance(group_keys, str):
         group_keys = [group_keys]
       for group_key in group_keys:
-        if str(group_key).upper() in raw_email:
+        if str(group_key).upper() in string_in_question:
           return group, reconcile
     return None, True
+
+  def get_buying_group(self, raw_email: str,
+                       driver: Optional[WebDriver]) -> Tuple[Optional[str], bool]:
+    from_email, reconcile = self.get_buying_group_from_string(raw_email)
+    if from_email:
+      return from_email, reconcile
+    return self.get_buying_group_from_string(
+        self.get_address_info_with_webdriver(raw_email, driver))
+
+  @abstractmethod
+  def get_address_info_with_webdriver(self, email_str: str,
+                                      driver: Optional[WebDriver]) -> Optional[str]:
+    pass
 
   @abstractmethod
   def get_order_ids_from_email(self, raw_email) -> Any:
@@ -173,20 +193,28 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
-  def get_trackings_with_profile(self, email_profile_name: str,
+  def get_trackings_with_profile(self, base_driver: Optional[WebDriver], email_profile_name: str,
                                  email_dict: Dict[str, str]) -> Tuple[List[Tracking], List[str]]:
     result: List[Tracking] = []
     failed_email_ids: List[str] = []
-    profile_base = self.config[
-        'profileBase'] if 'profileBase' in self.config else DEFAULT_PROFILE_BASE
+
+    # First, get the driver we're going to use. Create it if we're using profiles.
+    # If we're not using profiles, use the same driver for all the emails.
     try:
-      driver = find_login(email_profile_name, profile_base)
+      if 'profileBase' in self.config or self.config.get('useProfiles', False):
+        profile_base = self.config.get('profileBase', DEFAULT_PROFILE_BASE)
+        driver = find_login(email_profile_name, profile_base)
+      else:
+        if base_driver is None:
+          raise Exception('Base driver does not exist but we are not using profiles')
+        driver = base_driver
     except Exception as e:
       # If driver creation fails, it might be in use or something. Reset entirely.
       print(f"Unexpected error creating driver for profile {email_profile_name}: "
             f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
       failed_email_ids.extend(email_dict.keys())
       return result, failed_email_ids
+
     try:
       for email_id, email_content in email_dict.items():
         try:
@@ -238,7 +266,7 @@ class EmailTrackingRetriever(ABC):
         msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
     price = self.get_price_from_email(email_str)
     order_ids = self.get_order_ids_from_email(email_str)
-    group, reconcile = self.get_buying_group(email_str)
+    group, reconcile = self.get_buying_group(email_str, driver)
     tracking_nums = self.get_tracking_numbers_from_email(email_str, from_email, to_email, driver)
 
     if len(tracking_nums) == 0:

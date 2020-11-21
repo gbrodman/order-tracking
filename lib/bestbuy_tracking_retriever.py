@@ -14,6 +14,10 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   ]
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
+  def get_address_info_with_webdriver(self, email_str: str,
+                                      driver: Optional[WebDriver]) -> Optional[str]:
+    return ''
+
   def get_order_ids_from_email(self, raw_email):
     result = set()
     result.add(self._get_order_id(raw_email))

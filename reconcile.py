@@ -210,8 +210,7 @@ def reconcile_new(config, args):
   # add manual PO entries (and only manual ones)
   reconciliation_uploader.override_pos_and_costs(all_clusters)
 
-  driver_creator = DriverCreator()
-  group_site_manager = GroupSiteManager(config, driver_creator)
+  group_site_manager = GroupSiteManager(config)
 
   trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(config, group_site_manager, args)
 

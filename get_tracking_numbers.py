@@ -14,7 +14,6 @@ from lib import util
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.bestbuy_tracking_retriever import BestBuyTrackingRetriever
 from lib.config import open_config
-from lib.driver_creator import DriverCreator
 from lib.email_sender import EmailSender
 from lib.group_site_manager import GroupSiteManager
 from lib.tracking_output import TrackingOutput
@@ -31,14 +30,12 @@ def main():
   parser.add_argument("--days")
   args, _ = parser.parse_known_args()
 
-  driver_creator = DriverCreator()
-
   config = open_config()
   email_config = config['email']
   email_sender = EmailSender(email_config)
 
   print("Retrieving Amazon tracking numbers from email ...")
-  amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
+  amazon_tracking_retriever = AmazonTrackingRetriever(config, args)
   try:
     trackings = amazon_tracking_retriever.get_trackings()
   except:
@@ -46,7 +43,7 @@ def main():
     raise
 
   print("Retrieving Best Buy tracking numbers from email ...")
-  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
+  bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args)
   try:
     trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:
@@ -80,7 +77,7 @@ def main():
           raise e
 
     print("Uploading tracking numbers...")
-    group_site_manager = GroupSiteManager(config, driver_creator)
+    group_site_manager = GroupSiteManager(config)
     try:
       group_site_manager.upload(trackings.values())
     except:

@@ -5,7 +5,6 @@ import datetime
 import glob
 
 from lib.config import open_config
-from lib.driver_creator import DriverCreator
 from lib.group_site_manager import GroupSiteManager
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
@@ -157,7 +156,7 @@ def main():
   print("Number of trackings after: %d" % len(tracking_output.get_existing_trackings()))
 
   print("Uploading to the group(s)' site(s)...")
-  group_site_manager = GroupSiteManager(config, DriverCreator())
+  group_site_manager = GroupSiteManager(config)
   group_site_manager.upload(all_trackings)
 
 
