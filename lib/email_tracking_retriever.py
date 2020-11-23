@@ -38,7 +38,7 @@ class EmailTrackingRetriever(ABC):
 
   def mark_emails_as_unread(self, email_ids) -> None:
     if not self.args.seen:
-      for email_id in email_ids:
+      for email_id in tqdm(email_ids, desc="Marking emails as unread...", unit="email"):
         self.mark_as_unread(email_id)
 
   def mark_as_unread(self, email_id) -> None:
