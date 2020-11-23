@@ -95,6 +95,10 @@ class DriverCreator:
     # reduce Windows log spam
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
+    # auto download to exports folder
+    exports_dir = os.path.join(os.getcwd(), 'exports')
+    options.add_experimental_option('prefs', {'download.default_directory': exports_dir})
+
     if sys.platform.startswith("darwin"):  # osx
       driver = self._create_osx_driver(options, user_data_dir)
     elif sys.platform.startswith("win"):  # windows
