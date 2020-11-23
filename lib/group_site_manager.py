@@ -79,6 +79,10 @@ def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, s
     tracking_map[tracking] = tracking
 
 
+def _clean_melul_tracking(tracking: str) -> str:
+  return tracking.replace('"', '').replace('-', '').replace('=', '').replace("'", '')
+
+
 def _delete_existing_exports():
   if not os.path.exists(MELUL_EXPORTS_FOLDER):
     os.mkdir(MELUL_EXPORTS_FOLDER)
@@ -355,7 +359,7 @@ class GroupSiteManager:
       verified = row['VERIFIED'] == '1'
       po = row['ID']
       cost = float(row['TOTAL'])
-      trackings = row['TRACKING NUMBERS'].replace('-', '').split(',')
+      trackings = _clean_melul_tracking(row['TRACKING NUMBERS']).split(',')
       if trackings:
         tracking_tuple = tuple(
             [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
