@@ -324,24 +324,21 @@ class GroupSiteManager:
           'button[ng-click=\'tables["it@receipts"].execTable({cmd:"csv"})\']').click()
 
       # Wait for the file to be downloaded
-      wait_time = 0
       with tqdm(desc=f"Waiting for {group} export file...", unit='second') as pbar:
-        while True:
-          if os.listdir(MELUL_EXPORTS_FOLDER):
-            break
-          if wait_time > EXPORT_WAIT_TIMEOUT_SECONDS:
-            print(
-                f"Waited longer than {EXPORT_WAIT_TIMEOUT_SECONDS} seconds for group {group}. Skipping..."
-            )
-            return []
+        for i in range(EXPORT_WAIT_TIMEOUT_SECONDS):
+          list_dir_result = os.listdir(MELUL_EXPORTS_FOLDER)
+          if list_dir_result:
+            # now the file exists, we assume
+            export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{list_dir_result[0]}"
+            with open(export_csv_file, 'r') as f:
+              reader = csv.DictReader(f)
+              return [r for r in reader]
           time.sleep(1)
           pbar.update()
-          wait_time += 1
-      # now the file exists, we assume
-      export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{os.listdir(MELUL_EXPORTS_FOLDER)[0]}"
-      with open(export_csv_file, 'r') as f:
-        reader = csv.DictReader(f)
-        return [r for r in reader]
+      print(
+          f"Waited longer than {EXPORT_WAIT_TIMEOUT_SECONDS} seconds for group {group}. Skipping..."
+      )
+      return []
     finally:
       driver.quit()
 
