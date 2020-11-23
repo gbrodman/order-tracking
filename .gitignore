@@ -20,3 +20,4 @@ chrome/*/chrome-win32
 
 .idea/
 .profiles/
+exports/
