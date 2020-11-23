@@ -6,6 +6,7 @@ from typing import Tuple, Optional, List
 from selenium.webdriver.chrome.webdriver import WebDriver
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
+from tqdm import tqdm
 
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
@@ -87,7 +88,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     if not url:
       return []
     if not driver:
-      print(f"No driver found for email {to_email}")
+      tqdm.write(f"No driver found for email {to_email}")
       return []
 
     # Bulk ordering (from ship-confirm) or standard page (otherwise)

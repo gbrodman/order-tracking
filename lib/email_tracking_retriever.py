@@ -233,7 +233,7 @@ class EmailTrackingRetriever(ABC):
               result.extend(new_trackings)
               break
             elif attempt >= MAX_ATTEMPTS - 1:
-              print(
+              tqdm.write(
                   f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; we got: {new_trackings}"
               )
               self.mark_as_unread(email_id)
