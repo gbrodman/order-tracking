@@ -1,6 +1,8 @@
 import asyncio
 import collections
+import csv
 import email
+import os
 import re
 import sys
 import time
@@ -33,6 +35,7 @@ BASE_URL_FORMAT = "https://%s.com"
 MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 
 RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
+MELUL_EXPORTS_FOLDER = os.path.join(os.getcwd(), 'exports')
 
 OAKS_URL = "http://hso-tech.com"
 
@@ -73,6 +76,14 @@ def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, s
     total = float(tds[4].getText().strip().replace(',', '').replace('$', ''))
     result[tracking] += total
     tracking_map[tracking] = tracking
+
+
+def _delete_existing_exports():
+  if not os.path.exists(MELUL_EXPORTS_FOLDER):
+    os.mkdir(MELUL_EXPORTS_FOLDER)
+
+  for filename in os.listdir(MELUL_EXPORTS_FOLDER):
+    os.remove(f"{MELUL_EXPORTS_FOLDER}/{filename}")
 
 
 class GroupSiteManager:
@@ -121,8 +132,7 @@ class GroupSiteManager:
       group_config = self.config['groups'][group]
       username = group_config['username']
       password = group_config['password']
-      po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(
-          group, username, password, known_trackings, full)
+      po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(group, username, password)
 
       if 'archives' in group_config:
         for archive_group in group_config['archives']:
@@ -290,61 +300,63 @@ class GroupSiteManager:
     data = {"trackings": ",".join(numbers)}
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
 
-  def _melul_get_tracking_pos_costs_maps(
-      self, group: str, username: str, password: str, known_trackings: Set[Tuple[str]],
-      full: bool) -> Tuple[Dict[str, float], Dict[Tuple[str], float]]:
+  # Downloads the CSV export for the group in question and returns it as a list of rows as dicts
+  def _get_melul_csv(self, group: str, username: str, password: str) -> List[Dict[str, str]]:
+    _delete_existing_exports()
+    print(f"Loading group {group} via CSV export")
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
-      po_to_cost_map: Dict[str, float] = {}
-      trackings_to_cost_map: Dict[Tuple[str], float] = {}
+      three_dots_button_elems = driver.find_elements_by_css_selector(
+          'button.pf-menu-tool-item.launch')
+      if not three_dots_button_elems:
+        print(f"Could not find CSV export functionality for group {group}.")
+        return []
+      three_dots_button = three_dots_button_elems[0]
+      if three_dots_button.get_attribute('disabled'):
+        print(f"No data for group {group}.")
+        return []
+      three_dots_button.click()
+      time.sleep(0.5)
+      driver.find_element_by_css_selector(
+          'button[ng-click=\'tables["it@receipts"].execTable({cmd:"csv"})\']').click()
 
-      # go to the first page (page selection can get a bit messed up with the multiple sites)
-      # use a list to avoid throwing an exception (don't fail if there's only one page)
-      first_page_buttons = driver.find_elements_by_xpath(
-          "//button[@ng-click='$pagination.first()']")
-      if first_page_buttons:
-        first_page_buttons[0].click()
-        time.sleep(4)
-
-      with tqdm(desc=f"Fetching {group} check-ins", unit='page') as pbar:
+      # Wait for the file to be downloaded
+      with tqdm(desc=f"Waiting for {group} export file...", unit='second') as pbar:
         while True:
-          table = driver.find_element_by_xpath("//tbody[@class='md-body']")
-          rows = table.find_elements_by_tag_name('tr')
-          for row in rows:
-            tds = row.find_elements_by_tag_name('td')
-            verified_checkbox = tds[4].find_element_by_tag_name('md-checkbox')
-            verified = 'md-checked' in verified_checkbox.get_attribute('class')
-            po = str(tds[5].text)
-            cost = tds[14].text.replace('$', '').replace(',', '')
-            trackings: List[str] = tds[15].text.replace('-', '').split(",")
-
-            if trackings:
-              tracking_tuple = tuple(
-                  [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
-              # break out of this if we've seen this already, we're past a month, and we're not running --full
-              modified_date = str(tds[17].text)
-              not_recent = 'month' in modified_date or 'year' in modified_date
-              if tracking_tuple in known_trackings and not full and not_recent:
-                return po_to_cost_map, trackings_to_cost_map
-              if cost:
-                trackings_to_cost_map[tracking_tuple] = trackings_to_cost_map.get(
-                    tracking_tuple, 0.0) + float(cost) if verified else 0.0
-            if cost and po:
-              po_to_cost_map[po] = po_to_cost_map.get(po, 0.0) + float(cost)
-
-          next_page_buttons = driver.find_elements_by_xpath(
-              "//button[@ng-click='$pagination.next()']")
-          if next_page_buttons and not next_page_buttons[0].get_property("disabled"):
-            next_page_buttons[0].click()
-            time.sleep(3)
-            pbar.update()
-          else:
+          if os.listdir(MELUL_EXPORTS_FOLDER):
             break
-
-        return po_to_cost_map, trackings_to_cost_map
+          time.sleep(1)
+          pbar.update()
+      # now the file exists, we assume
+      export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{os.listdir(MELUL_EXPORTS_FOLDER)[0]}"
+      with open(export_csv_file, 'r') as f:
+        reader = csv.DictReader(f)
+        return [r for r in reader]
     finally:
       driver.quit()
+
+  def _melul_get_tracking_pos_costs_maps(
+      self, group: str, username: str,
+      password: str) -> Tuple[Dict[str, float], Dict[Tuple[str], float]]:
+    csv_rows = self._get_melul_csv(group, username, password)
+    po_to_cost_map: Dict[str, float] = {}
+    trackings_to_cost_map: Dict[Tuple[str], float] = {}
+    for row in csv_rows:
+      void = row['VOID'] == '1'
+      verified = row['VERIFIED'] == '1'
+      po = row['ID']
+      cost = float(row['TOTAL'])
+      trackings = row['TRACKING NUMBERS'].replace('-', '').split(',')
+      if trackings:
+        tracking_tuple = tuple(
+            [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
+        if cost:
+          trackings_to_cost_map[tracking_tuple] = trackings_to_cost_map.get(
+              tracking_tuple, 0.0) + float(cost) if (verified and not void) else 0.0
+      if cost and po:
+        po_to_cost_map[po] = po_to_cost_map.get(po, 0.0) + float(cost)
+    return po_to_cost_map, trackings_to_cost_map
 
   def _upload_to_group(self, numbers: List[str], group: str) -> None:
     last_ex = None
