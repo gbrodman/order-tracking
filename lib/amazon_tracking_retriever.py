@@ -36,8 +36,10 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     if not url:
       return ''
     self.load_url(driver, url)
-    shipping_address_container = driver.find_element_by_id('shippingAddress-container')
-    return shipping_address_container.text
+    shipping_address_containers = driver.find_elements_by_css_selector('div.a-row.shippingAddress')
+    if len(shipping_address_containers) != 1:
+      raise Exception("Could not find shipping address container")
+    return shipping_address_containers[0].text
 
   def get_order_url_from_email(self, raw_email):
     match = re.match(self.first_regex, str(raw_email))
