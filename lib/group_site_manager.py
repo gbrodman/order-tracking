@@ -1,13 +1,15 @@
 import asyncio
 import collections
 import csv
+import datetime
 import email
 import os
 import re
 import sys
 import time
 import traceback
-from typing import Any, Tuple, Dict, Set, List, Iterable
+from imaplib import IMAP4_SSL
+from typing import Any, Tuple, Dict, List, Iterable
 
 import aiohttp
 import requests
@@ -52,8 +54,15 @@ YRCW_URL = "https://app.yrcwtech.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
+TrackingInfo = Tuple[str, float, str]
+TrackingTuple = Tuple[str]
+TrackingInfoDict = Dict[TrackingTuple, TrackingInfo]
 
-def fill_busted_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, str], table: Tag):
+PoCostDict = Dict[str, float]
+ReconResult = Tuple[TrackingInfoDict, PoCostDict]
+
+
+def fill_busted_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
   trs = table.find_all('tr')
   # busted-ass html doesn't close the <tr> tags until the end
   tds = trs[1].find_all('td')
@@ -64,11 +73,11 @@ def fill_busted_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, str
     tracking = tds[i * 5].getText().upper().strip()
     total_text = tds[i * 5 + 4].getText()
     total = float(total_text.replace(',', '').replace('$', ''))
-    result[tracking] += total
-    tracking_map[tracking] = tracking
+    previous_total = result[(tracking,)][1] if (tracking,) in result else 0.0
+    result[(tracking,)] = ('bfmr', previous_total + total, date)
 
 
-def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, str], table: Tag):
+def fill_standard_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
   rows = table.find_all('tr')[1:]  # skip the header
   for row in rows:
     tds = row.find_all('td')
@@ -76,8 +85,12 @@ def fill_standard_bfmr_costs(result: Dict[str, float], tracking_map: Dict[str, s
       continue
     tracking = tds[0].getText().upper().strip()
     total = float(tds[4].getText().strip().replace(',', '').replace('$', ''))
-    result[tracking] += total
-    tracking_map[tracking] = tracking
+    previous_total = result[(tracking,)][1] if (tracking,) in result else 0.0
+    result[(tracking,)] = ('bfmr', previous_total + total, date)
+
+
+def _clean_melul_tracking(tracking: str) -> str:
+  return re.sub(r'[^0-9A-Z,]', '', tracking.upper())
 
 
 def _clean_melul_tracking(tracking: str) -> str:
@@ -111,51 +124,43 @@ class GroupSiteManager:
       if group_config.get('password') and group_config.get('username'):
         self._upload_to_group(numbers, group)
 
-  def get_new_tracking_pos_costs_maps_with_retry(
-      self, group: str, known_trackings: Set[Tuple[str]],
-      full: bool) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
+  def get_new_tracking_pos_costs_maps_with_retry(self, group: str) -> ReconResult:
     last_exc = None
     for i in range(5):
       try:
-        return self.get_new_tracking_pos_costs_maps(group, known_trackings, full)
+        return self.get_new_tracking_pos_costs_maps(group)
       except Exception as e:
         print(f"Received exception when getting costs: {str(e)}\n{util.get_traceback_lines()}\n"
               "Retrying up to five times.")
         last_exc = e
     raise Exception("Exceeded retry limit", last_exc)
 
-  def get_new_tracking_pos_costs_maps(
-      self, group: str, known_trackings: Set[Tuple[str]],
-      full: bool) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
+  def get_new_tracking_pos_costs_maps(self, group: str) -> ReconResult:
     if group == 'bfmr':
       print("Loading BFMR emails")
-      _, costs_map = self._get_bfmr_costs()
-      trackings_map = {}
-      for tracking, cost in costs_map.items():
-        trackings_map[(tracking,)] = cost
-      return trackings_map, costs_map
+      return self._get_bfmr_costs(), {}
     elif group in self.melul_portal_groups:
       group_config = self.config['groups'][group]
       username = group_config['username']
       password = group_config['password']
-      po_cost, trackings_cost = self._melul_get_tracking_pos_costs_maps(group, username, password)
+      trackings_info, po_cost = self._melul_get_tracking_pos_costs_maps(group, username, password)
 
       if 'archives' in group_config:
         for archive_group in group_config['archives']:
           print(f"Loading archive {archive_group}")
           if not self.archive_manager.has_archive(archive_group):
-            archive_po_cost, archive_trackings_cost = self._melul_get_tracking_pos_costs_maps(
+            archive_trackings_info, archive_po_cost = self._melul_get_tracking_pos_costs_maps(
                 archive_group, username, password)
-            self.archive_manager.put_archive(archive_group, archive_po_cost, archive_trackings_cost)
+            self.archive_manager.put_archive(archive_group, archive_po_cost, archive_trackings_info)
 
-          archive_po_cost, archive_trackings_cost = self.archive_manager.get_archive(archive_group)
+          archive_po_cost, archive_trackings_info = self.archive_manager.get_archive(archive_group)
           po_cost.update(archive_po_cost)
-          trackings_cost.update(archive_trackings_cost)
+          trackings_info.update(archive_trackings_info)
 
-      return trackings_cost, po_cost
+      return trackings_info, po_cost
     elif group == "usa":
       print("Loading group usa")
-      return asyncio.run(self._get_usa_tracking_pos_prices(known_trackings, full))
+      return asyncio.run(self._get_usa_tracking_pos_prices())
     elif group == "yrcw":
       print("Loading yrcw")
       return self._get_yrcw_tracking_pos_prices()
@@ -163,8 +168,8 @@ class GroupSiteManager:
       return self._get_oaks_tracking_pos_prices()
     return dict(), dict()
 
-  def _get_oaks_tracking_pos_prices(self) -> Tuple[Dict[Tuple[str], float], Dict[str, float]]:
-    tracking_cost_map = {}
+  def _get_oaks_tracking_pos_prices(self) -> ReconResult:
+    tracking_infos: Dict[Tuple[str], Tuple[str, float, str]] = {}
     driver = self._login_oaks()
     try:
       with tqdm(desc=f"Fetching oaks check-ins", unit='page') as pbar:
@@ -186,20 +191,20 @@ class GroupSiteManager:
               continue
             cost = tds[5].text.replace('$', '').replace(',', '').replace('-', '').strip()
             cost_value = float(cost) if cost else 0.0
-            tracking_cost_map[(tracking,)] = tracking_cost_map.get((tracking,), 0.0) + cost_value
+            previous_cost = tracking_infos[(tracking,)][1] if (tracking,) in tracking_infos else 0.0
+            tracking_infos[(tracking,)] = ('oaks', previous_cost + cost_value, '')
           next_page_button = driver.find_element_by_css_selector('input[title="Next Page"]')
           if not next_page_button.is_displayed():
-            return tracking_cost_map, {}
+            return tracking_infos, {}
           next_page_button.click()
           time.sleep(2)
           pbar.update()
     finally:
       driver.quit()
 
-  # returns ((trackings) -> cost, po -> cost) maps
-  def _get_yrcw_tracking_pos_prices(self):
-    tracking_cost_map = collections.defaultdict(float)
-    po_cost_map = collections.defaultdict(float)
+  def _get_yrcw_tracking_pos_prices(self) -> ReconResult:
+    tracking_info_map: TrackingInfoDict = {}
+    po_cost_map: PoCostDict = collections.defaultdict(float)
     driver = self._login_yrcw()
     try:
       time.sleep(5)  # it can take a bit to load
@@ -231,17 +236,18 @@ class GroupSiteManager:
       for row in rows:
         tds = row.find_elements_by_tag_name('td')
         if len(tds) > 1:  # there's a ghost <tr> at the end
-          tracking = tds[1].text.upper().strip()
+          tracking = str(tds[1].text.upper()).strip()
           # Something screwy is going on here with USPS labels.
           # Strip the first 8 chars
           if len(tracking) == 30:
             tracking = tracking[8:]
           value = float(tds[4].text.replace('$', '').replace(',', ''))
-          tracking_cost_map[(tracking,)] += value
+          old_value = tracking_info_map[(tracking,)][1] if (tracking,) in tracking_info_map else 0.0
+          tracking_info_map[(tracking,)] = ('yrcw', old_value + value, '')
           po_cost_map[tracking] += value
     finally:
       driver.quit()
-    return tracking_cost_map, po_cost_map
+    return tracking_info_map, po_cost_map
 
   def _get_usa_login_headers(self):
     group_config = self.config['groups']['usa']
@@ -271,29 +277,28 @@ class GroupSiteManager:
         break
     return result
 
-  async def _retrieve_usa_tracking_price(self, tracking_number, session, tracking_tuples_to_prices):
+  async def _retrieve_usa_tracking_price(self, tracking_number, session,
+                                         tracking_tuples_to_prices: TrackingInfoDict):
     try:
       response = await session.request(
           method="GET", url=f"{USA_API_TRACKINGS_URL}/{tracking_number}")
       response.raise_for_status()
       json = await response.json()
       cost = float(json['data']['box']['total_price'])
-      tracking_tuples_to_prices[(tracking_number,)] = cost
+      tracking_tuples_to_prices[(tracking_number,)] = ('usa', cost, '')
     except Exception as e:
       print(f"Error finding USA tracking cost for {tracking_number}")
       print(e)
 
-  async def _get_usa_tracking_pos_prices(self, known_trackings: Set[Tuple[str]], full: bool):
+  async def _get_usa_tracking_pos_prices(self) -> ReconResult:
     headers = self._get_usa_login_headers()
-    pos_to_prices = {}
+    pos_to_prices: PoCostDict = {}
     all_entries = self._get_usa_tracking_entries(headers)
     for entry in all_entries:
       pos_to_prices[entry['purchase_id']] = float(entry['purchase']['amount'])
     tracking_numbers = [entry['tracking_number'] for entry in all_entries]
-    if not full:
-      tracking_numbers = [t for t in tracking_numbers if (t,) not in known_trackings]
     async with aiohttp.ClientSession(headers=headers) as session:
-      tracking_tuples_to_prices = {}
+      tracking_tuples_to_prices: TrackingInfoDict = {}
       tasks = []
       for tracking_number in tracking_numbers:
         tasks.append(
@@ -346,27 +351,30 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _melul_get_tracking_pos_costs_maps(
-      self, group: str, username: str,
-      password: str) -> Tuple[Dict[str, float], Dict[Tuple[str], float]]:
+  def _melul_get_tracking_pos_costs_maps(self, group: str, username: str,
+                                         password: str) -> ReconResult:
     csv_rows = self._get_melul_csv(group, username, password)
-    po_to_cost_map: Dict[str, float] = {}
-    trackings_to_cost_map: Dict[Tuple[str], float] = {}
+    po_to_cost_map: PoCostDict = {}
+    tracking_infos: TrackingInfoDict = {}
     for row in csv_rows:
       void = row['VOID'] == '1'
       verified = row['VERIFIED'] == '1'
       po = row['ID']
       cost = float(row['TOTAL'])
+      date_str = row['CREATED DATE']
+      date = datetime.datetime.strptime(date_str, '%a %b %d %Y %H:%M:%S %z').strftime('%Y-%m-%d')
       trackings = _clean_melul_tracking(row['TRACKING NUMBERS']).split(',')
       if trackings:
         tracking_tuple = tuple(
             [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
         if cost:
-          trackings_to_cost_map[tracking_tuple] = trackings_to_cost_map.get(
-              tracking_tuple, 0.0) + float(cost) if (verified and not void) else 0.0
+          previous_cost = tracking_infos[tracking_tuple][
+              1] if tracking_tuple in tracking_infos else 0.0
+          new_cost = float(cost) if (verified and not void) else 0.0
+          tracking_infos[tracking_tuple] = (group, previous_cost + new_cost, date)
       if cost and po:
         po_to_cost_map[po] = po_to_cost_map.get(po, 0.0) + float(cost)
-    return po_to_cost_map, trackings_to_cost_map
+    return tracking_infos, po_to_cost_map
 
   def _upload_to_group(self, numbers: List[str], group: str) -> None:
     last_ex = None
@@ -516,7 +524,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _login_melul(self, group, username, password) -> Any:
+  def _login_melul(self, group, username, password) -> WebDriver:
     # Always use no-headless for Melul portals for CAPTCHA solving,
     # and save previous no-headless state and restore it aftewards.
     former_headless = self.driver_creator.args.no_headless
@@ -557,7 +565,7 @@ class GroupSiteManager:
 
     return driver
 
-  def _login_yrcw(self) -> Any:
+  def _login_yrcw(self) -> WebDriver:
     driver = self.driver_creator.new()
     self._load_page(driver, YRCW_URL)
     group_config = self.config['groups']['yrcw']
@@ -567,22 +575,23 @@ class GroupSiteManager:
     time.sleep(2)
     return driver
 
-  def _get_all_mail_folder(self):
+  def _get_all_mail_folder(self) -> IMAP4_SSL:
     mail = email_auth.email_authentication()
     mail.select('"[Gmail]/All Mail"')
     return mail
 
-  def _get_bfmr_costs(self):
+  def _get_bfmr_costs(self) -> TrackingInfoDict:
     mail = self._get_all_mail_folder()
     status, response = mail.uid('SEARCH', None, 'SUBJECT "BuyForMeRetail - Payment Sent"',
                                 'SINCE "01-Aug-2019"')
     email_ids = response[0].decode('utf-8').split()
-    # some hacks, "po" will just also be the tracking
-    tracking_map = dict()
-    result = collections.defaultdict(float)
+    result: TrackingInfoDict = {}
 
     for email_id in tqdm(email_ids, desc='Fetching BFMR check-ins', unit='email'):
       email_str = email_tracking_retriever.get_email_content(email_id, mail)
+      msg = email.message_from_string(email_str)
+      date = datetime.datetime.strptime(
+          msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else ''
       email_str = email_tracking_retriever.clean_email_content(email_str)
       soup = BeautifulSoup(email_str, features="html.parser")
 
@@ -593,7 +602,7 @@ class GroupSiteManager:
       if not tables or len(tables) < 2:
         continue
       table = tables[1]
-      fill_busted_bfmr_costs(result, tracking_map, table)
-      fill_standard_bfmr_costs(result, tracking_map, table)
+      fill_busted_bfmr_costs(result, table, date)
+      fill_standard_bfmr_costs(result, table, date)
 
-    return tracking_map, result
+    return result

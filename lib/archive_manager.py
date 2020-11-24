@@ -1,6 +1,6 @@
 from lib.object_retriever import ObjectRetriever
 
-ARCHIVES_FILENAME = "archives.pickle"
+ARCHIVES_FILENAME = "archives_v2.pickle"
 
 
 class ArchiveManager:
@@ -15,6 +15,6 @@ class ArchiveManager:
   def has_archive(self, name):
     return name in self.archive_dict
 
-  def put_archive(self, name, po_cost, trackings_cost) -> None:
-    self.archive_dict[name] = (po_cost, trackings_cost)
+  def put_archive(self, name, trackings_info, po_cost) -> None:
+    self.archive_dict[name] = (trackings_info, po_cost)
     self.retriever.flush(self.archive_dict, ARCHIVES_FILENAME)
