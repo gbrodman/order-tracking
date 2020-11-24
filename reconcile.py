@@ -210,11 +210,6 @@ def reconcile_new(config, args):
 def main():
   parser = argparse.ArgumentParser(description='Reconciliation script')
   parser.add_argument("--groups", nargs="*")
-  parser.add_argument(
-      "--print-unknowns",
-      "-u",
-      action="store_true",
-      help="print unknown trackings found in BG portals")
   args, _ = parser.parse_known_args()
   config = open_config()
 
