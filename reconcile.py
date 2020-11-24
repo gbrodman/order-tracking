@@ -10,11 +10,12 @@ from lib.clusters import Cluster
 from lib.config import open_config
 from lib.et import et
 from lib.order_info import OrderInfoRetriever
-from lib.group_site_manager import GroupSiteManager
+from lib.group_site_manager import GroupSiteManager, TrackingInfoDict, PoCostDict, ReconResult
 from lib.driver_creator import DriverCreator
-from lib.portal_reimbursements import NonPortalReimbursements, PortalReimbursements
+from lib.portal_reimbursements import NonPortalReimbursements
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
+from lib.unknown_trackings import upload_unknown_trackings
 
 
 def fill_billed_costs(tqdm_msg: str, all_clusters: List[Cluster],
@@ -40,9 +41,8 @@ def fill_billed_costs(tqdm_msg: str, all_clusters: List[Cluster],
         pbar.update()
 
 
-def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict[Tuple[str],
-                                                                                 Tuple[str, float]],
-                                    po_to_cost_map: Dict[str, float]) -> None:
+def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: TrackingInfoDict,
+                                    po_to_cost_map: PoCostDict) -> None:
   non_portal_reimbursements = NonPortalReimbursements(config)
   duplicate_tracking_tuples = set(non_portal_reimbursements.trackings_to_costs.keys()).intersection(
       trackings_to_costs_map.keys())
@@ -61,7 +61,7 @@ def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict
     raise Exception('Non-reimbursed POs should not be duplicated in a portal')
 
   filtered_non_portal_trackings = {
-      key: value
+      key: (value[0], value[1], '')
       for (key, value) in non_portal_reimbursements.trackings_to_costs.items()
       if value[0] in groups
   }
@@ -74,9 +74,8 @@ def apply_non_portal_reimbursements(config, groups, trackings_to_costs_map: Dict
   po_to_cost_map.update(non_portal_reimbursements.po_to_cost)
 
 
-def get_new_tracking_pos_costs_maps(
-    config, group_site_manager: GroupSiteManager,
-    args) -> Tuple[Dict[Tuple[str], Tuple[str, float]], Dict[str, float]]:
+def get_new_tracking_pos_costs_maps(config, group_site_manager: GroupSiteManager,
+                                    args) -> ReconResult:
   print("Loading tracked costs. This can take several minutes.")
   if args.groups:
     print("Only reconciling groups %s" % ",".join(args.groups))
@@ -84,34 +83,17 @@ def get_new_tracking_pos_costs_maps(
   else:
     groups = config['groups'].keys()
 
-  portal_reimbursements = PortalReimbursements(config)
-  known_trackings = set(portal_reimbursements.trackings_to_costs.keys())
+  trackings_to_info: TrackingInfoDict = {}
+  po_to_cost: PoCostDict = {}
   for group in groups:
-    group_trackings_to_cost, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
-        group, known_trackings, args.full)
-    # Update the map (adding the group in to the value tuple)
-    portal_reimbursements.trackings_to_costs.update(
-        {k: (
-            group,
-            v,
-        ) for (k, v) in group_trackings_to_cost.items()})
-    portal_reimbursements.po_to_cost.update(group_po_to_cost)
+    group_trackings_to_info, group_po_to_cost = group_site_manager.get_new_tracking_pos_costs_maps_with_retry(
+        group)
+    # Update the maps
+    trackings_to_info.update(group_trackings_to_info)
+    po_to_cost.update(group_po_to_cost)
 
-  # Save the portal reimbursements for future use (before adding non-portal reimbursements)
-  portal_reimbursements.flush()
-
-  apply_non_portal_reimbursements(config, groups, portal_reimbursements.trackings_to_costs,
-                                  portal_reimbursements.po_to_cost)
-
-  # For now, filter out portal reimbursements that are not in the specified groups. The reason for this is that
-  # until we are sure that we have full data in portal_reimbursements, we can't change the behavior in fill_costs_new
-  # to fill the costs for all groups (rather than just the specified ones). This means that if you were to run
-  # `reconcile.py --groups A` but portal_reimbursements had data for groups A, B, and C, that we'd double-count
-  # the reimbursements for groups B and C.
-  portal_reimbursements.trackings_to_costs = {
-      k: v for (k, v) in portal_reimbursements.trackings_to_costs.items() if v[0] in groups
-  }
-  return portal_reimbursements.trackings_to_costs, portal_reimbursements.po_to_cost
+  apply_non_portal_reimbursements(config, groups, trackings_to_info, po_to_cost)
+  return trackings_to_info, po_to_cost
 
 
 def map_clusters_by_tracking(all_clusters):
@@ -149,8 +131,8 @@ def merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clust
       clusters_by_tracking[tracking] = first_cluster
 
 
-def fill_costs_new(clusters_by_tracking, trackings_to_cost: Dict[Tuple[str], Tuple[str, float]],
-                   po_to_cost: Dict[str, float], args):
+def fill_costs_new(clusters_by_tracking, trackings_to_cost: TrackingInfoDict,
+                   po_to_cost: PoCostDict, args):
   for cluster in clusters_by_tracking.values():
     # Reset the cluster if it's included in the groups
     if args.groups and cluster.group not in args.groups:
@@ -160,7 +142,7 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost: Dict[Tuple[str], Tup
 
   # We've already merged by tracking tuple (if multiple trackings are counted as the same price)
   # so only use the first tracking in each tuple
-  for trackings_tuple, (group, cost) in trackings_to_cost.items():
+  for trackings_tuple, (group, cost, date) in trackings_to_cost.items():
     if not trackings_tuple:
       continue
     first_tracking: str = trackings_tuple[0]
@@ -170,8 +152,6 @@ def fill_costs_new(clusters_by_tracking, trackings_to_cost: Dict[Tuple[str], Tup
       for tracking in trackings_tuple:
         if tracking in cluster.non_reimbursed_trackings:
           cluster.non_reimbursed_trackings.remove(tracking)
-    elif args.print_unknowns:
-      print(f"Unknown tracking for group {group}: {first_tracking}")
 
   # Next, manual PO fixes
   for cluster in clusters_by_tracking.values():
@@ -213,15 +193,17 @@ def reconcile_new(config, args):
   driver_creator = DriverCreator()
   group_site_manager = GroupSiteManager(config, driver_creator)
 
-  trackings_to_cost, po_to_cost = get_new_tracking_pos_costs_maps(config, group_site_manager, args)
+  trackings_to_info, po_to_cost = get_new_tracking_pos_costs_maps(config, group_site_manager, args)
 
   clusters_by_tracking = map_clusters_by_tracking(all_clusters)
-  merge_by_trackings_tuples(clusters_by_tracking, trackings_to_cost, all_clusters)
+  merge_by_trackings_tuples(clusters_by_tracking, trackings_to_info, all_clusters)
 
-  fill_costs_new(clusters_by_tracking, trackings_to_cost, po_to_cost, args)
+  fill_costs_new(clusters_by_tracking, trackings_to_info, po_to_cost, args)
 
   fill_cancellations(all_clusters, config)
   et(config, all_clusters)
+  sheet_id = config['reconciliation']['baseSpreadsheetId']
+  upload_unknown_trackings(sheet_id, set(clusters_by_tracking.keys()), trackings_to_info)
   reconciliation_uploader.download_upload_clusters_new(all_clusters)
 
 
@@ -233,12 +215,6 @@ def main():
       "-u",
       action="store_true",
       help="print unknown trackings found in BG portals")
-  parser.add_argument(
-      '-f',
-      '--full',
-      action='store_true',
-      help='Run a full reconciliation, not stopping once we see trackings we\'ve already seen in the sites'
-  )
   args, _ = parser.parse_known_args()
   config = open_config()
 
