@@ -313,6 +313,14 @@ class GroupSiteManager:
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, RECEIPTS_URL_FORMAT % group)
+      # Clear out any filters that might have stuck around
+      search_button = driver.find_element_by_class_name('pf-search-button')
+      search_button.click()
+      time.sleep(1)
+      driver.find_element_by_xpath('//button[@title="Clear filters only"]').click()
+      time.sleep(1)
+
+      # Now download the CSV
       three_dots_button_elems = driver.find_elements_by_css_selector(
           'button.pf-menu-tool-item.launch')
       if not three_dots_button_elems:
