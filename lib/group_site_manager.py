@@ -510,8 +510,8 @@ class GroupSiteManager:
 
       textareas = driver.find_elements_by_tag_name("textarea")
       if not textareas:
-        # omg sellerspeed wyd
-        driver.find_element_by_xpath("//span[text() = ' Show Import wizard']").click()
+        # omg sellerspeed wyd (show import wizard)
+        driver.find_element_by_css_selector('button.pf-menu-tool-item.ng-scope').click()
         time.sleep(1)
         textareas = driver.find_elements_by_tag_name("textarea")
         if not textareas:
