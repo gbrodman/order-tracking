@@ -93,10 +93,6 @@ def _clean_melul_tracking(tracking: str) -> str:
   return re.sub(r'[^0-9A-Z,]', '', tracking.upper())
 
 
-def _clean_melul_tracking(tracking: str) -> str:
-  return tracking.replace('"', '').replace('-', '').replace('=', '').replace("'", '')
-
-
 def _delete_existing_exports():
   if not os.path.exists(MELUL_EXPORTS_FOLDER):
     os.mkdir(MELUL_EXPORTS_FOLDER)
@@ -177,7 +173,7 @@ class GroupSiteManager:
         elem.click()
         select = Select(elem)
         select.select_by_visible_text('Resume')
-        time.sleep(5)
+        time.sleep(15)  # the site can be super slow
 
         while True:
           table = driver.find_elements_by_tag_name('table')[-1]
