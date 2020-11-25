@@ -203,7 +203,10 @@ def reconcile_new(config, args):
   fill_cancellations(all_clusters, config)
   et(config, all_clusters)
   sheet_id = config['reconciliation']['baseSpreadsheetId']
-  upload_unknown_trackings(sheet_id, set(clusters_by_tracking.keys()), trackings_to_info)
+  if args.groups:
+    print("Skipping unknown-tracking upload due to the --groups argument")
+  else:
+    upload_unknown_trackings(sheet_id, set(clusters_by_tracking.keys()), trackings_to_info)
   reconciliation_uploader.download_upload_clusters_new(all_clusters)
 
 

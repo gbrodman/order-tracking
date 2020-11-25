@@ -172,7 +172,7 @@ class GroupSiteManager:
         elem.click()
         select = Select(elem)
         select.select_by_visible_text('Resume')
-        time.sleep(5)
+        time.sleep(15)  # the site can be super slow
 
         while True:
           table = driver.find_elements_by_tag_name('table')[-1]
