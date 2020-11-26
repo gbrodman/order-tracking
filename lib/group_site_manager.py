@@ -586,8 +586,8 @@ class GroupSiteManager:
 
   def _get_bfmr_costs(self) -> TrackingInfoDict:
     mail = self._get_all_mail_folder()
-    status, response = mail.uid('SEARCH', None, 'SUBJECT "BuyForMeRetail - Payment Sent"',
-                                'SINCE "01-Aug-2019"')
+    status, response = mail.uid('SEARCH', None, 'SUBJECT "Payment Sent"',
+                                'SINCE "01-Aug-2019"', 'FROM "deals@buyformeretail.com"')
     email_ids = response[0].decode('utf-8').split()
     result: TrackingInfoDict = {}
 
