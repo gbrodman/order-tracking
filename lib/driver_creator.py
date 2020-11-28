@@ -16,7 +16,7 @@ class DriverCreator:
 
   def __init__(self) -> None:
     parser = argparse.ArgumentParser(description='Driver creator')
-    parser.add_argument("--no-headless", action="store_true")
+    parser.add_argument("--headless", action="store_true")
     parser.add_argument("--firefox", action="store_true")
     self.args, _ = parser.parse_known_args()
 
@@ -82,7 +82,7 @@ class DriverCreator:
 
   def _new_chrome_driver(self, wait, page_load, user_data_dir=None) -> WebDriver:
     options = webdriver.chrome.options.Options()
-    options.headless = not self.args.no_headless
+    options.headless = self.args.headless
     options.add_argument("--log-level=3")
 
     # no idea why, but it's a million times slower in headless mode in Windows without these lines

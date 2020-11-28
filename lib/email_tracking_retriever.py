@@ -372,9 +372,7 @@ def retrieve_email_infos(all_email_ids: Set[str],
 
 
 def new_driver(profile_base: str, profile_name: str) -> WebDriver:
-  dc = DriverCreator()
-  dc.args.no_headless = True
-  return dc.new(f"{os.path.expanduser(profile_base)}/{profile_name}")
+  return DriverCreator().new(f"{os.path.expanduser(profile_base)}/{profile_name}")
 
 
 def get_all_mail_folder() -> imaplib.IMAP4_SSL:
