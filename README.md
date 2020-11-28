@@ -97,7 +97,7 @@ That should be it -- the "creds.json" file will give the scripts the ability to 
 
 ## Arguments
 
-- `--no-headless` to run in a standard browser, rather than a headless browser. This is useful if you want to see what the Selenium browser automation is actually doing.
+- `--headless` to run in a headless browser. This is useful if you don't care to see what the automation is doing.
 - `--firefox` to run using Firefox/Geckodriver rather than Chrome
 - `--groups A B` will only run reconciliation over groups A and B. If omitted, will run over all groups.
 

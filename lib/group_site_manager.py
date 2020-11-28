@@ -446,10 +446,10 @@ class GroupSiteManager:
 
   def _upload_bfmr_batch(self, numbers) -> None:
     group_config = self.config['groups']['bfmr']
-    former_headless = self.driver_creator.args.no_headless
-    self.driver_creator.args.no_headless = True
+    former_headless = self.driver_creator.args.headless
+    self.driver_creator.args.headless = False
     driver = self.driver_creator.new()
-    self.driver_creator.args.no_headless = former_headless
+    self.driver_creator.args.headless = former_headless
     try:
       # load the login page first
       self._load_page(driver, "https://buyformeretail.com/login")
@@ -532,11 +532,11 @@ class GroupSiteManager:
 
   def _login_melul(self, group, username, password) -> WebDriver:
     # Always use no-headless for Melul portals for CAPTCHA solving,
-    # and save previous no-headless state and restore it aftewards.
-    former_headless = self.driver_creator.args.no_headless
-    self.driver_creator.args.no_headless = True
+    # and save previous headless state and restore it aftewards.
+    former_headless = self.driver_creator.args.headless
+    self.driver_creator.args.headless = False
     driver = self.driver_creator.new()
-    self.driver_creator.args.no_headless = former_headless
+    self.driver_creator.args.headless = former_headless
     self._load_page(driver, BASE_URL_FORMAT % group)
     driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
     driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
@@ -588,8 +588,8 @@ class GroupSiteManager:
 
   def _get_bfmr_costs(self) -> TrackingInfoDict:
     mail = self._get_all_mail_folder()
-    status, response = mail.uid('SEARCH', None, 'SUBJECT "Payment Sent"',
-                                'SINCE "01-Aug-2019"', 'FROM "deals@buyformeretail.com"')
+    status, response = mail.uid('SEARCH', None, 'SUBJECT "Payment Sent"', 'SINCE "01-Aug-2019"',
+                                'FROM "deals@buyformeretail.com"')
     email_ids = response[0].decode('utf-8').split()
     result: TrackingInfoDict = {}
 
