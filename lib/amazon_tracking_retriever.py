@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
-from lib.email_tracking_retriever import EmailTrackingRetriever
+from lib.email_tracking_retriever import EmailTrackingRetriever, AddressStrAndTrackings
 
 
 def _parse_date(text):
@@ -23,6 +23,36 @@ def _parse_date(text):
     return ''
 
 
+def get_standard_trackings(driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
+  try:
+    element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+    regex = r'Tracking ID: ([a-zA-Z0-9]+)'
+    match = re.match(regex, element.text)
+    if not match:
+      return []
+    tracking_number = match.group(1).upper()
+    shipping_status = driver.find_element_by_id("primaryStatus").get_attribute("textContent").strip(
+        " \t\n\r")
+    return [(tracking_number, shipping_status)]
+  except:
+    # swallow this and continue on
+    return []
+
+
+def get_standard_address_info(driver: WebDriver) -> str:
+  shipping_address_containers = driver.find_elements_by_css_selector('div.a-row.shippingAddress')
+  if not shipping_address_containers:
+    raise Exception("Could not find shipping address container")
+  return shipping_address_containers[0].text.strip()
+
+
+def get_address_info_from_order_details_page(driver: WebDriver) -> str:
+  display_address_divs = driver.find_elements_by_class_name('displayAddressDiv')
+  if not display_address_divs:
+    raise Exception("Could not find displayAddressDiv")
+  return display_address_divs[0].text.strip()
+
+
 class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
@@ -31,15 +61,28 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
   li_regex = re.compile(r"\d+\.\s+")
 
-  def get_address_info_with_webdriver(self, email_str: str, driver: Optional[WebDriver]) -> str:
+  def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
+                                     from_email: str, to_email: str) -> AddressStrAndTrackings:
+    if not driver:
+      tqdm.write(f"No driver found for email {to_email}")
+      return '', []
     url = self.get_order_url_from_email(email_str)
     if not url:
-      return ''
+      tqdm.write(f"No URL found for email addressed to {to_email}")
+      return '', []
     self.load_url(driver, url)
-    shipping_address_containers = driver.find_elements_by_css_selector('div.a-row.shippingAddress')
-    if len(shipping_address_containers) != 1:
-      raise Exception("Could not find shipping address container")
-    return shipping_address_containers[0].text
+    # Bulk ordering (from ship-confirm) or standard page (otherwise)
+    if "ship-confirm@amazon.com" in from_email:
+      trackings = self.get_bulk_trackings(driver)
+      # we have to grab the address from the order details page
+      order_id = self.get_order_ids_from_email(email_str)[0]
+      order_url = f"https://amazon.com/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&orderID={order_id.strip()}"
+      self.load_url(driver, order_url)
+      address_info = get_address_info_from_order_details_page(driver)
+    else:
+      trackings = get_standard_trackings(driver)
+      address_info = get_standard_address_info(driver)
+    return address_info, trackings
 
   def get_order_url_from_email(self, raw_email):
     match = re.match(self.first_regex, str(raw_email))
@@ -83,25 +126,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
         item_descriptions.append(item_match.group(1))
     return ",".join(item_descriptions)
 
-  def get_tracking_numbers_from_email(
-      self, raw_email, from_email: str, to_email: str,
-      driver: Optional[WebDriver]) -> List[Tuple[str, Optional[str]]]:
-    url = self.get_order_url_from_email(raw_email)
-    if not url:
-      return []
-    if not driver:
-      tqdm.write(f"No driver found for email {to_email}")
-      return []
-
-    # Bulk ordering (from ship-confirm) or standard page (otherwise)
-    if "ship-confirm@amazon.com" in from_email:
-      return self.get_bulk_trackings(url, driver)
-    else:
-      return self.get_standard_trackings(url, driver)
-
-  def get_bulk_trackings(self, amazon_url: str,
-                         driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
-    driver.get(amazon_url)
+  def get_bulk_trackings(self, driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
     shipment_eles = driver.find_elements_by_css_selector("div.a-section-expander-container")
     if len(shipment_eles) == 0:
       return self.get_trackings_within_shipment(
@@ -125,23 +150,6 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
           "span[data-action='trackingidclick'] a.a-link-normal span.a-size-small"):
         trackings.append((self.li_regex.sub("", tracking.text.strip()), delivery_status))
     return trackings
-
-  def get_standard_trackings(self, amazon_url: str,
-                             driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
-    self.load_url(driver, amazon_url)
-    try:
-      element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
-      regex = r'Tracking ID: ([a-zA-Z0-9]+)'
-      match = re.match(regex, element.text)
-      if not match:
-        return []
-      tracking_number = match.group(1).upper()
-      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute(
-          "textContent").strip(" \t\n\r")
-      return [(tracking_number, shipping_status)]
-    except:
-      # swallow this and continue on
-      return []
 
   def get_delivery_date_from_email(self, email_str):
     soup = BeautifulSoup(email_str, features="html.parser")

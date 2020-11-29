@@ -20,6 +20,8 @@ from lib.driver_creator import DriverCreator
 from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
+# no point in loading pages twice, so grab the address string + the trackings from the page
+AddressStrAndTrackings = Tuple[str, List[Tuple[str, Optional[str]]]]
 
 DEFAULT_PROFILE_BASE = '.profiles'
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
@@ -125,7 +127,7 @@ class EmailTrackingRetriever(ABC):
 
     return trackings
 
-  def get_buying_group_from_string(self, string_in_question: str) -> Tuple[Optional[str], bool]:
+  def get_buying_group(self, string_in_question: str) -> Tuple[Optional[str], bool]:
     string_in_question = string_in_question.upper()
     for group in self.config['groups'].keys():
       group_conf = self.config['groups'][group]
@@ -147,17 +149,9 @@ class EmailTrackingRetriever(ABC):
           return group, reconcile
     return None, True
 
-  def get_buying_group(self, raw_email: str,
-                       driver: Optional[WebDriver]) -> Tuple[Optional[str], bool]:
-    from_email, reconcile = self.get_buying_group_from_string(raw_email)
-    if from_email:
-      return from_email, reconcile
-    return self.get_buying_group_from_string(
-        self.get_address_info_with_webdriver(raw_email, driver))
-
   @abstractmethod
-  def get_address_info_with_webdriver(self, email_str: str,
-                                      driver: Optional[WebDriver]) -> Optional[str]:
+  def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
+                                     from_email: str, to_email: str) -> AddressStrAndTrackings:
     pass
 
   @abstractmethod
@@ -166,15 +160,6 @@ class EmailTrackingRetriever(ABC):
 
   @abstractmethod
   def get_price_from_email(self, raw_email) -> Any:
-    pass
-
-  @abstractmethod
-  def get_tracking_numbers_from_email(
-      self, raw_email, from_email: str, to_email: str,
-      driver: Optional[WebDriver]) -> List[Tuple[str, Optional[str]]]:
-    """
-    Returns a potentially empty list of (tracking number, optional shipping status) tuples.
-    """
     pass
 
   @abstractmethod
@@ -266,8 +251,9 @@ class EmailTrackingRetriever(ABC):
         msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
     price = self.get_price_from_email(email_str)
     order_ids = self.get_order_ids_from_email(email_str)
-    group, reconcile = self.get_buying_group(email_str, driver)
-    tracking_nums = self.get_tracking_numbers_from_email(email_str, from_email, to_email, driver)
+    address_info, tracking_nums = self.get_address_info_and_trackings(email_str, driver, from_email,
+                                                                      to_email)
+    group, reconcile = self.get_buying_group(address_info)
 
     if len(tracking_nums) == 0:
       incomplete_tracking = Tracking(None, group, order_ids, price, to_email, date, 0.0)
