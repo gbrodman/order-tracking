@@ -123,7 +123,7 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
   temp_dir = os.path.join(report_dir, admin_profile)
   os.mkdir(temp_dir)
   driver = DriverCreator().new(user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
-                               download_dir=temp_dir)
+                               download_dir=temp_dir, page_load=30)
   try:
     # Go to https://amazon.com/b2b/aba/
     driver.get(ANALYTICS_URL)
