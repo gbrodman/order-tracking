@@ -9,7 +9,7 @@ import sys
 import time
 import traceback
 from imaplib import IMAP4_SSL
-from typing import Any, Tuple, Dict, List, Iterable
+from typing import Tuple, Dict, List, Iterable
 
 import aiohttp
 import requests
@@ -89,7 +89,7 @@ def fill_standard_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
     result[(tracking,)] = ('bfmr', previous_total + total, date)
 
 
-def _clean_melul_tracking(tracking: str) -> str:
+def clean_csv_tracking(tracking: str) -> str:
   return re.sub(r'[^0-9A-Z,]', '', tracking.upper())
 
 
@@ -367,7 +367,7 @@ class GroupSiteManager:
       cost = float(row['TOTAL'])
       date_str = row['CREATED DATE']
       date = datetime.datetime.strptime(date_str, '%a %b %d %Y %H:%M:%S %z').strftime('%Y-%m-%d')
-      trackings = _clean_melul_tracking(row['TRACKING NUMBERS']).split(',')
+      trackings = clean_csv_tracking(row['TRACKING NUMBERS']).split(',')
       if trackings:
         tracking_tuple = tuple(
             [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
@@ -533,7 +533,7 @@ class GroupSiteManager:
     # and save previous headless state and restore it aftewards.
     former_headless = self.driver_creator.args.headless
     self.driver_creator.args.headless = False
-    driver = self.driver_creator.new()
+    driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
     self.driver_creator.args.headless = former_headless
     self._load_page(driver, BASE_URL_FORMAT % group)
     driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)

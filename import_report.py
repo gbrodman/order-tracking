@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 import argparse
+import concurrent
 import csv
 import datetime
 import glob
+import os
+import time
+from concurrent.futures.thread import ThreadPoolExecutor
 
+from tqdm import tqdm
+
+from lib import util
 from lib.config import open_config
-from lib.group_site_manager import GroupSiteManager
+from lib.driver_creator import DriverCreator
+from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
@@ -14,6 +22,13 @@ from typing import Any, List, Optional
 from lib.tracking_uploader import TrackingUploader
 
 config = open_config()
+admin_profiles = config['adminProfiles']
+profile_base = config['profileBase']
+
+ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
+REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
+MAX_WORKERS = 5
+DOWNLOAD_TIMEOUT_SECS = 120
 
 
 def get_group(header, row) -> Any:
@@ -47,8 +62,8 @@ def get_ship_date(ship_date_str: str) -> str:
     return 'n/a'
 
 
-def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
-  tracking = str(row[header.index('Carrier Tracking #')]).upper().replace('"', '')
+def from_amazon_row(header: List[str], row: List[str]) -> Optional[Tracking]:
+  tracking = clean_csv_tracking(row[header.index('Carrier Tracking #')])
   orders = {row[header.index('Order ID')].upper()}
   price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
       'N/A', '0.0')
@@ -103,6 +118,64 @@ def get_required(prompt):
   return result
 
 
+def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[str]:
+  # Create temp dir to download this report into
+  temp_dir = os.path.join(report_dir, admin_profile)
+  os.mkdir(temp_dir)
+  driver = DriverCreator().new(user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
+                               download_dir=temp_dir)
+  try:
+    # Go to https://amazon.com/b2b/aba/
+    driver.get(ANALYTICS_URL)
+    # Click on Shipments link (thanks Amazon for the garbage-tier HTML)
+    shipment_span = driver.find_element_by_xpath("//a[span[span[text()='Shipments']]]")
+    shipment_span.click()
+    time.sleep(3)  # Could be smarter
+    # Set Time period to "Past 12 months"
+    driver.find_element_by_id("date_range_selector__range").click()
+    driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click()
+    time.sleep(5)  # Could be a lot smarter
+    # Click "Download CSV"
+    driver.find_element_by_id("download-csv-file-button").click()
+    # Wait for download to complete.
+    for s in range(DOWNLOAD_TIMEOUT_SECS):
+      dir_contents = os.listdir(temp_dir)
+      if dir_contents and dir_contents[0].endswith(".csv"):  # Ignore .crdownload files
+        tqdm.write(f"{admin_profile + ':':<20} Successfully downloaded report ({s}s).")
+        return os.path.join(temp_dir, dir_contents[0])
+      else:
+        time.sleep(1)
+    tqdm.write(f"{admin_profile + ':':<20} Failed: Downloading report timed out.")
+  except Exception as e:
+    tqdm.write(f"{admin_profile + ':':<20} Failed with error: {str(e)}\n{util.get_traceback_lines()}")
+    return
+  finally:
+    driver.quit()
+
+
+def download_az_reports() -> List[str]:
+  if not os.path.exists(REPORTS_DIR):
+    os.mkdir(REPORTS_DIR)
+  report_dir = os.path.join(REPORTS_DIR, datetime.datetime.now().strftime("shipping_%Y-%m-%dT%H_%M_%S"))
+  os.mkdir(report_dir)
+  with ThreadPoolExecutor(MAX_WORKERS) as executor:
+    tasks = {}
+    report_paths = []
+    for admin_profile in admin_profiles:
+      tasks[executor.submit(download_shipping_report, admin_profile, report_dir)] = admin_profile
+    for task in tqdm(
+        concurrent.futures.as_completed(tasks),
+        desc="Downloading reports",
+        unit="profile",
+        total=len(tasks),
+        maxinterval=3):
+      report_path = task.result()
+      if report_path:
+        report_paths.append(report_path)
+    # Potential TODO: Retry failed imports.
+    return report_paths
+
+
 def read_trackings_from_file(file) -> List[Tracking]:
   with open(file, 'r') as f:
     header = f.readline().strip().split(',')
@@ -112,11 +185,17 @@ def read_trackings_from_file(file) -> List[Tracking]:
 
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
+  parser.add_argument("--download", "-d", action="store_true",
+                      help="Download from Amazon using logged-in profiles")
   parser.add_argument("globs", nargs="*")
   args, _ = parser.parse_known_args()
 
   all_trackings = []
-  if args.globs:
+  if args.download:
+    files = download_az_reports()
+    for file in files:
+      all_trackings.extend(read_trackings_from_file(file))
+  elif args.globs:
     for glob_input in args.globs:
       files = glob.glob(glob_input)
       for file in files:
@@ -126,6 +205,10 @@ def main():
     tab_name = get_required("Enter the name of the tab within the sheet: ")
     objects_to_sheet = ObjectsToSheet()
     all_trackings.extend(objects_to_sheet.download_from_sheet(from_amazon_row, sheet_id, tab_name))
+
+  if len(all_trackings) == 0:
+    print("Nothing to import; terminating.")
+    return
 
   num_n_a_trackings = len(
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == 'N/A'])
@@ -150,14 +233,18 @@ def main():
   tracking_uploader.upload_trackings(all_trackings)
 
   tracking_output = TrackingOutput(config)
-  print("Number of trackings beforehand: %d" % len(tracking_output.get_existing_trackings()))
-  print("Number from sheet: %d" % len(all_trackings))
+  trackings_before_save = {t.tracking_number for t in tracking_output.get_existing_trackings()}
+  print(f"Number of trackings before: {len(trackings_before_save)}.")
+  print(f"Number imported from report(s): {len(all_trackings)}.")
   tracking_output.save_trackings(all_trackings)
-  print("Number of trackings after: %d" % len(tracking_output.get_existing_trackings()))
+  trackings_after_save = {t.tracking_number: t for t in tracking_output.get_existing_trackings()}
+  print(f"Number of trackings after: {len(trackings_after_save)}.")
+  new_trackings = set(trackings_after_save.keys()).difference(trackings_before_save)
+  print(f"Number of new-to-us trackings: {len(new_trackings)}")
 
-  print("Uploading to the group(s)' site(s)...")
+  print("Uploading new trackings to the group(s)' site(s)...")
   group_site_manager = GroupSiteManager(config)
-  group_site_manager.upload(all_trackings)
+  group_site_manager.upload([trackings_after_save[t] for t in new_trackings])
 
 
 if __name__ == "__main__":
