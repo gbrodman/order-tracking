@@ -7,6 +7,7 @@ import glob
 import os
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
+from random import shuffle
 
 from tqdm import tqdm
 
@@ -23,12 +24,13 @@ from lib.tracking_uploader import TrackingUploader
 
 config = open_config()
 admin_profiles = config['adminProfiles']
+shuffle(admin_profiles)
 profile_base = config['profileBase']
 
 ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
 REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
-MAX_WORKERS = 5
-DOWNLOAD_TIMEOUT_SECS = 120
+MAX_WORKERS = 8
+DOWNLOAD_TIMEOUT_SECS = 240
 
 
 def get_group(header, row) -> Any:
@@ -122,8 +124,10 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
   # Create temp dir to download this report into
   temp_dir = os.path.join(report_dir, admin_profile)
   os.mkdir(temp_dir)
-  driver = DriverCreator().new(user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
-                               download_dir=temp_dir, page_load=30)
+  driver = DriverCreator().new(
+      user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
+      download_dir=temp_dir,
+      page_load=30)
   try:
     # Go to https://amazon.com/b2b/aba/
     driver.get(ANALYTICS_URL)
@@ -141,13 +145,17 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
     for s in range(DOWNLOAD_TIMEOUT_SECS):
       dir_contents = os.listdir(temp_dir)
       if dir_contents and dir_contents[0].endswith(".csv"):  # Ignore .crdownload files
-        tqdm.write(f"{admin_profile + ':':<20} Successfully downloaded report ({s}s).")
-        return os.path.join(temp_dir, dir_contents[0])
+        file_path = os.path.join(temp_dir, dir_contents[0])
+        kib = os.path.getsize(file_path) / 1024
+        tqdm.write(
+            f"{admin_profile + ':':<20} Successfully downloaded report ({kib:.0f} KiB in {s}s).")
+        return file_path
       else:
         time.sleep(1)
     tqdm.write(f"{admin_profile + ':':<20} Failed: Downloading report timed out.")
   except Exception as e:
-    tqdm.write(f"{admin_profile + ':':<20} Failed with error: {str(e)}\n{util.get_traceback_lines()}")
+    tqdm.write(
+        f"{admin_profile + ':':<20} Failed with error: {str(e)}\n{util.get_traceback_lines()}")
     return
   finally:
     driver.quit()
@@ -156,7 +164,8 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
 def download_az_reports() -> List[str]:
   if not os.path.exists(REPORTS_DIR):
     os.mkdir(REPORTS_DIR)
-  report_dir = os.path.join(REPORTS_DIR, datetime.datetime.now().strftime("shipping_%Y-%m-%dT%H_%M_%S"))
+  report_dir = os.path.join(REPORTS_DIR,
+                            datetime.datetime.now().strftime("shipping_%Y-%m-%dT%H_%M_%S"))
   os.mkdir(report_dir)
   with ThreadPoolExecutor(MAX_WORKERS) as executor:
     tasks = {}
@@ -185,8 +194,8 @@ def read_trackings_from_file(file) -> List[Tracking]:
 
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
-  parser.add_argument("--download", "-d", action="store_true",
-                      help="Download from Amazon using logged-in profiles")
+  parser.add_argument(
+      "--download", "-d", action="store_true", help="Download from Amazon using logged-in profiles")
   parser.add_argument("globs", nargs="*")
   args, _ = parser.parse_known_args()
 
@@ -214,19 +223,18 @@ def main():
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == 'N/A'])
   num_empty_trackings = len(
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == ''])
-  print(
-      f'Skipping {num_n_a_trackings} for n/a tracking column and {num_empty_trackings} for empty tracking column'
-  )
+  print(f'Skipping {num_n_a_trackings} for N/A tracking column and '
+        f'{num_empty_trackings} for empty tracking column.')
   all_trackings = [
       tracking for tracking in all_trackings
       if tracking and tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   len_non_reconcilable_trackings = len([t for t in all_trackings if not t.reconcile])
-  print(f'Skipping {len_non_reconcilable_trackings} non-reconcilable trackings')
+  print(f'Skipping {len_non_reconcilable_trackings} non-reconcilable trackings.')
   all_trackings = [t for t in all_trackings if t.reconcile]
   base_len_trackings = len(all_trackings)
   all_trackings = dedupe_trackings(all_trackings)
-  print(f'Filtered {base_len_trackings - len(all_trackings)} duplicate trackings from the sheet')
+  print(f'Filtered {base_len_trackings - len(all_trackings)} duplicate trackings from the sheet.')
 
   print('Uploading trackings to Sheets...')
   tracking_uploader = TrackingUploader(config)
