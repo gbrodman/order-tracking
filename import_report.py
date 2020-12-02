@@ -6,7 +6,7 @@ import glob
 
 from lib.config import open_config
 from lib.driver_creator import DriverCreator
-from lib.group_site_manager import GroupSiteManager
+from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
@@ -49,7 +49,7 @@ def get_ship_date(ship_date_str: str) -> str:
 
 
 def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
-  tracking = str(row[header.index('Carrier Tracking #')]).upper().replace('"', '')
+  tracking = clean_csv_tracking(str(row[header.index('Carrier Tracking #')]))
   orders = {row[header.index('Order ID')].upper()}
   price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
       'N/A', '0.0')

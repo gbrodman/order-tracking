@@ -88,7 +88,7 @@ def fill_standard_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
     result[(tracking,)] = ('bfmr', previous_total + total, date)
 
 
-def _clean_melul_tracking(tracking: str) -> str:
+def clean_csv_tracking(tracking: str) -> str:
   return re.sub(r'[^0-9A-Z,]', '', tracking.upper())
 
 
@@ -369,7 +369,7 @@ class GroupSiteManager:
       cost = float(row['TOTAL'])
       date_str = row['CREATED DATE']
       date = datetime.datetime.strptime(date_str, '%a %b %d %Y %H:%M:%S %z').strftime('%Y-%m-%d')
-      trackings = _clean_melul_tracking(row['TRACKING NUMBERS']).split(',')
+      trackings = clean_csv_tracking(row['TRACKING NUMBERS']).split(',')
       if trackings:
         tracking_tuple = tuple(
             [tracking.strip() for tracking in trackings if tracking and tracking.strip()])
