@@ -8,7 +8,11 @@ import os
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from random import shuffle
+from typing import Any, List, Optional
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
 from lib import util
@@ -18,8 +22,6 @@ from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
-from typing import Any, List, Optional
-
 from lib.tracking_uploader import TrackingUploader
 
 config = open_config()
@@ -120,6 +122,13 @@ def get_required(prompt):
   return result
 
 
+def do_with_spinner(driver, fn):
+  fn()
+  time.sleep(0.5)
+  WebDriverWait(driver, 20).until(
+      expected_conditions.invisibility_of_element_located((By.CSS_SELECTOR, "span.a-spinner")))
+
+
 def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[str]:
   # Create temp dir to download this report into
   temp_dir = os.path.join(report_dir, admin_profile)
@@ -132,13 +141,12 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
     # Go to https://amazon.com/b2b/aba/
     driver.get(ANALYTICS_URL)
     # Click on Shipments link (thanks Amazon for the garbage-tier HTML)
-    shipment_span = driver.find_element_by_xpath("//a[span[span[text()='Shipments']]]")
-    shipment_span.click()
-    time.sleep(3)  # Could be smarter
+    do_with_spinner(
+        driver, lambda: driver.find_element_by_xpath("//a[span[span[text()='Shipments']]]").click())
     # Set Time period to "Past 12 months"
     driver.find_element_by_id("date_range_selector__range").click()
-    driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click()
-    time.sleep(5)  # Could be a lot smarter
+    do_with_spinner(
+        driver, lambda: driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click())
     # Click "Download CSV"
     driver.find_element_by_id("download-csv-file-button").click()
     # Wait for download to complete.
