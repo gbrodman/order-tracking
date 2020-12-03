@@ -99,6 +99,8 @@ class DriverCreator:
     exports_dir = os.path.join(os.getcwd(), 'exports')
     options.add_experimental_option('prefs', {'download.default_directory': exports_dir})
 
+    # make sure the window is big enough
+    options.add_argument("--window-size=1600,1200")
     if sys.platform.startswith("darwin"):  # osx
       driver = self._create_osx_driver(options, user_data_dir)
     elif sys.platform.startswith("win"):  # windows
