@@ -20,7 +20,7 @@ class DriverCreator:
     parser.add_argument("--firefox", action="store_true")
     self.args, _ = parser.parse_known_args()
 
-  def new(self, user_data_dir=None, wait=10, page_load=10) -> WebDriver:
+  def new(self, user_data_dir=None, wait=10, page_load=30) -> WebDriver:
     if self.args.firefox:
       return self._new_firefox_driver(wait, page_load)
     else:
