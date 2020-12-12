@@ -78,7 +78,7 @@ def get_new_tracking_pos_costs_maps(config, group_site_manager: GroupSiteManager
                                     args) -> ReconResult:
   print("Loading tracked costs. This can take several minutes.")
   if args.groups:
-    print("Only reconciling groups %s" % ",".join(args.groups))
+    print(f"Only reconciling groups {', '.join(args.groups)}")
     groups = args.groups
   else:
     groups = config['groups'].keys()

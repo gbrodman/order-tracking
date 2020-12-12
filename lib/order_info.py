@@ -1,4 +1,7 @@
 import re
+
+from tqdm import tqdm
+
 import lib.email_auth as email_auth
 from bs4 import BeautifulSoup
 
@@ -6,6 +9,7 @@ from lib import email_tracking_retriever
 from lib.debounce import debounce
 from lib.object_retriever import ObjectRetriever
 from typing import Dict, Optional, Tuple
+from math import isclose
 
 ORDERS_FILENAME = "orders.pickle"
 
@@ -54,7 +58,7 @@ class OrderInfoRetriever:
     # we found a 0 or MISSING_COST_SENTINEL cost before and we want to retry.
     if order_id not in self.orders_dict or (
         fetch_from_email and (self.orders_dict[order_id].cost == 0 or
-                              self.orders_dict[order_id].cost == MISSING_COST_SENTINEL)):
+                              isclose(self.orders_dict[order_id].cost, MISSING_COST_SENTINEL))):
       from_email = self.load_order_total(order_id)
       if not from_email:
         from_email = {order_id: OrderInfo(None, MISSING_COST_SENTINEL)}
@@ -89,7 +93,7 @@ class OrderInfoRetriever:
   def load_order_total_amazon(self, order_id: str) -> Dict[str, OrderInfo]:
     email_id, email_str = self.get_relevant_raw_email_data(order_id)
     if not email_str:
-      print("Could not find email for order ID %s" % order_id)
+      tqdm.write(f"Could not find email for order ID {order_id}.")
       return {}
 
     regex_pretax = r'Total Before Tax:[^$]*\$([\d,]+\.\d{2})'
@@ -124,7 +128,7 @@ class OrderInfoRetriever:
         return dict(zip(orders, order_infos))
 
   def get_relevant_raw_email_data(self, order_id) -> Tuple[Optional[str], Optional[str]]:
-    status, search_result = self.mail.uid('SEARCH', None, 'BODY "%s"' % order_id)
+    status, search_result = self.mail.uid('SEARCH', None, f'BODY "Order #{order_id}"', 'FROM "auto-confirm@amazon.com"')
     email_id = search_result[0]
     if not email_id:
       return None, None
