@@ -62,7 +62,7 @@ class Cluster:
 
   def to_row(self) -> list:
     return [
-        ", ".join(self.orders), ", ".join(self.trackings), self.to_email, self.expected_cost,
+        ",".join(self.orders), ", ".join(self.trackings), self.to_email, self.expected_cost,
         self.tracked_cost, ", ".join(self.non_reimbursed_trackings), self.last_ship_date,
         self.last_delivery_date, "'" + ", ".join(self.purchase_orders), self.group, self.adjustment,
         self.manual_override, '=D:D - E:E - K:K', self.notes, ", ".join(self.cancelled_items)
