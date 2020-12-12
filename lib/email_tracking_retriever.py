@@ -6,6 +6,7 @@ import socket
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional, Tuple, TypeVar, Dict, List
 
+from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 
 import lib.email_auth as email_auth
@@ -69,6 +70,7 @@ class EmailTrackingRetriever(ABC):
 
     self.driver = self.driver_creator.new()
     try:
+      log_in_if_necessary(self.driver)
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -281,3 +283,12 @@ def clean_email_content(email_str) -> str:
   email_str = email_str.replace(r'\r', '')
   email_str = email_str.replace(r'\n', '')
   return email_str
+
+
+def log_in_if_necessary(driver: WebDriver):
+  driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
+  orders_containers = driver.find_elements_by_id('ordersContainer')
+  if len(orders_containers) == 0:
+    # likely a login screen
+    driver.find_element_by_css_selector('form[name="signIn"]')
+    input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
