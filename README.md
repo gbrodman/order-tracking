@@ -6,15 +6,16 @@ This is a set of Python scripts meant for streamlining and automating the proces
 
 There are two main tasks. They are:
 
-### get_order_tracking.py: 
+### get_tracking_numbers.py: 
 
 This script does the following:
 
-- Parses unread shipping notification emails from the last 45 days from Amazon or Best Buy. 
+- Parses unread (by default) shipping notification emails from the last 45 days from Amazon or Best Buy. 
 - Parses out a set of information from those emails and associated emails, including tracking number(s), order number(s), order costs, email addresses, order URLs, and shipping dates and saves that information to disk and to Drive. 
 - Uploads those tracking numbers to the order tracking systems of groups like Pointsmaker, MYS, or USA.
 - Groups together orders or tracking numbers that are bunched together by Amazon or Best Buy for later reconciliation (e.g. two orders are grouped together if they ship in the same shipment). 
 - Emails you (the user) a list of tracking/order numbers that it found, for sanity checking.
+- Uploads the set of tracking objects to a Google Sheet
 
 If it cannot parse an email for some reason, it will mark the email as unread so that you can look at it manually later. This sometimes happens if Amazon is being slow -- in these cases, there is no harm in running the script again. 
 
@@ -86,7 +87,7 @@ Here are details of the fields on config.yml:
 We need to create and use an automated Google Cloud account to write to Drive and to Sheets. Here's how we do that:
 
 - First, create a Google Cloud project at https://console.cloud.google.com
-- Next, create the serivce account in Google Cloud and get the credentials for it, by following steps 1-5 on [this page](https://docs.bmc.com/docs/PATROL4GoogleCloudPlatform/10/creating-a-service-account-key-in-the-google-cloud-platform-project-799095477.html). Make sure to note the email address of the service account -- it should be very long, and it should include ".gserviceaccount.com" at the end.
+- Next, create the service account in Google Cloud and get the credentials for it, by following steps 1-5 on [this page](https://docs.bmc.com/docs/PATROL4GoogleCloudPlatform/10/creating-a-service-account-key-in-the-google-cloud-platform-project-799095477.html). Make sure to note the email address of the service account -- it should be very long, and it should include ".gserviceaccount.com" at the end.
 - When you download the credentials JSON file, rename it "creds.json" and put it in the same directory as these scripts.
 - In the Google Cloud console website, use the left navigation pane to go to "APIs and Services"
 - Next, click "Enable APIs and Services". This will take you to the API library. You need to search for and enable the "Google Drive API" and "Google Sheets API". For each, search for it, click the term, and enable it.
@@ -114,7 +115,8 @@ This is the main spreadsheet. Because a single tracking number can consist of mu
 - Amount Billed: Total amount that you were charged for this group
 - Amount Reimbursed: Total amount that the buying groups' sites show for this group
 - Last Ship Date: This is the date of the most recent shipment. If it was long ago and the order is under-reimbursed, you probably have a problem.
-- POs: List of purchase orders (currently only for USA)
+- Last Delivery Date: Ditto, but for delivery
+- POs: List of purchase orders. Add to this if you need to manually mark a receipt as corresopnding to a particular row
 - Group: the buying group
 - To Email: the email to which the shipping/order emails were sent
 - Manual Cost Adjustment: This is a way to adjust the expected reimbursed cost for an order. If you know that an item was under-reimbursed for a good reason, you can add that amount here. We expect that the amount billed is equal to the amount reimbursed plus this manual cost adjustment. This is saved if you change it.
@@ -129,19 +131,19 @@ Each row on this sheet corresponds to a tracking number. It contains order(s) fo
 ## Amazon Report Import
 
 First, export an Amazon business shipments report as CSV (through the Business Analytics section of the site). Then,
-upload that CSV file to Google Drive and open it as a Sheets file. Note the sheet ID, which can be retrieved from the
-sheet URL the same way as before, i.e. "https://docs.google.com/spreadsheets/d/SHEET_ID". Also note the tab name.
+note the file name(s) (you can move around the files). Then, run `python import_report.py {GLOB}` where the {GLOB}
+should be replaced by the path to your file(s). To include a single file, you can run `python import_report path/to/myfile.csv`
+or to include (for instance) all CSV files in a folder, you can run `python import_report.py myfolder/*.csv`.
 
-Then, run `python import_report.py`. It will ask you for the aforementioned sheet ID and tab name -- put them in. It
-will print out information about the trackings it is importing, and it will also print any rows for which it could not
-find a valid group (note: the address is not formatted like "City, STATE" so for this section I recommend using the
+It will print out information about the trackings it is importing, and it will also print any rows for which it could 
+not find a valid group (note: the address is not formatted like "City, STATE" so for this section I recommend using the
 beginnings of addresses as your group keys, e.g. '123 Fake St' (without the quotes) in your group config).
 
 ## Manual Order Import
 
 Sometimes, one may wish to manually add a tracking object to the datastore. To do so, run the `manual_input.py` script.
 If you run it without arguments, it will ask you for a series of inputs (it also allows you to delete existing tracking
-objects). Most arguments are optional and it will try to fill out sane defaults, but the tracking number, order number,
+objects). Most arguments are optional, and it will try to fill out sane defaults, but the tracking number, order number,
 and group fields are required.
 
 If you wish to run the input all in one step adding a new tracking object in the simplest form, simply run as one
@@ -153,6 +155,15 @@ e.g.
 
 ```python manual_input.py -a -t TBA1234567890 -g mysbuyinggroup -o 123-1234567-1234567```
 
+## Non-Shipped Order Verification
+
+The vast majority of the time, Amazon send shipping emails. However sometimes they might not. If you run
+`python verify_orders.py` it will find all order confirmation emails (from the last 90 days by default) and attempt to
+match all orders with a corresponding tracking object or cancellation email. It will upload the results to a tab on
+the reconciliation sheet, Non-Shipped Orders. For recent orders this is expected (they haven't shipped yet) but for
+old orders, something may be wrong
+
 ## Donations
 
-This software is completely free, licensed under the GNU Affero General Public License. However, if you feel like you wish to donate some money to me, feel free to send any amount of money through Paypal to https://paypal.me/GustavBrodman
+This software is completely free, licensed under the GNU Affero General Public License. However, if you feel like you
+wish to donate some money to me, feel free to send any amount of money through Paypal to https://paypal.me/GustavBrodman
