@@ -149,12 +149,15 @@ def run_auto(config, args):
   if not args.tracking or not args.order or not args.group:
     raise Exception('Must provide tracking, order, and group if doing auto')
 
-  orders = set()
-  orders.add(args.order)
-  tracking = Tracking(args.tracking, args.group, orders, '', '', TODAY, 0.0, '', '')
-  print(tracking)
+  trackings_to_add = []
+  for number in args.tracking.split(','):
+    orders = set()
+    orders.add(args.order)
+    tracking = Tracking(number.strip(), args.group, orders, '', '', TODAY, 0.0, '', '')
+    print(tracking)
+    trackings_to_add.append(tracking)
   tracking_output = TrackingOutput(config)
-  tracking_output.save_trackings([tracking], overwrite=True)
+  tracking_output.save_trackings(trackings_to_add, overwrite=True)
 
 
 def main():
