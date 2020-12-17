@@ -14,8 +14,6 @@ import lib.email_auth as email_auth
 from lib import util
 from lib.tracking import Tracking
 from lib.config import open_config
-# CONFIG = open_config()
-# AMAZON = CONFIG['amazon']
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
