@@ -14,21 +14,21 @@ import lib.email_auth as email_auth
 from lib import util
 from lib.tracking import Tracking
 from lib.config import open_config
+# CONFIG = open_config()
+# AMAZON = CONFIG['amazon']
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 MAX_ATTEMPTS = 2
-CONFIG = open_config()
-AMAZON = CONFIG['amazon']
-
 
 class EmailTrackingRetriever(ABC):
 
   def __init__(self, config, args, driver_creator) -> None:
     self.config = config
     self.email_config = config['email']
+    self.amazon_config = config['amazon']
     self.args = args
     self.driver_creator = driver_creator
     self.driver = None
@@ -294,15 +294,15 @@ def log_in_if_necessary(driver: WebDriver):
   orders_containers = driver.find_elements_by_id('ordersContainer')
   if len(orders_containers) == 0:
     # likely a login screen
-    print("Signing into Amazon ...")
-    driver.find_element_by_css_selector('form[name="signIn"]')
-    driver.find_element_by_xpath("//input[@type='email']").send_keys(AMAZON['email'])
-    driver.find_element_by_xpath("//input[@type='submit']").click()
-    time.sleep(2)
-    driver.find_element_by_xpath("//input[@type='password']").send_keys(AMAZON['password'])
-    driver.find_element_by_xpath("//input[@type='submit']").click()
-    time.sleep(2)
+    if "email" in AMAZON and AMAZON["email"]:
+      print("Signing into Amazon ...")
+      driver.find_element_by_css_selector('form[name="signIn"]')
+      driver.find_element_by_css_selector('input[type="email"]').send_keys(AMAZON['email'])
+      driver.find_element_by_css_selector('input[type="submit"]').click()
+      driver.find_element_by_css_selector('input[type="password"]').send_keys(AMAZON['password'])
+      driver.find_element_by_css_selector('input[type="submit"]').click()
 
-    two_factor_auth = driver.find_elements_by_id('auth-mfa-otpcode')
-    if len(two_factor_auth) == 0:
-      input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+      if (AMAZON['twoFactor']):
+        input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+    else:
+      input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
