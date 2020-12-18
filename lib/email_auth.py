@@ -52,10 +52,10 @@ def send_email(recipients, message):
 
 
 def get_oauth_credentials():
-  store = file.Storage('storage.json')
+  store = file.Storage(EMAIL_CONFIG['storage'])
   creds = store.get()
   if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('client_secret.json', GMAIL_URL)
+    flow = client.flow_from_clientsecrets(EMAIL_CONFIG['client_secret'], GMAIL_URL)
     creds = tools.run_flow(flow, store)
   else:
     creds.refresh(Http())

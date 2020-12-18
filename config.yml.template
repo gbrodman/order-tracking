@@ -1,15 +1,18 @@
 email:
   username: my_email@gmail.com
-  # for Gmail, password should be an application-specific password
-  # App Passwords are deprecated.  Follow Readme to set up OAuth.
-  # password line can be removed after OAuth is set up, if desired.
-  password:
+  amazon_email: my_email@gmail.com
+  amazon_password: my_password
+  creds: creds.json
+  client_secret: client_secret.json
+  storage: storage.json
 
-amazon:
-  # To automate the amazon login place account details here
-  # otherwise leave blank
-  email: my_email@gmail.com
-  password: my_password
+email2:
+  username: my_email2@gmail.com
+  amazon_email: my_email2@gmail.com
+  amazon_password: my_password2
+  creds: creds.json
+  client_secret: client_secret2.json
+  storage: storage2.json
 
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site

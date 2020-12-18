@@ -71,7 +71,7 @@ class EmailTrackingRetriever(ABC):
 
     self.driver = self.driver_creator.new()
     try:
-      log_in_if_necessary(self.driver, self.config)
+      log_in_if_necessary(self.driver, self.email_config)
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -286,17 +286,17 @@ def clean_email_content(email_str) -> str:
   return email_str
 
 
-def log_in_if_necessary(driver: WebDriver, config):
+def log_in_if_necessary(driver: WebDriver, email_config):
   driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
   orders_containers = driver.find_elements_by_id('ordersContainer')
   if len(orders_containers) == 0:
     # likely a login screen
-    if 'amazon' in config:
+    if 'amazon_email' in email_config:
       print("Signing into Amazon ...")
       driver.find_element_by_css_selector('form[name="signIn"]')
-      driver.find_element_by_css_selector('input[type="email"]').send_keys(config['amazon']['email'])
+      driver.find_element_by_css_selector('input[type="email"]').send_keys(email_config['amazon_email'])
       driver.find_element_by_css_selector('input[type="submit"]').click()
-      driver.find_element_by_css_selector('input[type="password"]').send_keys(config['amazon']['password'])
+      driver.find_element_by_css_selector('input[type="password"]').send_keys(email_config['amazon_password'])
       driver.find_element_by_css_selector('input[type="submit"]').click()
 
       orders_containers = driver.find_elements_by_id('ordersContainer')
