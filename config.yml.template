@@ -10,7 +10,6 @@ amazon:
   # otherwise leave blank
   email: my_email@gmail.com
   password: my_password
-  twoFactor: False
 
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site
