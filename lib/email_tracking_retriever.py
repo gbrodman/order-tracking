@@ -3,7 +3,6 @@ import datetime
 import email
 import imaplib
 import socket
-import time
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Optional, Tuple, TypeVar, Dict, List
 
@@ -13,7 +12,6 @@ from tqdm import tqdm
 import lib.email_auth as email_auth
 from lib import util
 from lib.tracking import Tracking
-from lib.config import open_config
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
 
@@ -288,19 +286,16 @@ def clean_email_content(email_str) -> str:
 
 def log_in_if_necessary(driver: WebDriver, email_config):
   driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
-  orders_containers = driver.find_elements_by_id('ordersContainer')
-  if len(orders_containers) == 0:
-    # likely a login screen
-    if 'amazon_email' in email_config:
-      print("Signing into Amazon ...")
-      driver.find_element_by_css_selector('form[name="signIn"]')
-      driver.find_element_by_css_selector('input[type="email"]').send_keys(email_config['amazon_email'])
-      driver.find_element_by_css_selector('input[type="submit"]').click()
-      driver.find_element_by_css_selector('input[type="password"]').send_keys(email_config['amazon_password'])
-      driver.find_element_by_css_selector('input[type="submit"]').click()
+  if 'amazon_email' in email_config:
+    print("Signing into Amazon ...")
+    driver.find_element_by_css_selector('form[name="signIn"]')
+    driver.find_element_by_css_selector('input[type="email"]').send_keys(email_config['amazon_email'])
+    driver.find_element_by_css_selector('input[type="submit"]').click()
+    driver.find_element_by_css_selector('input[type="password"]').send_keys(email_config['amazon_password'])
+    driver.find_element_by_css_selector('input[type="submit"]').click()
 
-      orders_containers = driver.find_elements_by_id('ordersContainer')
-      if len(orders_containers) == 0:
-            input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
-    else:
-      input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
+    orders_containers = driver.find_elements_by_id('ordersContainer')
+    if len(orders_containers) == 0:
+          input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+  else:
+    input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
