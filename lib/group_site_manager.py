@@ -106,7 +106,7 @@ def fill_2020_12_22_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
       match = re.search(r'\$([0-9,.]+)', row.text)
       if not match:
         raise Exception(f"Unknown BFMR format, found row {row.text} but expected a cost")
-      cost_for_tracking += float(match.group(1))
+      cost_for_tracking += float(match.group(1).replace(',', ''))
     else:
       add_bfmr_cost_if_nonempty(result, tracking, cost_for_tracking, date)
       cost_for_tracking = 0.0
