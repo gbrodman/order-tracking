@@ -60,7 +60,7 @@ def run_add(config):
   tracking_output = TrackingOutput(config)
   while True:
     existing_tracking_num = get_optional(
-      "Enter the tracking number of the existing cluster (or blank to finish): ")
+        "Enter the tracking number of the existing cluster (or blank to finish): ")
     if not existing_tracking_num:
       break
     tracking = tracking_output.get_tracking(existing_tracking_num)

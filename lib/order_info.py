@@ -128,7 +128,8 @@ class OrderInfoRetriever:
         return dict(zip(orders, order_infos))
 
   def get_relevant_raw_email_data(self, order_id) -> Tuple[Optional[str], Optional[str]]:
-    status, search_result = self.mail.uid('SEARCH', None, f'BODY "Order #{order_id}"', 'FROM "auto-confirm@amazon.com"')
+    status, search_result = self.mail.uid('SEARCH', None, f'BODY "Order #{order_id}"',
+                                          'FROM "auto-confirm@amazon.com"')
     email_id = search_result[0]
     if not email_id:
       return None, None
