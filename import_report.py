@@ -130,13 +130,18 @@ def do_with_spinner(driver, fn):
 
 
 def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[str]:
-  # Create temp dir to download this report into
-  temp_dir = os.path.join(report_dir, admin_profile)
-  os.mkdir(temp_dir)
-  driver = DriverCreator().new(
-      user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
-      download_dir=temp_dir,
-      page_load=30)
+  try:
+    # Create temp dir to download this report into
+    temp_dir = os.path.join(report_dir, admin_profile)
+    os.mkdir(temp_dir)
+    driver = DriverCreator().new(
+        user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
+        download_dir=temp_dir,
+        page_load=30)
+  except Exception as e:
+    tqdm.write(
+      f"{admin_profile + ':':<20} Failed to open profile: {str(e)}\n{util.get_traceback_lines()}")
+    return None
   try:
     # Go to https://amazon.com/b2b/aba/
     driver.get(ANALYTICS_URL)
@@ -163,8 +168,8 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
     tqdm.write(f"{admin_profile + ':':<20} Failed: Downloading report timed out.")
   except Exception as e:
     tqdm.write(
-        f"{admin_profile + ':':<20} Failed with error: {str(e)}\n{util.get_traceback_lines()}")
-    return
+        f"{admin_profile + ':':<20} Failed to fetch report: {str(e)}\n{util.get_traceback_lines()}")
+    return None
   finally:
     driver.quit()
 
