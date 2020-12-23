@@ -204,7 +204,8 @@ class EmailTrackingRetriever(ABC):
     try:
       for tracking_number, shipping_status in tracking_nums:
         # Don't output common statuses in --seen mode, as this is just noise.
-        if not self.args.seen or ('Delivered' not in shipping_status and 'Arriving' not in shipping_status):
+        if not self.args.seen or ('Delivered' not in shipping_status and
+                                  'Arriving' not in shipping_status):
           tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
                      f"Group: {group}, Status: {shipping_status}, Items: {items}")
     except UnicodeEncodeError:

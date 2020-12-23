@@ -88,6 +88,32 @@ def fill_standard_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
     result[(tracking,)] = ('bfmr', previous_total + total, date)
 
 
+def add_bfmr_cost_if_nonempty(result: TrackingInfoDict, tracking: str, cost: float, date: str):
+  if cost:
+    previous_total = result[(tracking,)][1] if (tracking,) in result else 0.0
+    result[(tracking,)] = ('bfmr', previous_total + cost, date)
+
+
+def fill_2020_12_22_bfmr_costs(result: TrackingInfoDict, table: Tag, date: str):
+  rows = table.find_all('tr')[1:]
+  tracking = rows[0].text.strip()
+  if '$' in tracking:  # old format, we can quit
+    return
+  cost_for_tracking = 0.0
+  for row in rows[1:-1]:  # skip the first (we have the tracking) and the last (total amount)
+    if '$' in row.text:
+      match = re.search(r'\$([0-9,.]+)', row.text)
+      if not match:
+        raise Exception(f"Unknown BFMR format, found row {row.text} but expected a cost")
+      cost_for_tracking += float(match.group(1))
+    else:
+      add_bfmr_cost_if_nonempty(result, tracking, cost_for_tracking, date)
+      cost_for_tracking = 0.0
+      tracking = row.text.strip()
+  # cover the last tracking (fence post)
+  add_bfmr_cost_if_nonempty(result, tracking, cost_for_tracking, date)
+
+
 def clean_csv_tracking(tracking: str) -> str:
   return re.sub(r'[^0-9A-Z,]', '', tracking.upper())
 
@@ -610,5 +636,6 @@ class GroupSiteManager:
       table = tables[1]
       fill_busted_bfmr_costs(result, table, date)
       fill_standard_bfmr_costs(result, table, date)
+      fill_2020_12_22_bfmr_costs(result, table, date)
 
     return result
