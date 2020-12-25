@@ -56,28 +56,39 @@ def input_orders() -> Dict[str, OrderInfo]:
 
 
 def run_add(config):
+  new_trackings = []
   print("Add tracking to existing tracking/order cluster.")
-  existing_tracking_num = get_required("Enter a tracking number of the existing cluster: ")
   tracking_output = TrackingOutput(config)
-  tracking = tracking_output.get_tracking(existing_tracking_num)
-  if not tracking:
-    print("Error: Tracking does not exist. Aborting.")
-    return
-  print("Existing tracking data is:")
-  print(tracking)
-  new_tracking_num = get_optional("Enter new tracking number (or blank to abort): ")
-  if not new_tracking_num:
-    print("Aborting.")
-    return
-  tracking.tracking_number = new_tracking_num
-  print("New tracking data is:")
-  print(tracking)
-  submit = get_required_from_options("Save?", ['y', 'n'])
-  if submit:
-    tracking_output.save_trackings([tracking])
-    print("Saved.")
+  while True:
+    existing_tracking_num = get_optional(
+        "Enter the tracking number of the existing cluster (or blank to finish): ")
+    if not existing_tracking_num:
+      break
+    tracking = tracking_output.get_tracking(existing_tracking_num)
+    if not tracking:
+      print("Error: Tracking does not exist. Aborting.")
+      continue
+    print("Existing tracking data is:")
+    print(tracking)
+    new_tracking_num = get_optional("Enter new tracking number (or blank to abort): ")
+    if not new_tracking_num:
+      print("Aborting.")
+      continue
+    tracking.tracking_number = new_tracking_num
+    print("New tracking data is:")
+    print(tracking)
+    submit = get_required_from_options("Save?", ['y', 'n'])
+    if submit:
+      new_trackings.append(tracking)
+      print("Saved.")
+    else:
+      print("Cancelled.")
+
+  if len(new_trackings) > 0:
+    print(f"Saving {len(new_trackings)} new tracking(s) and quitting.")
+    tracking_output.save_trackings(new_trackings)
   else:
-    print("Cancelled.")
+    print("No new trackings to save; quitting.")
 
 
 def run_delete(config):
