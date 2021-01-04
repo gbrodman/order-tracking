@@ -14,6 +14,12 @@ email2:
   client_secret: client_secret2.json
   storage: storage2.json
 
+amazon:
+  # To automate the amazon login place account details here
+  # otherwise leave blank
+  email: my_email@gmail.com
+  password: my_password
+
 # The group should correspond to a PM/MYS-like website name if one exists.
 # If you wish to automatically upload the tracking numbers, include the site
 # username + password here. For USA, we will always use usabuying.group

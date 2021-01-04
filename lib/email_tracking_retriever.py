@@ -299,6 +299,6 @@ def log_in_if_necessary(driver: WebDriver, email_config):
 
     orders_containers = driver.find_elements_by_id('ordersContainer')
     if len(orders_containers) == 0:
-          input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+      input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
   else:
     input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')

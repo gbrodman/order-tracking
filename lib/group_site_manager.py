@@ -499,25 +499,22 @@ class GroupSiteManager:
 
       time.sleep(2)
 
-      modal = driver.find_element_by_class_name("modal-body")
-      form = modal.find_element_by_tag_name("form")
-
-      textarea = form.find_element_by_class_name("textarea-control")
+      textarea = driver.find_element_by_css_selector('div.modal-content textarea')
       textarea.send_keys("\n".join(numbers))
-      form.find_element_by_xpath("//button[text() = 'Submit']").click()
+      driver.find_element_by_css_selector('div.modal-content button.btn-primary').click()
       # TODO: This needs to wait for the success dialog to be displayed.
       time.sleep(5)
 
       # If there are some dupes, we need to remove the dupes and submit again
       modal = driver.find_element_by_class_name("modal-body")
       if "Tracking number was already entered" in modal.text:
-        dupes_list = form.find_element_by_css_selector('ul.error-message > li.ng-star-inserted')
+        dupes_list = driver.find_element_by_css_selector('ul.error-message > li.ng-star-inserted')
         dupe_numbers = dupes_list.text.strip().split(", ")
         new_numbers = [n for n in numbers if not n in dupe_numbers]
         driver.find_element_by_class_name("modal-close").click()
         if len(new_numbers) > 0:
           # Re-run this batch with only new numbers, if there are any
-          self._upload_bfmr_batch(driver, new_numbers)
+          self._upload_bfmr_batch(new_numbers)
     finally:
       driver.quit()
 
