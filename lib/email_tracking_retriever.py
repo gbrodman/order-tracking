@@ -19,7 +19,6 @@ BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 MAX_ATTEMPTS = 2
 
-
 class EmailTrackingRetriever(ABC):
 
   def __init__(self, config, args, driver_creator) -> None:
@@ -70,7 +69,7 @@ class EmailTrackingRetriever(ABC):
 
     self.driver = self.driver_creator.new()
     try:
-      log_in_if_necessary(self.driver)
+      log_in_if_necessary(self.driver, self.config)
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -288,10 +287,17 @@ def clean_email_content(email_str) -> str:
   return email_str
 
 
-def log_in_if_necessary(driver: WebDriver):
+def log_in_if_necessary(driver: WebDriver, config):
   driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
-  orders_containers = driver.find_elements_by_id('ordersContainer')
-  if len(orders_containers) == 0:
-    # likely a login screen
-    driver.find_element_by_css_selector('form[name="signIn"]')
+  if 'amazon' in config:
+    print("Signing into Amazon ...")
+    driver.find_element_by_css_selector('input[type="email"]').send_keys(config['amazon']['email'])
+    driver.find_element_by_css_selector('input[type="submit"]').click()
+    driver.find_element_by_css_selector('input[type="password"]').send_keys(config['amazon']['password'])
+    driver.find_element_by_css_selector('input[type="submit"]').click()
+
+    orders_containers = driver.find_elements_by_id('ordersContainer')
+    if len(orders_containers) == 0:
+      input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+  else:
     input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
