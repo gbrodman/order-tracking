@@ -301,11 +301,10 @@ class GroupSiteManager:
       await asyncio.gather(*tasks)
       return tracking_tuples_to_prices, pos_to_prices
 
-  def _upload_usa(self, numbers) -> None:
+  def _upload_usa(self, numbers):
     headers = self._get_usa_login_headers()
     data = {"trackings": ",".join(numbers)}
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
-    print("Upload complete for usa.")
 
   # Downloads the CSV export for the group in question and returns it as a list of rows as dicts
   def _get_melul_csv(self, group: str, username: str, password: str) -> List[Dict[str, str]]:
@@ -385,23 +384,26 @@ class GroupSiteManager:
 
   def _upload_to_group(self, numbers: List[str], group: str) -> None:
     last_ex = None
-    print("Uploading tracking numbers to %s..." % group)
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
+        print("Uploading to %s." % group)
         if group in self.melul_portal_groups:
           username = self.config['groups'][group]['username']
           password = self.config['groups'][group]['password']
-          return self._upload_melul(numbers, group, username, password)
+          self._upload_melul(numbers, group, username, password)
         elif group == "usa":
-          return self._upload_usa(numbers)
+          self._upload_usa(numbers)
         elif group == "yrcw":
-          return self._upload_yrcw(numbers)
+          self._upload_yrcw(numbers)
         elif group == "bfmr":
-          return self._upload_bfmr(numbers)
+          self._upload_bfmr(numbers)
         elif group == 'oaks':
-          return self._upload_oaks(numbers)
+          self._upload_oaks(numbers)
         else:
           raise Exception("Unknown group: " + group)
+
+        print("Upload complete for %s." % group)
+        return None
       except Exception as e:
         last_ex = e
         print("Received exception when uploading: " + str(e))
@@ -429,7 +431,7 @@ class GroupSiteManager:
     time.sleep(3)
     return driver
 
-  def _upload_oaks(self, numbers) -> None:
+  def _upload_oaks(self, numbers):
     driver = self._login_oaks()
     try:
       driver.find_element_by_id('ContentPlaceHolder1_btnUpload').click()
@@ -439,14 +441,12 @@ class GroupSiteManager:
       driver.execute_script(f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
       driver.find_element_by_id('ContentPlaceHolder1_btnGrabar').click()
       time.sleep(2)
-      print("Upload complete for oaks.")
     finally:
       driver.quit()
 
-  def _upload_bfmr(self, numbers) -> None:
+  def _upload_bfmr(self, numbers):
     for batch in util.chunks(numbers, 100):
       self._upload_bfmr_batch(batch)
-    print("Upload complete for bfmr.")
 
   def _upload_bfmr_batch(self, numbers) -> None:
     group_config = self.config['groups']['bfmr']
@@ -495,7 +495,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _upload_yrcw(self, numbers) -> None:
+  def _upload_yrcw(self, numbers):
     driver = self._login_yrcw()
     try:
       self._load_page(driver, YRCW_URL + "dashboard")
@@ -506,11 +506,10 @@ class GroupSiteManager:
       time.sleep(0.5)
       driver.find_element_by_xpath("//button[text() = 'Submit All']").click()
       time.sleep(5)
-      print("Upload complete for yrcw")
     finally:
       driver.quit()
 
-  def _upload_melul(self, numbers, group, username, password) -> None:
+  def _upload_melul(self, numbers, group, username, password):
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
@@ -532,7 +531,6 @@ class GroupSiteManager:
       # TODO: This needs to wait for the success dialog to be displayed and then print the number
       #       of new trackings from that to the command line.
       time.sleep(5)
-      print("Upload complete for %s." % group)
     finally:
       driver.quit()
 
