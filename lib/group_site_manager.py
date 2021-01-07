@@ -403,7 +403,6 @@ class GroupSiteManager:
           raise Exception("Unknown group: " + group)
 
         print("Upload complete for %s." % group)
-        return None
       except Exception as e:
         last_ex = e
         print("Received exception when uploading: " + str(e))
@@ -431,7 +430,7 @@ class GroupSiteManager:
     time.sleep(3)
     return driver
 
-  def _upload_oaks(self, numbers):
+  def _upload_oaks(self, numbers) -> None:
     driver = self._login_oaks()
     try:
       driver.find_element_by_id('ContentPlaceHolder1_btnUpload').click()
@@ -444,7 +443,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _upload_bfmr(self, numbers):
+  def _upload_bfmr(self, numbers) -> None:
     for batch in util.chunks(numbers, 100):
       self._upload_bfmr_batch(batch)
 
@@ -495,7 +494,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _upload_yrcw(self, numbers):
+  def _upload_yrcw(self, numbers) -> None:
     driver = self._login_yrcw()
     try:
       self._load_page(driver, YRCW_URL + "dashboard")
@@ -509,7 +508,7 @@ class GroupSiteManager:
     finally:
       driver.quit()
 
-  def _upload_melul(self, numbers, group, username, password):
+  def _upload_melul(self, numbers, group, username, password) -> None:
     driver = self._login_melul(group, username, password)
     try:
       self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
