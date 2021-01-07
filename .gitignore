@@ -10,10 +10,12 @@ geckodriver.log
 # Google drive creds
 creds.json
 creds2.json
+creds3.json
 client_secret.json
 client_secret2.json
 storage.json
 storage2.json
+storage3.json
 
 output/
 
