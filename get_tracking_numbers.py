@@ -40,7 +40,7 @@ def main():
   print("Retrieving Amazon tracking numbers from email ...")
   amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
   try:
-    trackings = amazon_tracking_retriever.get_trackings()
+    trackings = amazon_tracking_retriever.get_trackings(True)
   except:
     send_error_email(email_sender, "Error retrieving Amazon emails")
     raise
@@ -48,7 +48,7 @@ def main():
   print("Retrieving Best Buy tracking numbers from email ...")
   bestbuy_tracking_retriever = BestBuyTrackingRetriever(config, args, driver_creator)
   try:
-    trackings.update(bestbuy_tracking_retriever.get_trackings())
+    trackings.update(bestbuy_tracking_retriever.get_trackings(False))
   except:
     send_error_email(email_sender, "Error retrieving Best Buy emails")
     raise

@@ -46,7 +46,7 @@ class EmailTrackingRetriever(ABC):
       mail = self.get_all_mail_folder()
       mail.uid('STORE', email_id, '-FLAGS', '(\Seen)')
 
-  def get_trackings(self) -> Dict[str, Tracking]:
+  def get_trackings(self, is_amazon) -> Dict[str, Tracking]:
     """
     Gets all shipping emails falling within the configured search parameters,
     i.e. all unread or all read within the past N days, and parses them to find
@@ -67,9 +67,10 @@ class EmailTrackingRetriever(ABC):
     # Incomplete tracking information from emails with handled errors.
     incomplete_trackings = []
 
-    self.driver = self.driver_creator.new()
     try:
-      log_in_if_necessary(self.driver, self.config)
+      if is_amazon:
+        self.driver = self.driver_creator.new()
+        log_in_if_necessary(self.driver, self.config)
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -101,7 +102,8 @@ class EmailTrackingRetriever(ABC):
         self.back_out_of_all()
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
     finally:
-      self.driver.quit()
+      if is_amazon:
+        self.driver.quit()
 
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
