@@ -301,7 +301,7 @@ class GroupSiteManager:
       await asyncio.gather(*tasks)
       return tracking_tuples_to_prices, pos_to_prices
 
-  def _upload_usa(self, numbers):
+  def _upload_usa(self, numbers) -> None:
     headers = self._get_usa_login_headers()
     data = {"trackings": ",".join(numbers)}
     requests.post(url=USA_API_TRACKINGS_URL, headers=headers, data=data)
