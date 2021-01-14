@@ -13,6 +13,7 @@ import argparse
 from lib import util
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.bestbuy_tracking_retriever import BestBuyTrackingRetriever
+from lib.walmart_tracking_retriever import WalmartTrackingRetriever
 from lib.config import open_config
 from lib.driver_creator import DriverCreator
 from lib.email_sender import EmailSender
@@ -51,6 +52,14 @@ def main():
     trackings.update(bestbuy_tracking_retriever.get_trackings())
   except:
     send_error_email(email_sender, "Error retrieving Best Buy emails")
+    raise
+
+  print("Retrieving Walmart tracking numbers from email ...")
+  walmart_tracking_retriever = WalmartTrackingRetriever(config, args, driver_creator)
+  try:
+    trackings.update(walmart_tracking_retriever.get_trackings())
+  except:
+    send_error_email(email_sender, "Error retrieving Walmart emails")
     raise
 
   try:
