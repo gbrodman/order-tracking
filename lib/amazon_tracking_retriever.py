@@ -147,7 +147,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     for item in shipment_ele.find_elements_by_css_selector("span[data-action='asinclick']"):
       item.click()
       for tracking in shipment_ele.find_elements_by_css_selector(
-          "span[data-action='trackingidclick'] a.a-link-normal span.a-size-small"):
+          "div.asinTrackingInformation span.a-list-item span.a-size-small"):
         trackings.append((self.li_regex.sub("", tracking.text.strip()), delivery_status))
     return trackings
 
