@@ -429,6 +429,7 @@ class GroupSiteManager:
           raise Exception("Unknown group: " + group)
 
         print("Upload complete for %s." % group)
+        return
       except Exception as e:
         last_ex = e
         print("Received exception when uploading: " + str(e))
