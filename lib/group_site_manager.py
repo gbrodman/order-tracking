@@ -414,20 +414,24 @@ class GroupSiteManager:
     print("Uploading tracking numbers to %s..." % group)
     for attempt in range(MAX_UPLOAD_ATTEMPTS):
       try:
+        print("Uploading to %s." % group)
         if group in self.melul_portal_groups:
           username = self.config['groups'][group]['username']
           password = self.config['groups'][group]['password']
-          return self._upload_melul(numbers, group, username, password)
+          self._upload_melul(numbers, group, username, password)
         elif group == "usa":
-          return self._upload_usa(numbers)
+          self._upload_usa(numbers)
         elif group == "yrcw":
-          return self._upload_yrcw(numbers)
+          self._upload_yrcw(numbers)
         elif group == "bfmr":
-          return self._upload_bfmr(numbers)
+          self._upload_bfmr(numbers)
         elif group == 'oaks':
-          return self._upload_oaks(numbers)
+          self._upload_oaks(numbers)
         else:
           raise Exception("Unknown group: " + group)
+
+        print("Upload complete for %s." % group)
+        return
       except Exception as e:
         last_ex = e
         print("Received exception when uploading: " + str(e))
@@ -483,15 +487,15 @@ class GroupSiteManager:
     try:
       # load the login page first
       self._load_page(driver, "https://buyformeretail.com/login")
-      driver.find_element_by_id("loginEmail").send_keys(group_config['username'])
-      driver.find_element_by_id("loginPassword").send_keys(group_config['password'])
-      driver.find_element_by_xpath("//button[@type='submit']").click()
+      driver.find_element_by_id("email").send_keys(group_config['username'])
+      driver.find_element_by_id("password").send_keys(group_config['password'])
+      driver.find_element_by_css_selector('div.bfmr-auth-form-next button').click()
 
       time.sleep(2)
 
       # hope there's a button to submit tracking numbers -- it doesn't matter which one
       try:
-        driver.find_element_by_class_name('btn-bf-submit-track').click()
+        driver.find_element_by_css_selector('div.view-deal-section button').click()
       except NoSuchElementException:
         raise Exception(
             "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
@@ -501,7 +505,7 @@ class GroupSiteManager:
 
       textarea = driver.find_element_by_css_selector('div.modal-content textarea')
       textarea.send_keys("\n".join(numbers))
-      driver.find_element_by_css_selector('div.modal-content button.btn-primary').click()
+      driver.find_element_by_css_selector('div.modal-content button.btn-green').click()
       # TODO: This needs to wait for the success dialog to be displayed.
       time.sleep(5)
 

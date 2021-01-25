@@ -56,6 +56,8 @@ groups:
   bfmr:
     keys:
       - 51 s broadway
+    username: my_bfmr_username
+    password:
   home:
     keys:
       - 1234 Fake St
