@@ -246,6 +246,12 @@ class GroupSiteManager:
         any_button.find_element_by_xpath('..').click()
       # Submit it
       driver.find_element_by_css_selector('div.modal-footer .btn-primary').click()
+
+      # hack for yrcw's shitty site with lots of data loading all at once
+      yrcw_config = self.config['groups']['yrcw']
+      if yrcw_config.get('waitForPageLoad', False):
+        input('Wait for all rows on the page to finish loading, then hit enter:')
+
       # Give it time to load
       time.sleep(10)
 
