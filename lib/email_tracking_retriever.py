@@ -26,10 +26,12 @@ AddressStrAndTrackings = Tuple[str, List[Tuple[str, Optional[str]]]]
 DEFAULT_PROFILE_BASE = '.profiles'
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
-MAX_ATTEMPTS = 2
+MAX_ATTEMPTS = 3
 DEFAULT_NUM_WORKERS = 10
 
 
+# Retry several times in case profile dir is transiently in use.
+@retry(stop=stop_after_attempt(4), wait=wait_exponential(min=10, max=60))
 def find_login(email_profile_name: str, profile_base: str) -> Optional[WebDriver]:
   # attempt exact matches first
   for profile_name in os.listdir(os.path.expanduser(profile_base)):
@@ -195,8 +197,8 @@ class EmailTrackingRetriever(ABC):
         driver = base_driver
     except Exception as e:
       # If driver creation fails, it might be in use or something. Reset entirely.
-      print(f"Unexpected error creating driver for profile {email_profile_name}: "
-            f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      tqdm.write(f"Unexpected error creating driver for profile {email_profile_name}: "
+                 f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
       failed_email_ids.extend(email_dict.keys())
       return result, failed_email_ids
 
@@ -204,28 +206,19 @@ class EmailTrackingRetriever(ABC):
       for email_id, email_content in email_dict.items():
         try:
           for attempt in range(MAX_ATTEMPTS):
-            try:
-              success, new_trackings = self.get_trackings_from_email(email_id, email_content,
-                                                                     attempt, driver)
-            except (ConnectionError, socket.error, imaplib.IMAP4.abort):
-              print(f"Connection lost; reconnecting (attempt {attempt + 1}).")
-              # Re-initializing the IMAP connection and retrying should fix most
-              # connection-related errors.
-              # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
-              mail = get_all_mail_folder()
-              continue
+            success, new_trackings = self.get_trackings_from_email(email_id, email_content, attempt,
+                                                                   driver)
             if success:
               result.extend(new_trackings)
               break
             elif attempt >= MAX_ATTEMPTS - 1:
-              tqdm.write(
-                  f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; we got: {new_trackings}"
-              )
+              tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; "
+                         f"we got: {new_trackings}")
               self.mark_as_unread(email_id)
         except Exception as e:
           failed_email_ids.append(email_id)
-          print(f"Unexpected error fetching tracking from email ID {email_id}: "
-                f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+          tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
+                     f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
       return result, failed_email_ids
     except Exception as e:
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
@@ -317,7 +310,6 @@ class EmailTrackingRetriever(ABC):
     return string_date
 
 
-@retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=120))
 def get_email_content(email_id, mail) -> str:
   result, data = mail.uid("FETCH", email_id, "(RFC822)")
   email_str = data[0][1].decode('utf-8')
@@ -350,13 +342,38 @@ def clean_email_content(email_str) -> str:
 def retrieve_email_infos(all_email_ids: Set[str],
                          mail: imaplib.IMAP4_SSL) -> Dict[str, Dict[str, str]]:
   result: Dict[str, Dict[str, str]] = collections.defaultdict(dict)
+  failed_email_ids: List[str] = []
   for email_id in tqdm(
       all_email_ids, desc="Retrieving email information", unit="email", total=len(all_email_ids)):
-    email_str = get_email_content(email_id, mail)
-    msg = email.message_from_string(email_str)
-    to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
-    profile_name = to_email.split("@")[0].lower()
-    result[profile_name][email_id] = email_str
+    try:
+      for attempt in range(MAX_ATTEMPTS):
+        success = False
+        try:
+          email_str = get_email_content(email_id, mail)
+          msg = email.message_from_string(email_str)
+          to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
+          profile_name = to_email.split("@")[0].lower()
+          if len(email_str) >= 100 and to_email and profile_name:
+            # Success heuristics to determine if we retrieved and parsed valid email content.
+            result[profile_name][email_id] = email_str
+            success = True
+        except (ConnectionError, socket.error, imaplib.IMAP4.abort):
+          tqdm.write(f"Connection lost; reconnecting (attempt {attempt + 1}).")
+          # Re-initializing the IMAP connection and retrying should fix most
+          # connection-related errors.
+          # See https://stackoverflow.com/questions/7575943/eof-error-in-imaplib
+          mail = get_all_mail_folder()
+          continue
+        if success:
+          break
+        elif attempt >= MAX_ATTEMPTS - 1:
+          tqdm.write(f"Failed to get content of email ID {email_id} after {MAX_ATTEMPTS} retries.")
+    except Exception as e:
+      failed_email_ids.append(email_id)
+      tqdm.write(f"Unexpected error fetching content of email ID {email_id}: "
+                 f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+  if len(failed_email_ids) > 0:
+    print(f"Errored out getting content for these email IDs; skipping them: {failed_email_ids}")
   return result
 
 
@@ -366,5 +383,6 @@ def new_driver(profile_base: str, profile_name: str) -> WebDriver:
 
 def get_all_mail_folder() -> imaplib.IMAP4_SSL:
   mail = email_auth.email_authentication()
+  mail.socket().settimeout(120)  # 2 min timeout on IMAP operations
   mail.select('"[Gmail]/All Mail"')
   return mail

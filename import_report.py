@@ -140,7 +140,7 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
         page_load=30)
   except Exception as e:
     tqdm.write(
-      f"{admin_profile + ':':<20} Failed to open profile: {str(e)}\n{util.get_traceback_lines()}")
+        f"{admin_profile + ':':<20} Failed to open profile: {str(e)}\n{util.get_traceback_lines()}")
     return None
   try:
     # Go to https://amazon.com/b2b/aba/
