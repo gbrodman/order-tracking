@@ -82,7 +82,10 @@ def main():
       group_site_manager.upload(trackings.values())
     except:
       send_error_email(email_sender, "Error uploading tracking numbers")
-      raise
+      if args.seen:
+        print("Error uploading tracking numbers; skipping.")
+      else:
+        raise
 
     reconcilable_trackings = [t for t in new_trackings if t.reconcile]
 
@@ -93,7 +96,10 @@ def main():
       tracking_uploader.upload_trackings(reconcilable_trackings)
     except:
       send_error_email(email_sender, "Error uploading to Google Sheets")
-      raise
+      if args.seen:
+        print("Error uploading to Google Sheets; skipping.")
+      else:
+        raise
 
     print("Writing results to file")
     try:
