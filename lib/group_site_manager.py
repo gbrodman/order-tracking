@@ -453,6 +453,7 @@ class GroupSiteManager:
     driver.find_element_by_css_selector('input[type="email"]').send_keys(username)
     driver.find_element_by_css_selector('input[type="password"]').send_keys(password)
     driver.find_element_by_xpath('//button[text() = "LOG IN"]').click()
+    time.sleep(3)
     return driver
 
   def _upload_dtmd(self, numbers: List[str]):
@@ -460,12 +461,15 @@ class GroupSiteManager:
     try:
       # There are no ids, names, or class names that are useful at all so we have to use xpath / text
       driver.find_element_by_xpath('//button[text() = "Submit Tracking"]').click()
+      time.sleep(0.5)
       textarea = driver.find_element_by_tag_name('textarea')
       textarea.send_keys("\n".join(numbers))
       group_selector = Select(driver.find_element_by_tag_name('select'))
       group_selector.select_by_visible_text('DTMD')
       # Same text in the modal's submit field, so select the last one with this text
       driver.find_elements_by_xpath('//button[text() = "Submit Tracking"]')[-1].click()
+      # If we close out too soon it aborts the PUT request (which seems to be unrelated to the button click) so sleep
+      time.sleep(5)
     finally:
       driver.quit()
 
