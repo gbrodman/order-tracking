@@ -436,7 +436,7 @@ class GroupSiteManager:
         elif group == 'dtmd':
           self._upload_dtmd(numbers)
         elif group == 'embdeals':
-          return self._upload_emb(numbers)
+          self._upload_emb(numbers)
         else:
           raise Exception("Unknown group: " + group)
 
@@ -496,8 +496,8 @@ class GroupSiteManager:
     driver.implicitly_wait(30)
     self._load_page(driver, EMB_URL)
     
-    driver.find_element_by_css_selector('input[name="email"]').send_keys(username)
-    driver.find_element_by_css_selector('[name="password"]').send_keys(password)
+    driver.find_element_by_name('email').send_keys(username)
+    driver.find_element_by_name('password').send_keys(password)
     driver.find_element_by_css_selector('app-login .mat-button-wrapper').click()
     time.sleep(3)
     return driver
@@ -507,24 +507,22 @@ class GroupSiteManager:
     try:
       time.sleep(1)
       #Open menu and navigate to Tracking page
-      driver.find_element_by_xpath("//*[contains(text(), 'menu')]").click()
+      driver.find_element_by_xpath("//mat-icon[text() = 'menu']").click()
       #EMB site is slow
       time.sleep(1)
-      driver.find_element_by_xpath("//*[contains(text(), 'Tracking')]").click()
+      driver.find_element_by_xpath("//span[text() = 'Tracking']").click()
       time.sleep(1)
 
       #add trackings
-      driver.find_element_by_xpath("//*[contains(text(), 'Bulk Tracking')]").click()
-      driver.find_element_by_css_selector("[name='numbers']").send_keys('\n'.join(numbers))
+      driver.find_element_by_xpath("//span[text() = ' Bulk Tracking']").click()
+      driver.find_element_by_name('numbers').send_keys('\n'.join(numbers))
 
       #submit - EMB site is slow
       driver.implicitly_wait(120)
-      driver.find_element_by_css_selector('.mat-raised-button span.mat-button-wrapper').click()
+      driver.find_element_by_xpath("//span[text() = 'Add']").click()
 
       #wait for trackings to be saved
-      driver.find_element_by_xpath("//*[contains(text(), 'saved')]")
-      time.sleep(4)
-      
+      driver.find_element_by_xpath("//span[text() = 'saved']")
     finally:
       driver.quit()
 
