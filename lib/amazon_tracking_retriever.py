@@ -187,3 +187,22 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   def load_url(self, driver, url):
     driver.get(url)
     time.sleep(1)  # wait for page load because the timeouts can be buggy
+
+  def log_in_if_necessary(self):
+    driver = self.driver_creator.new()
+    config = self.config
+    driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
+    if 'amazon' in config:
+      print("Signing into Amazon ...")
+      driver.find_element_by_css_selector('input[type="email"]').send_keys(config['amazon']['email'])
+      driver.find_element_by_css_selector('input[type="submit"]').click()
+      driver.find_element_by_css_selector('input[type="password"]').send_keys(config['amazon']['password'])
+      driver.find_element_by_css_selector('input[type="submit"]').click()
+
+      orders_containers = driver.find_elements_by_id('ordersContainer')
+      if len(orders_containers) == 0:
+        input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+    else:
+      input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
+
+    return driver
