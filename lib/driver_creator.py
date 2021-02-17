@@ -24,8 +24,8 @@ class DriverCreator:
     if self.args.firefox:
       return self._new_firefox_driver(wait, page_load)
     else:
-      return self._new_chrome_driver(wait, page_load, user_data_dir=user_data_dir,
-                                     download_dir=download_dir)
+      return self._new_chrome_driver(
+          wait, page_load, user_data_dir=user_data_dir, download_dir=download_dir)
 
   def fix_perms(self, path):
     for root, dirs, files in os.walk(path):

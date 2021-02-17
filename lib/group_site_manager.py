@@ -41,6 +41,7 @@ RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
 MELUL_EXPORTS_FOLDER = os.path.join(os.getcwd(), 'exports')
 EXPORT_WAIT_TIMEOUT_SECONDS = 60
 
+DTMD_URL = "https://gibstrat.com"
 OAKS_URL = "http://hso-tech.com"
 
 USA_LOGIN_URL = "https://usabuying.group/login"
@@ -422,6 +423,8 @@ class GroupSiteManager:
           return self._upload_bfmr(numbers)
         elif group == 'oaks':
           return self._upload_oaks(numbers)
+        elif group == 'dtmd':
+          return self._upload_dtmd(numbers)
         else:
           raise Exception("Unknown group: " + group)
       except Exception as e:
@@ -433,6 +436,42 @@ class GroupSiteManager:
   def _load_page(self, driver, url) -> None:
     driver.get(url)
     time.sleep(3)
+
+  def _login_dtmd(self):
+    group_config = self.config['groups']['dtmd']
+    username = group_config['username']
+    password = group_config['password']
+    driver = self.driver_creator.new()
+    self._load_page(driver, DTMD_URL)
+    # There are no ids, names, or class names that are useful at all so we have to use xpath / text
+    driver.find_element_by_xpath('//button[text() = "SIGN UP OR LOGIN"]').click()
+    # takes a sec to bring up the modal
+    time.sleep(1)
+    driver.find_element_by_xpath('//button[text() = "OR LOGIN"]').click()
+    # takes a sec to bring up the true login page
+    time.sleep(1)
+    driver.find_element_by_css_selector('input[type="email"]').send_keys(username)
+    driver.find_element_by_css_selector('input[type="password"]').send_keys(password)
+    driver.find_element_by_xpath('//button[text() = "LOG IN"]').click()
+    time.sleep(3)
+    return driver
+
+  def _upload_dtmd(self, numbers: List[str]):
+    driver = self._login_dtmd()
+    try:
+      # There are no ids, names, or class names that are useful at all so we have to use xpath / text
+      driver.find_element_by_xpath('//button[text() = "Submit Tracking"]').click()
+      time.sleep(0.5)
+      textarea = driver.find_element_by_tag_name('textarea')
+      textarea.send_keys("\n".join(numbers))
+      group_selector = Select(driver.find_element_by_tag_name('select'))
+      group_selector.select_by_visible_text('DTMD')
+      # Same text in the modal's submit field, so select the last one with this text
+      driver.find_elements_by_xpath('//button[text() = "Submit Tracking"]')[-1].click()
+      # If we close out too soon it aborts the PUT request (which seems to be unrelated to the button click) so sleep
+      time.sleep(5)
+    finally:
+      driver.quit()
 
   def _login_oaks(self) -> WebDriver:
     group_config = self.config['groups']['oaks']
