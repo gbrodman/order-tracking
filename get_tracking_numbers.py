@@ -79,7 +79,7 @@ def main():
         else:
           raise e
 
-    print("Uploading tracking numbers...")
+    print("Uploading all tracking numbers...")
     group_site_manager = GroupSiteManager(config, driver_creator)
     try:
       group_site_manager.upload(trackings.values())
