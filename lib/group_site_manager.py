@@ -42,6 +42,7 @@ EXPORT_WAIT_TIMEOUT_SECONDS = 60
 
 DTMD_URL = "https://gibstrat.com"
 OAKS_URL = "http://hso-tech.com"
+EMB_URL = "http://embdeals.com"
 
 USA_LOGIN_URL = "https://usabuying.group/login"
 USA_TRACKING_URL = "https://usabuying.group/trackings"
@@ -434,6 +435,8 @@ class GroupSiteManager:
           self._upload_oaks(numbers)
         elif group == 'dtmd':
           self._upload_dtmd(numbers)
+        elif group == 'embdeals':
+          self._upload_emb(numbers)
         else:
           raise Exception("Unknown group: " + group)
 
@@ -482,6 +485,48 @@ class GroupSiteManager:
       driver.find_elements_by_xpath('//button[text() = "Submit Tracking"]')[-1].click()
       # If we close out too soon it aborts the PUT request (which seems to be unrelated to the button click) so sleep
       time.sleep(5)
+    finally:
+      driver.quit()
+
+  def _login_emb(self) -> WebDriver:
+    group_config = self.config['groups']['embdeals']
+    username = group_config['username']
+    password = group_config['password']
+    driver = self.driver_creator.new()
+
+    # the website is terrible, give it leeway
+    driver.set_page_load_timeout(30)
+    driver.set_script_timeout(30)
+    driver.implicitly_wait(30)
+    self._load_page(driver, EMB_URL)
+    
+    driver.find_element_by_name('email').send_keys(username)
+    driver.find_element_by_name('password').send_keys(password)
+    driver.find_element_by_css_selector('app-login .mat-button-wrapper').click()
+    time.sleep(3)
+    return driver
+
+  def _upload_emb(self, numbers) -> None:
+    driver = self._login_emb()
+    try:
+      time.sleep(1)
+      #Open menu and navigate to Tracking page
+      driver.find_element_by_xpath("//mat-icon[text() = 'menu']").click()
+      #EMB site is slow
+      time.sleep(1)
+      driver.find_element_by_xpath("//span[text() = 'Tracking']").click()
+      time.sleep(1)
+
+      #add trackings
+      driver.find_element_by_xpath("//span[text() = ' Bulk Tracking']").click()
+      driver.find_element_by_name('numbers').send_keys('\n'.join(numbers))
+
+      #submit - EMB site is slow
+      driver.implicitly_wait(120)
+      driver.find_element_by_xpath("//span[text() = 'Add']").click()
+
+      #wait for trackings to be saved
+      driver.find_element_by_xpath("//span[text() = 'saved']")
     finally:
       driver.quit()
 
