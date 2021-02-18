@@ -47,6 +47,3 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   def get_delivery_date_from_email(self, data):
     return ""
-
-  def log_in_if_necessary(self):
-    return None

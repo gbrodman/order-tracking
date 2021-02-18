@@ -67,8 +67,8 @@ class EmailTrackingRetriever(ABC):
     # Incomplete tracking information from emails with handled errors.
     incomplete_trackings = []
 
+    self.driver = self.log_in_if_necessary()
     try:
-      self.driver = self.log_in_if_necessary()
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -99,9 +99,6 @@ class EmailTrackingRetriever(ABC):
         print("Fatal unexpected error parsing emails; marking all as unread.")
         self.back_out_of_all()
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
-
-    finally:
-      self.driver.quit()
 
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
@@ -170,7 +167,6 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
-  @abstractmethod
   def log_in_if_necessary(self):
     pass
 
