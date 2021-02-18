@@ -403,7 +403,7 @@ class GroupSiteManager:
       po = row['ID']
       cost = float(row['TOTAL'])
       date_str = row['CREATED DATE']
-      date = datetime.datetime.strptime(date_str, '%a %b %d %Y %H:%M:%S %z').strftime('%Y-%m-%d')
+      date = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d')
       trackings = clean_csv_tracking(row['TRACKING NUMBERS']).split(',')
       if trackings:
         tracking_tuple = tuple(
