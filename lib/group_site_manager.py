@@ -498,7 +498,7 @@ class GroupSiteManager:
     
     driver.find_element_by_name('email').send_keys(username)
     driver.find_element_by_name('password').send_keys(password)
-    driver.find_element_by_css_selector('app-login .mat-button-wrapper').click()
+    driver.find_element_by_xpath("//span[text() = 'Login']").click()
     time.sleep(3)
     return driver
 
@@ -511,6 +511,9 @@ class GroupSiteManager:
       #EMB site is slow
       time.sleep(1)
       driver.find_element_by_xpath("//span[text() = 'Tracking']").click()
+      time.sleep(1)
+      #Have to re-open menu after page change
+      driver.find_element_by_xpath("//mat-icon[text() = 'menu']").click()
       time.sleep(1)
 
       #add trackings
