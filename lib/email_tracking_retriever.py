@@ -94,12 +94,19 @@ class EmailTrackingRetriever(ABC):
           failed_email_ids.append(email_id)
           tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
                      f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+
     except Exception as e:
       if not self.args.seen:
         print("Fatal unexpected error parsing emails; marking all as unread.")
         self.back_out_of_all()
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
 
+    finally:
+      try:
+        self.driver.quit()
+      except Exception as e:
+        pass
+  
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
             "Here's what we got:\n" + "\n".join([str(t) for t in incomplete_trackings]))
