@@ -102,10 +102,8 @@ class EmailTrackingRetriever(ABC):
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
 
     finally:
-      try:
+      if self.driver:
         self.driver.quit()
-      except Exception as e:
-        pass
   
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
