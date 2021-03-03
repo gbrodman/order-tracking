@@ -174,6 +174,7 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
+  # By default this does nothing, but it can be used for logging into amazon
   def log_in_if_necessary(self):
     pass
 
