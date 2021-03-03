@@ -1,5 +1,5 @@
 requests==2.23.0
-aiohttp==3.6.2
+aiohttp==3.7.4
 beautifulsoup4==4.9.1
 bs4==0.0.1
 google-api-python-client==1.8.4

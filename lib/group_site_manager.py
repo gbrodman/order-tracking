@@ -128,6 +128,22 @@ def _delete_existing_exports():
     os.remove(f"{MELUL_EXPORTS_FOLDER}/{filename}")
 
 
+def _wait_for_csv(group: str) -> List[Dict[str, str]]:
+  with tqdm(desc=f"Waiting for {group} export file...", unit='second') as pbar:
+    for i in range(EXPORT_WAIT_TIMEOUT_SECONDS):
+      list_dir_result = os.listdir(MELUL_EXPORTS_FOLDER)
+      if list_dir_result:
+        # now the file exists, we assume
+        export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{list_dir_result[0]}"
+        with open(export_csv_file, 'r') as f:
+          reader = csv.DictReader(f)
+          return [r for r in reader]
+      time.sleep(1)
+      pbar.update()
+  print(f"Waited longer than {EXPORT_WAIT_TIMEOUT_SECONDS} seconds for group {group}. Skipping...")
+  return []
+
+
 class GroupSiteManager:
 
   def __init__(self, config, driver_creator) -> None:
@@ -189,6 +205,8 @@ class GroupSiteManager:
       return self._get_yrcw_tracking_pos_prices()
     elif group == "oaks":
       return self._get_oaks_tracking_pos_prices()
+    elif group == "dtmd":
+      return self._get_dtmd_tracking_pos_prices()
     return dict(), dict()
 
   def _get_oaks_tracking_pos_prices(self) -> ReconResult:
@@ -370,24 +388,7 @@ class GroupSiteManager:
           'button[ng-click=\'tables["it@receipts"].execTable({cmd:"csv"})\']').click()
 
       # Wait for the file to be downloaded
-      wait_time = 0
-      with tqdm(desc=f"Waiting for {group} export file...", unit='second') as pbar:
-        while True:
-          if os.listdir(MELUL_EXPORTS_FOLDER):
-            break
-          if wait_time > EXPORT_WAIT_TIMEOUT_SECONDS:
-            print(
-                f"Waited longer than {EXPORT_WAIT_TIMEOUT_SECONDS} seconds for group {group}. Skipping..."
-            )
-            return []
-          time.sleep(1)
-          pbar.update()
-          wait_time += 1
-      # now the file exists, we assume
-      export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{os.listdir(MELUL_EXPORTS_FOLDER)[0]}"
-      with open(export_csv_file, 'r') as f:
-        reader = csv.DictReader(f)
-        return [r for r in reader]
+      return _wait_for_csv(group)
     finally:
       driver.quit()
 
@@ -456,7 +457,7 @@ class GroupSiteManager:
     group_config = self.config['groups']['dtmd']
     username = group_config['username']
     password = group_config['password']
-    driver = self.driver_creator.new()
+    driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
     self._load_page(driver, DTMD_URL)
     # There are no ids, names, or class names that are useful at all so we have to use xpath / text
     driver.find_element_by_xpath('//button[text() = "SIGN UP OR LOGIN"]').click()
@@ -470,6 +471,34 @@ class GroupSiteManager:
     driver.find_element_by_xpath('//button[text() = "LOG IN"]').click()
     time.sleep(3)
     return driver
+
+  def _get_dtmd_csv(self):
+    _delete_existing_exports()
+    print("Loading DTMD via CSV export")
+    driver = self._login_dtmd()
+    try:
+      time.sleep(3)  # it takes a few seconds to load async
+      csv_button = driver.find_element_by_xpath('//button[text() = "Export to CSV"]')
+      csv_button.click()
+      # Wait for the file to be downloaded
+      return _wait_for_csv('dtmd')
+    finally:
+      driver.quit()
+
+  def _get_dtmd_tracking_pos_prices(self) -> ReconResult:
+    csv_rows = self._get_dtmd_csv()
+    tracking_infos: TrackingInfoDict = {}
+    for row in csv_rows:
+      tracking_number = clean_csv_tracking(row['Tracking Number'])
+      tracking_tuple = (tracking_number.strip(),)
+      price_total = row['Price Total']
+      price_total = float(price_total) if price_total else 0.0
+      commission_total = row['Commission Total']
+      commission_total = float(commission_total) if commission_total else 0.0
+      previous_cost = tracking_infos[tracking_tuple][1] if tracking_tuple in tracking_infos else 0.0
+      tracking_infos[tracking_tuple] = ('dtmd', price_total + commission_total + previous_cost,
+                                        'unknown')
+    return tracking_infos, {}
 
   def _upload_dtmd(self, numbers: List[str]):
     driver = self._login_dtmd()
@@ -499,7 +528,7 @@ class GroupSiteManager:
     driver.set_script_timeout(30)
     driver.implicitly_wait(30)
     self._load_page(driver, EMB_URL)
-    
+
     driver.find_element_by_name('email').send_keys(username)
     driver.find_element_by_name('password').send_keys(password)
     driver.find_element_by_xpath("//span[text() = 'Login']").click()
