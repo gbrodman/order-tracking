@@ -67,9 +67,8 @@ class EmailTrackingRetriever(ABC):
     # Incomplete tracking information from emails with handled errors.
     incomplete_trackings = []
 
-    self.driver = self.driver_creator.new()
+    self.driver = self.log_in_if_necessary()
     try:
-      log_in_if_necessary(self.driver, self.email_config)
       for email_id in tqdm(self.all_email_ids, desc="Fetching trackings", unit="email"):
         try:
           for attempt in range(MAX_ATTEMPTS):
@@ -95,14 +94,17 @@ class EmailTrackingRetriever(ABC):
           failed_email_ids.append(email_id)
           tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
                      f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+
     except Exception as e:
       if not self.args.seen:
         print("Fatal unexpected error parsing emails; marking all as unread.")
         self.back_out_of_all()
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
-    finally:
-      self.driver.quit()
 
+    finally:
+      if self.driver:
+        self.driver.quit()
+  
     if len(incomplete_trackings) > 0:
       print("Couldn't find full tracking info/matching buying group for some emails.\n"
             "Here's what we got:\n" + "\n".join([str(t) for t in incomplete_trackings]))
@@ -168,6 +170,10 @@ class EmailTrackingRetriever(ABC):
 
   @abstractmethod
   def get_delivery_date_from_email(self, email_str) -> Any:
+    pass
+
+  # By default this does nothing, but it can be used for logging into amazon
+  def log_in_if_necessary(self):
     pass
 
   def get_trackings_from_email(self, email_id, mail, attempt: int) -> Tuple[bool, List[Tracking]]:
@@ -285,20 +291,3 @@ def clean_email_content(email_str) -> str:
   email_str = email_str.replace(r'\r', '')
   email_str = email_str.replace(r'\n', '')
   return email_str
-
-
-def log_in_if_necessary(driver: WebDriver, email_config):
-  driver.get('https://www.amazon.com/gp/your-account/order-history/ref=ppx_yo_dt_b_orders')
-  if 'amazon_email' in email_config:
-    print("Signing into Amazon ...")
-    driver.find_element_by_css_selector('form[name="signIn"]')
-    driver.find_element_by_css_selector('input[type="email"]').send_keys(email_config['amazon_email'])
-    driver.find_element_by_css_selector('input[type="submit"]').click()
-    driver.find_element_by_css_selector('input[type="password"]').send_keys(email_config['amazon_password'])
-    driver.find_element_by_css_selector('input[type="submit"]').click()
-
-    orders_containers = driver.find_elements_by_id('ordersContainer')
-    if len(orders_containers) == 0:
-      input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
-  else:
-    input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
