@@ -73,7 +73,8 @@ class OrderInfoRetriever:
       return self.load_order_total_amazon(order_id)
 
   def load_order_total_bb(self, order_id: str) -> Dict[str, OrderInfo]:
-    email_id, email_str = self.get_relevant_raw_email_data(order_id)
+    from_email = 'BestBuyInfo@emailinfo.bestbuy.com'
+    email_id, email_str = self.get_relevant_raw_email_data(order_id, from_email)
     if not email_str:
       print("Could not find email for order ID %s" % order_id)
       return {}
@@ -91,7 +92,7 @@ class OrderInfoRetriever:
     return {order_id: OrderInfo(email_id, subtotal + tax)}
 
   def load_order_total_amazon(self, order_id: str) -> Dict[str, OrderInfo]:
-    email_id, email_str = self.get_relevant_raw_email_data(order_id)
+    email_id, email_str = self.get_relevant_raw_email_data(order_id, 'auto-confirm@amazon.com')
     if not email_str:
       tqdm.write(f"Could not find email for order ID {order_id}.")
       return {}
@@ -127,9 +128,9 @@ class OrderInfoRetriever:
         order_infos = [OrderInfo(email_id, t) for t in overall_totals]
         return dict(zip(orders, order_infos))
 
-  def get_relevant_raw_email_data(self, order_id) -> Tuple[Optional[str], Optional[str]]:
-    status, search_result = self.mail.uid('SEARCH', None, f'BODY "Order #{order_id}"',
-                                          'FROM "auto-confirm@amazon.com"')
+  def get_relevant_raw_email_data(self, order_id: str, from_email: str) -> Tuple[Optional[str], Optional[str]]:
+    status, search_result = self.mail.uid('SEARCH', None, f'BODY "{order_id}"',
+                                          f'FROM "{from_email}"')
     email_id = search_result[0]
     if not email_id:
       return None, None
