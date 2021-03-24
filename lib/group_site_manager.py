@@ -468,7 +468,7 @@ class GroupSiteManager:
     print("Loading DTMD via CSV export")
     driver = self._login_dtmd()
     try:
-      time.sleep(3)  # it takes a few seconds to load async
+      time.sleep(10)  # it takes a few seconds to load async
       csv_button = driver.find_element_by_xpath('//button[text() = "Export to CSV"]')
       csv_button.click()
       # Wait for the file to be downloaded
@@ -611,7 +611,7 @@ class GroupSiteManager:
 
       textarea = driver.find_element_by_css_selector('div.modal-content textarea')
       textarea.send_keys("\n".join(numbers))
-      driver.find_element_by_css_selector('div.modal-content button.btn-green').click()
+      driver.find_element_by_css_selector('div.modal-content div.deal-detail button.btn-green').click()
       # TODO: This needs to wait for the success dialog to be displayed.
       time.sleep(5)
 
