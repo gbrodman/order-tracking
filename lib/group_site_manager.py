@@ -34,7 +34,7 @@ SUBMIT_BUTTON_SELECTOR = "//*[contains(text(), 'SUBMIT')]"
 RESULT_SELECTOR = "//*[contains(text(), 'record(s) effected')]"
 RESULT_REGEX = r"(\d+) record\(s\) effected"
 
-BASE_URL_FORMAT = "https://%s.com"
+BASE_URL_FORMAT = "https://%s.com/p/login"
 MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 
 RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
