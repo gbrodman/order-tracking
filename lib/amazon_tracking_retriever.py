@@ -16,6 +16,7 @@ from lib.email_tracking_retriever import EmailTrackingRetriever
 def _parse_date(text):
   if not text:
     return ''
+  text = text.replace('=20', '')  # extra char can get added
   date_text = text.split(',')[-1].strip()
   date_text = ' '.join(date_text.split(' ')[0:2])
   try:
