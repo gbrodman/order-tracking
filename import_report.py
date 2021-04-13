@@ -8,10 +8,12 @@ import os
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from random import shuffle
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Callable, Dict, Tuple
 
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
@@ -30,13 +32,13 @@ shuffle(admin_profiles)
 profile_base = config['profileBase']
 
 ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
+PERSONAL_REPORT_URL = 'https://www.amazon.com/gp/b2b/reports'
 REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
-MAX_WORKERS = 8
+MAX_WORKERS = 5
 DOWNLOAD_TIMEOUT_SECS = 240
 
 
-def get_group(header, row) -> Any:
-  address = row[header.index("Shipping Address")]
+def get_group(address: str) -> Tuple[Optional[str], bool]:
   address = address.upper()
   for group in config['groups'].keys():
     group_conf = config['groups'][group]
@@ -47,8 +49,8 @@ def get_group(header, row) -> Any:
     for group_key in group_keys:
       if str(group_key).upper() in address:
         return group, reconcile
-  print("No group from row:")
-  print(row)
+  if len(address) > 3:
+    print(f"No group from address {address}:")
   return None, True
 
 
@@ -66,20 +68,52 @@ def get_ship_date(ship_date_str: str) -> str:
     return 'n/a'
 
 
-def from_amazon_row(header: List[str], row: List[str]) -> Optional[Tracking]:
-  tracking = clean_csv_tracking(row[header.index('Carrier Tracking #')])
-  orders = {row[header.index('Order ID')].upper()}
-  price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
-      'N/A', '0.0')
+def from_amazon_row(row: Dict[str, str]) -> Optional[Tracking]:
+  tracking = clean_csv_tracking(row['Carrier Tracking #'])
+  orders = {row['Order ID'].upper()}
+  price_str = str(row['Shipment Subtotal']).replace(',', '').replace('$', '').replace('N/A', '0.0')
   price = float(price_str) if price_str else 0.0
-  to_email = row[header.index("Account User Email")]
-  ship_date = get_ship_date(str(row[header.index("Shipment Date")]))
-  group, reconcile = get_group(header, row)
+  to_email = row["Account User Email"]
+  ship_date = get_ship_date(str(row["Shipment Date"]))
+  group, reconcile = get_group(row['Shipping Address'])
   if group is None:
     return None
   tracked_cost = 0.0
-  items = row[header.index("Title")] + " Qty:" + str(row[header.index("Item Quantity")])
-  merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
+  items = row["Title"] + " Qty:" + str(row["Item Quantity"])
+  merchant = row['Merchant'] if 'Merchant' in row else 'Amazon'
+  return Tracking(
+      tracking,
+      group,
+      orders,
+      price,
+      to_email,
+      ship_date=ship_date,
+      tracked_cost=tracked_cost,
+      items=items,
+      merchant=merchant,
+      reconcile=reconcile)
+
+
+def from_personal_row(row: Dict[str, str]) -> Optional[Tracking]:
+  tracking_col = row['Carrier Name & Tracking Number']
+  if not tracking_col:
+    return None
+  tracking = tracking_col.split('(')[1].replace(')', '')
+  orders = {row['Order ID'].upper()}
+  price_str = str(row['Subtotal']).replace(',', '').replace('$', '').replace('N/A', '0.0')
+  price = float(price_str) if price_str else 0.0
+  to_email = row['Ordering Customer Email']
+  ship_date = get_ship_date(str(row["Shipment Date"]))
+  street_1 = row['Shipping Address Street 1']
+  city = row['Shipping Address City']
+  state = row['Shipping Address State']
+  address = f"{street_1} {city}, {state}"
+  group, reconcile = get_group(address)
+  if group is None:
+    return None
+  tracked_cost = 0.0
+  items = price_str
+  merchant = 'Amazon'
   return Tracking(
       tracking,
       group,
@@ -129,32 +163,48 @@ def do_with_spinner(driver, fn):
       expected_conditions.invisibility_of_element_located((By.CSS_SELECTOR, "span.a-spinner")))
 
 
-def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[str]:
+def create_driver(admin_profile: str, temp_dir: str) -> WebDriver:
+  # Create temp dir to download this report into
+  os.mkdir(temp_dir)
+  return DriverCreator().new(
+      user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
+      download_dir=temp_dir,
+      page_load=30)
+
+
+def download_personal_report(driver: WebDriver) -> None:
+  driver.get(PERSONAL_REPORT_URL)
+  type_select = Select(driver.find_element_by_id('report-type'))
+  type_select.select_by_visible_text('Orders and shipments')
+  driver.execute_script('setDatesToYearToDate()')
+  driver.find_element_by_id('report-confirm').click()
+
+
+def download_shipping_report(driver: WebDriver) -> None:
+  # Go to https://amazon.com/b2b/aba/
+  driver.get(ANALYTICS_URL)
+  # Click on Shipments link (thanks Amazon for the garbage-tier HTML)
+  do_with_spinner(
+      driver, lambda: driver.find_element_by_xpath("//a[span[span[text()='Shipments']]]").click())
+  # Set Time period to "Past 12 months"
+  driver.find_element_by_id("date_range_selector__range").click()
+  do_with_spinner(driver,
+                  lambda: driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click())
+  # Click "Download CSV"
+  driver.find_element_by_id("download-csv-file-button").click()
+
+
+def operate_on_profile(get_from_amazon_fn: Callable[[WebDriver], None], admin_profile: str,
+                       report_dir: str) -> Optional[str]:
+  temp_dir = os.path.join(report_dir, admin_profile)
   try:
-    # Create temp dir to download this report into
-    temp_dir = os.path.join(report_dir, admin_profile)
-    os.mkdir(temp_dir)
-    driver = DriverCreator().new(
-        user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
-        download_dir=temp_dir,
-        page_load=30)
+    driver = create_driver(admin_profile, temp_dir)
   except Exception as e:
     tqdm.write(
         f"{admin_profile + ':':<20} Failed to open profile: {str(e)}\n{util.get_traceback_lines()}")
     return None
   try:
-    # Go to https://amazon.com/b2b/aba/
-    driver.get(ANALYTICS_URL)
-    # Click on Shipments link (thanks Amazon for the garbage-tier HTML)
-    do_with_spinner(
-        driver, lambda: driver.find_element_by_xpath("//a[span[span[text()='Shipments']]]").click())
-    # Set Time period to "Past 12 months"
-    driver.find_element_by_id("date_range_selector__range").click()
-    do_with_spinner(
-        driver, lambda: driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click())
-    # Click "Download CSV"
-    driver.find_element_by_id("download-csv-file-button").click()
-    # Wait for download to complete.
+    get_from_amazon_fn(driver)
     for s in range(DOWNLOAD_TIMEOUT_SECS):
       dir_contents = os.listdir(temp_dir)
       if dir_contents and dir_contents[0].endswith(".csv"):  # Ignore .crdownload files
@@ -174,7 +224,7 @@ def download_shipping_report(admin_profile: str, report_dir: str) -> Optional[st
     driver.quit()
 
 
-def download_az_reports() -> List[str]:
+def download_reports_generic(get_from_amazon_fn: Callable[[WebDriver], None]):
   if not os.path.exists(REPORTS_DIR):
     os.mkdir(REPORTS_DIR)
   report_dir = os.path.join(REPORTS_DIR,
@@ -184,7 +234,8 @@ def download_az_reports() -> List[str]:
     tasks = {}
     report_paths = []
     for admin_profile in admin_profiles:
-      tasks[executor.submit(download_shipping_report, admin_profile, report_dir)] = admin_profile
+      tasks[executor.submit(operate_on_profile, get_from_amazon_fn, admin_profile,
+                            report_dir)] = admin_profile
     for task in tqdm(
         concurrent.futures.as_completed(tasks),
         desc="Downloading reports",
@@ -198,30 +249,50 @@ def download_az_reports() -> List[str]:
     return report_paths
 
 
-def read_trackings_from_file(file) -> List[Tracking]:
+def download_az_personal_reports() -> List[str]:
+  return download_reports_generic(download_personal_report)
+
+
+def download_az_reports() -> List[str]:
+  return download_reports_generic(download_shipping_report)
+
+
+def read_trackings_from_file(file, from_row_fn: Callable[[Dict[str, str]],
+                                                         Tracking]) -> List[Tracking]:
   with open(file, 'r') as f:
-    header = f.readline().strip().split(',')
-    rows = csv.reader(f.readlines(), quotechar='"', delimiter=',')
-    return [from_amazon_row(header, row) for row in rows]
+    reader = csv.DictReader(f)
+    rows = [r for r in reader]
+    return [from_row_fn(row) for row in rows]
 
 
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
   parser.add_argument(
       "--download", "-d", action="store_true", help="Download from Amazon using logged-in profiles")
+  parser.add_argument("--personal", "-p", action="store_true", help="Use the personal CSV format")
   parser.add_argument("globs", nargs="*")
   args, _ = parser.parse_known_args()
 
   all_trackings = []
-  if args.download:
+  if args.download and not args.personal:
     files = download_az_reports()
     for file in files:
-      all_trackings.extend(read_trackings_from_file(file))
-  elif args.globs:
+      all_trackings.extend(read_trackings_from_file(file, from_amazon_row))
+  elif args.globs and not args.personal:
     for glob_input in args.globs:
       files = glob.glob(glob_input)
       for file in files:
-        all_trackings.extend(read_trackings_from_file(file))
+        all_trackings.extend(read_trackings_from_file(file, from_amazon_row))
+  elif args.download and args.personal:
+    files = download_az_personal_reports()
+    for file in files:
+      all_trackings.extend(read_trackings_from_file(file, from_personal_row))
+    pass
+  elif args.globs and args.personal:
+    for glob_input in args.globs:
+      files = glob.glob(glob_input)
+      for file in files:
+        all_trackings.extend(read_trackings_from_file(file, from_personal_row))
   else:
     sheet_id = get_required("Enter Google Sheet ID: ")
     tab_name = get_required("Enter the name of the tab within the sheet: ")

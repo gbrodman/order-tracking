@@ -128,7 +128,8 @@ class OrderInfoRetriever:
         order_infos = [OrderInfo(email_id, t) for t in overall_totals]
         return dict(zip(orders, order_infos))
 
-  def get_relevant_raw_email_data(self, order_id: str, from_email: str) -> Tuple[Optional[str], Optional[str]]:
+  def get_relevant_raw_email_data(self, order_id: str,
+                                  from_email: str) -> Tuple[Optional[str], Optional[str]]:
     status, search_result = self.mail.uid('SEARCH', None, f'BODY "{order_id}"',
                                           f'FROM "{from_email}"')
     email_id = search_result[0]
