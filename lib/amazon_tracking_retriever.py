@@ -28,7 +28,10 @@ def get_standard_orders(driver: WebDriver) -> Set[str]:
   container = driver.find_element_by_id('ordersInPackage-container')
   if 'orders in this package' not in container.text:
     return set()
-  return set(re.findall(r'\d{3}-\d{7}-\d{7}', container.text))
+  link_elems = container.find_elements_by_tag_name('a')
+  links = [elem.get_attribute('href') for elem in link_elems]
+  orders_list = [re.search(r'\d{3}-\d{7}-\d{7}', link).group(0) for link in links]
+  return set(orders_list)
 
 
 def get_standard_trackings(driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
