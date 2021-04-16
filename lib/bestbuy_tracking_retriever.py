@@ -3,7 +3,7 @@ from typing import Tuple, Optional, List
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 
-from lib.email_tracking_retriever import EmailTrackingRetriever, AddressStrAndTrackings
+from lib.email_tracking_retriever import EmailTrackingRetriever, AddressTrackingsAndOrders
 
 
 class BestBuyTrackingRetriever(EmailTrackingRetriever):
@@ -16,8 +16,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
   def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
-                                     from_email: str, to_email: str) -> AddressStrAndTrackings:
-    return email_str, self.get_tracking_numbers_from_email(email_str)
+                                     from_email: str, to_email: str) -> AddressTrackingsAndOrders:
+    return email_str, self.get_tracking_numbers_from_email(email_str, from_email, to_email), set()
 
   def get_order_ids_from_email(self, raw_email):
     result = set()

@@ -1,14 +1,14 @@
 import datetime
 import re
 import time
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Set
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
-from lib.email_tracking_retriever import EmailTrackingRetriever, AddressStrAndTrackings
+from lib.email_tracking_retriever import EmailTrackingRetriever, AddressTrackingsAndOrders
 
 
 def _parse_date(text):
@@ -22,6 +22,13 @@ def _parse_date(text):
     return date.strftime('%Y-%m-%d')
   except:
     return ''
+
+
+def get_standard_orders(driver: WebDriver) -> Set[str]:
+  container = driver.find_element_by_id('ordersInPackage-container')
+  if 'orders in this package' not in container.text:
+    return set()
+  return set(re.findall(r'\d{3}-\d{7}-\d{7}', container.text))
 
 
 def get_standard_trackings(driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
@@ -63,14 +70,14 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   li_regex = re.compile(r"\d+\.\s+")
 
   def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
-                                     from_email: str, to_email: str) -> AddressStrAndTrackings:
+                                     from_email: str, to_email: str) -> AddressTrackingsAndOrders:
     if not driver:
       tqdm.write(f"No driver found for email {to_email}")
-      return '', []
+      return '', [], set()
     url = self.get_order_url_from_email(email_str)
     if not url:
       tqdm.write(f"No URL found for email addressed to {to_email}")
-      return '', []
+      return '', [], set()
     self.load_url(driver, url)
     # Bulk ordering (from ship-confirm) or standard page (otherwise)
     if "ship-confirm@amazon.com" in from_email:
@@ -80,10 +87,12 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       order_url = f"https://amazon.com/gp/your-account/order-details/ref=ppx_yo_dt_b_order_details_o03?ie=UTF8&orderID={order_id.strip()}"
       self.load_url(driver, order_url)
       address_info = get_address_info_from_order_details_page(driver)
+      orders = set()
     else:
       trackings = get_standard_trackings(driver)
       address_info = get_standard_address_info(driver)
-    return address_info, trackings
+      orders = get_standard_orders(driver)
+    return address_info, trackings, orders
 
   def get_order_url_from_email(self, raw_email):
     match = re.match(self.first_regex, str(raw_email))

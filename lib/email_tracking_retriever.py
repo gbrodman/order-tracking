@@ -20,8 +20,8 @@ from lib.driver_creator import DriverCreator
 from lib.tracking import Tracking
 
 _FuncT = TypeVar('_FuncT', bound=Callable)
-# no point in loading pages twice, so grab the address string + the trackings from the page
-AddressStrAndTrackings = Tuple[str, List[Tuple[str, Optional[str]]]]
+# no point in loading pages twice, so grab the address string, the trackings, and possibly orders from the page
+AddressTrackingsAndOrders = Tuple[str, List[Tuple[str, Optional[str]]], Set[str]]
 
 DEFAULT_PROFILE_BASE = '.profiles'
 BASE_64_FLAG = 'Content-Transfer-Encoding: base64'
@@ -153,7 +153,7 @@ class EmailTrackingRetriever(ABC):
 
   @abstractmethod
   def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
-                                     from_email: str, to_email: str) -> AddressStrAndTrackings:
+                                     from_email: str, to_email: str) -> AddressTrackingsAndOrders:
     pass
 
   @abstractmethod
@@ -244,8 +244,10 @@ class EmailTrackingRetriever(ABC):
         msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
     price = self.get_price_from_email(email_str)
     order_ids = self.get_order_ids_from_email(email_str)
-    address_info, tracking_nums = self.get_address_info_and_trackings(email_str, driver, from_email,
-                                                                      to_email)
+    address_info, tracking_nums, order_ids_from_driver = self.get_address_info_and_trackings(
+        email_str, driver, from_email, to_email)
+    if order_ids_from_driver:
+      order_ids = order_ids_from_driver
     group, reconcile = self.get_buying_group(address_info)
 
     if len(tracking_nums) == 0:
