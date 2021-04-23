@@ -739,7 +739,7 @@ class GroupSiteManager:
       email_str = email_tracking_retriever.clean_email_content(email_str)
       soup = BeautifulSoup(email_str, features="html.parser")
 
-      body = soup.find('td', id='email_body')
+      body = soup.find(id='email_body')
       if not body:
         continue
       tables = body.find_all('table')
@@ -749,5 +749,4 @@ class GroupSiteManager:
       fill_busted_bfmr_costs(result, table, date)
       fill_standard_bfmr_costs(result, table, date)
       fill_2020_12_22_bfmr_costs(result, table, date)
-
     return result
