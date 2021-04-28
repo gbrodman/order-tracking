@@ -3,22 +3,19 @@ import argparse
 import csv
 import datetime
 import glob
+from typing import List, Optional, Callable, Dict, Tuple
 
 from lib.config import open_config
-from lib.driver_creator import DriverCreator
 from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
 from lib.tracking_output import TrackingOutput
-from typing import Any, List, Optional
-
 from lib.tracking_uploader import TrackingUploader
 
 config = open_config()
 
 
-def get_group(header, row) -> Any:
-  address = row[header.index("Shipping Address")]
+def get_group(address: str) -> Tuple[Optional[str], bool]:
   address = address.upper()
   for group in config['groups'].keys():
     group_conf = config['groups'][group]
@@ -29,8 +26,8 @@ def get_group(header, row) -> Any:
     for group_key in group_keys:
       if str(group_key).upper() in address:
         return group, reconcile
-  print("No group from row:")
-  print(row)
+  if len(address) > 3:
+    print(f"No group from address {address}:")
   return None, True
 
 
@@ -48,20 +45,52 @@ def get_ship_date(ship_date_str: str) -> str:
     return 'n/a'
 
 
-def from_amazon_row(header: List[str], row: List[str]) -> Tracking:
-  tracking = clean_csv_tracking(str(row[header.index('Carrier Tracking #')]))
-  orders = {row[header.index('Order ID')].upper()}
-  price_str = str(row[header.index('Shipment Subtotal')]).replace(',', '').replace('$', '').replace(
-      'N/A', '0.0')
+def from_amazon_row(row: Dict[str, str]) -> Optional[Tracking]:
+  tracking = clean_csv_tracking(row['Carrier Tracking #'])
+  orders = {row['Order ID'].upper()}
+  price_str = str(row['Shipment Subtotal']).replace(',', '').replace('$', '').replace('N/A', '0.0')
   price = float(price_str) if price_str else 0.0
-  to_email = row[header.index("Account User Email")]
-  ship_date = get_ship_date(str(row[header.index("Shipment Date")]))
-  group, reconcile = get_group(header, row)
+  to_email = row["Account User Email"]
+  ship_date = get_ship_date(str(row["Shipment Date"]))
+  group, reconcile = get_group(row['Shipping Address'])
   if group is None:
     return None
   tracked_cost = 0.0
-  items = row[header.index("Title")] + " Qty:" + str(row[header.index("Item Quantity")])
-  merchant = row[header.index('Merchant')] if 'Merchant' in header else 'Amazon'
+  items = row["Title"] + " Qty:" + str(row["Item Quantity"])
+  merchant = row['Merchant'] if 'Merchant' in row else 'Amazon'
+  return Tracking(
+      tracking,
+      group,
+      orders,
+      price,
+      to_email,
+      ship_date=ship_date,
+      tracked_cost=tracked_cost,
+      items=items,
+      merchant=merchant,
+      reconcile=reconcile)
+
+
+def from_personal_row(row: Dict[str, str]) -> Optional[Tracking]:
+  tracking_col = row['Carrier Name & Tracking Number']
+  if not tracking_col:
+    return None
+  tracking = tracking_col.split('(')[1].replace(')', '')
+  orders = {row['Order ID'].upper()}
+  price_str = str(row['Subtotal']).replace(',', '').replace('$', '').replace('N/A', '0.0')
+  price = float(price_str) if price_str else 0.0
+  to_email = row['Ordering Customer Email']
+  ship_date = get_ship_date(str(row["Shipment Date"]))
+  street_1 = row['Shipping Address Street 1']
+  city = row['Shipping Address City']
+  state = row['Shipping Address State']
+  address = f"{street_1} {city}, {state}"
+  group, reconcile = get_group(address)
+  if group is None:
+    return None
+  tracked_cost = 0.0
+  items = price_str
+  merchant = 'Amazon'
   return Tracking(
       tracking,
       group,
@@ -104,61 +133,71 @@ def get_required(prompt):
   return result
 
 
-def read_trackings_from_file(file) -> List[Tracking]:
+def read_trackings_from_file(file, from_row_fn: Callable[[Dict[str, str]],
+                                                         Tracking]) -> List[Tracking]:
   with open(file, 'r') as f:
-    header = f.readline().strip().split(',')
-    rows = csv.reader(f.readlines(), quotechar='"', delimiter=',')
-    return [from_amazon_row(header, row) for row in rows]
+    reader = csv.DictReader(f)
+    rows = [r for r in reader]
+    return [from_row_fn(row) for row in rows]
 
 
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
+  parser.add_argument("--personal", "-p", action="store_true", help="Use the personal CSV format")
   parser.add_argument("globs", nargs="*")
   args, _ = parser.parse_known_args()
 
+  from_row_function = from_personal_row if args.personal else from_amazon_row
   all_trackings = []
   if args.globs:
     for glob_input in args.globs:
       files = glob.glob(glob_input)
       for file in files:
-        all_trackings.extend(read_trackings_from_file(file))
+        all_trackings.extend(read_trackings_from_file(file, from_row_function))
   else:
     sheet_id = get_required("Enter Google Sheet ID: ")
     tab_name = get_required("Enter the name of the tab within the sheet: ")
     objects_to_sheet = ObjectsToSheet()
     all_trackings.extend(objects_to_sheet.download_from_sheet(from_amazon_row, sheet_id, tab_name))
 
+  if len(all_trackings) == 0:
+    print("Nothing to import; terminating.")
+    return
+
   num_n_a_trackings = len(
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == 'N/A'])
   num_empty_trackings = len(
       [ignored for ignored in all_trackings if ignored and ignored.tracking_number == ''])
-  print(
-      f'Skipping {num_n_a_trackings} for n/a tracking column and {num_empty_trackings} for empty tracking column'
-  )
+  print(f'Skipping {num_n_a_trackings} for N/A tracking column and '
+        f'{num_empty_trackings} for empty tracking column.')
   all_trackings = [
       tracking for tracking in all_trackings
       if tracking and tracking.tracking_number != 'N/A' and tracking.tracking_number != ''
   ]
   len_non_reconcilable_trackings = len([t for t in all_trackings if not t.reconcile])
-  print(f'Skipping {len_non_reconcilable_trackings} non-reconcilable trackings')
+  print(f'Skipping {len_non_reconcilable_trackings} non-reconcilable trackings.')
   all_trackings = [t for t in all_trackings if t.reconcile]
   base_len_trackings = len(all_trackings)
   all_trackings = dedupe_trackings(all_trackings)
-  print(f'Filtered {base_len_trackings - len(all_trackings)} duplicate trackings from the sheet')
+  print(f'Filtered {base_len_trackings - len(all_trackings)} duplicate trackings from the sheet.')
 
   print('Uploading trackings to Sheets...')
   tracking_uploader = TrackingUploader(config)
   tracking_uploader.upload_trackings(all_trackings)
 
   tracking_output = TrackingOutput(config)
-  print("Number of trackings beforehand: %d" % len(tracking_output.get_existing_trackings()))
-  print("Number from sheet: %d" % len(all_trackings))
+  trackings_before_save = {t.tracking_number for t in tracking_output.get_existing_trackings()}
+  print(f"Number of trackings before: {len(trackings_before_save)}.")
+  print(f"Number imported from report(s): {len(all_trackings)}.")
   tracking_output.save_trackings(all_trackings)
-  print("Number of trackings after: %d" % len(tracking_output.get_existing_trackings()))
+  trackings_after_save = {t.tracking_number: t for t in tracking_output.get_existing_trackings()}
+  print(f"Number of trackings after: {len(trackings_after_save)}.")
+  new_trackings = set(trackings_after_save.keys()).difference(trackings_before_save)
+  print(f"Number of new-to-us trackings: {len(new_trackings)}")
 
-  print("Uploading to the group(s)' site(s)...")
-  group_site_manager = GroupSiteManager(config, DriverCreator())
-  group_site_manager.upload(all_trackings)
+  print("Uploading new trackings to the group(s)' site(s)...")
+  group_site_manager = GroupSiteManager(config)
+  group_site_manager.upload([trackings_after_save[t] for t in new_trackings])
 
 
 if __name__ == "__main__":
