@@ -6,6 +6,7 @@ import glob
 from typing import List, Optional, Callable, Dict, Tuple
 
 from lib.config import open_config
+from lib.driver_creator import DriverCreator
 from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
@@ -196,7 +197,7 @@ def main():
   print(f"Number of new-to-us trackings: {len(new_trackings)}")
 
   print("Uploading new trackings to the group(s)' site(s)...")
-  group_site_manager = GroupSiteManager(config)
+  group_site_manager = GroupSiteManager(config, DriverCreator())
   group_site_manager.upload([trackings_after_save[t] for t in new_trackings])
 
 
