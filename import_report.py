@@ -20,6 +20,7 @@ from tqdm import tqdm
 from lib import util
 from lib.config import open_config
 from lib.driver_creator import DriverCreator
+from lib.email_sender import EmailSender
 from lib.group_site_manager import GroupSiteManager, clean_csv_tracking
 from lib.objects_to_sheet import ObjectsToSheet
 from lib.tracking import Tracking
@@ -334,9 +335,14 @@ def main():
   new_trackings = set(trackings_after_save.keys()).difference(trackings_before_save)
   print(f"Number of new-to-us trackings: {len(new_trackings)}")
 
+  new_tracking_objects = [trackings_after_save[t] for t in new_trackings]
+  email_config = config['email']
+  email_sender = EmailSender(email_config)
+  email_sender.send_email(new_tracking_objects)
+
   print("Uploading new trackings to the group(s)' site(s)...")
   group_site_manager = GroupSiteManager(config)
-  group_site_manager.upload([trackings_after_save[t] for t in new_trackings])
+  group_site_manager.upload(new_tracking_objects)
 
 
 if __name__ == "__main__":
