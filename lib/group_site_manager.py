@@ -54,6 +54,7 @@ USA_API_LOGIN_URL = "https://api.usabuying.group/index.php/buyers/login"
 USA_API_TRACKINGS_URL = "https://api.usabuying.group/index.php/buyers/trackings"
 
 YRCW_URL = "https://app.yrcwtech.com/"
+YRCW_CSV_URL = "https://csv.yrcwtech.com/"
 
 MAX_UPLOAD_ATTEMPTS = 10
 
@@ -246,54 +247,26 @@ class GroupSiteManager:
       driver.quit()
 
   def _get_yrcw_tracking_pos_prices(self) -> ReconResult:
+    _delete_existing_exports()
     tracking_info_map: TrackingInfoDict = {}
     po_cost_map: PoCostDict = collections.defaultdict(float)
-    driver = self._login_yrcw()
+    driver = self._login_yrcw(YRCW_CSV_URL)
     try:
-      time.sleep(5)  # it can take a bit to load
-
-      # show all trackings, not just non-paid
-      driver.find_element_by_css_selector('button[title="Filters"]').click()
-      time.sleep(2)
-
-      # Clear the date filter (nb: this resets all filters so do it first)
-      driver.find_element_by_css_selector('div.modal-body button.ButtonLink').click()
-      # 'Any' item status
-      select = Select(driver.find_element_by_tag_name('select'))
-      select.select_by_visible_text('Any')
-      # 'Any' PO status and approval status
-      show_any_filter_buttons = driver.find_elements_by_css_selector('input[value="Any"]')
-      for any_button in show_any_filter_buttons:
-        # we have to click the parent
-        any_button.find_element_by_xpath('..').click()
-      # Submit it
-      driver.find_element_by_css_selector('div.modal-footer .btn-primary').click()
-
-      # hack for yrcw's shitty site with lots of data loading all at once
-      yrcw_config = self.config['groups']['yrcw']
-      if yrcw_config.get('waitForPageLoad', False):
-        input('Wait for all rows on the page to finish loading, then hit enter:')
-
-      # Give it time to load
-      time.sleep(10)
-
-      # next load the actual data
-      nav_home = driver.find_element_by_id('nav-home')
-      table = nav_home.find_element_by_tag_name('table')
-      body = table.find_element_by_tag_name('tbody')
-      rows = body.find_elements_by_tag_name('tr')
+      body_text = driver.find_element_by_tag_name('body').text
+      if 'Invalid login attempt' in body_text:
+        print(f'Please create an account on {YRCW_CSV_URL} and get it approved by the admins')
+        return tracking_info_map, po_cost_map
+      if 'WARNING: You have not yet been approved to download this file' in body_text:
+        print('Please get the YRCW admin to approve your CSV account')
+        return tracking_info_map, po_cost_map
+      driver.find_elements_by_tag_name('button')[-1].click()
+      rows = _wait_for_csv('yrcw')
       for row in rows:
-        tds = row.find_elements_by_tag_name('td')
-        if len(tds) > 1:  # there's a ghost <tr> at the end
-          tracking = str(tds[1].text.upper()).strip()
-          # Something screwy is going on here with USPS labels.
-          # Strip the first 8 chars
-          if len(tracking) == 30:
-            tracking = tracking[8:]
-          value = float(tds[4].text.replace('$', '').replace(',', ''))
-          old_value = tracking_info_map[(tracking,)][1] if (tracking,) in tracking_info_map else 0.0
-          tracking_info_map[(tracking,)] = ('yrcw', old_value + value, '')
-          po_cost_map[tracking] += value
+        tracking = clean_csv_tracking(row['Tracking #'])
+        value = float(row['Value'].replace('$', '').replace(',', ''))
+        old_value = tracking_info_map[(tracking,)][1] if (tracking,) in tracking_info_map else 0.0
+        tracking_info_map[(tracking,)] = ('yrcw', old_value + value, '')
+        po_cost_map[tracking] += value
     finally:
       driver.quit()
     return tracking_info_map, po_cost_map
@@ -637,7 +610,7 @@ class GroupSiteManager:
     time.sleep(3)
 
   def _upload_yrcw(self, numbers) -> None:
-    driver = self._login_yrcw()
+    driver = self._login_yrcw(YRCW_URL)
     try:
       self._load_page(driver, YRCW_URL + "dashboard")
       driver.find_element_by_xpath("//button[@data-target='#modalAddTrackingNumbers']").click()
@@ -716,9 +689,9 @@ class GroupSiteManager:
 
     return driver
 
-  def _login_yrcw(self) -> WebDriver:
-    driver = self.driver_creator.new()
-    self._load_page(driver, YRCW_URL)
+  def _login_yrcw(self, url: str) -> WebDriver:
+    driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
+    self._load_page(driver, url)
     group_config = self.config['groups']['yrcw']
     driver.find_element_by_xpath("//input[@type='email']").send_keys(group_config['username'])
     driver.find_element_by_xpath("//input[@type='password']").send_keys(group_config['password'])
