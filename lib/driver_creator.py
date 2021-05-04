@@ -20,11 +20,12 @@ class DriverCreator:
     parser.add_argument("--firefox", action="store_true")
     self.args, _ = parser.parse_known_args()
 
-  def new(self, user_data_dir=None, wait=10, page_load=30) -> WebDriver:
+  def new(self, user_data_dir=None, download_dir=None, wait=10, page_load=10) -> WebDriver:
     if self.args.firefox:
       return self._new_firefox_driver(wait, page_load)
     else:
-      return self._new_chrome_driver(wait, page_load, user_data_dir=user_data_dir)
+      return self._new_chrome_driver(
+          wait, page_load, user_data_dir=user_data_dir, download_dir=download_dir)
 
   def fix_perms(self, path):
     for root, dirs, files in os.walk(path):
@@ -80,7 +81,7 @@ class DriverCreator:
                                            "chrome-win32/chrome.exe", "chromedriver.exe",
                                            user_data_dir)
 
-  def _new_chrome_driver(self, wait, page_load, user_data_dir=None) -> WebDriver:
+  def _new_chrome_driver(self, wait, page_load, user_data_dir=None, download_dir=None) -> WebDriver:
     options = webdriver.chrome.options.Options()
     options.headless = self.args.headless
     options.add_argument("--log-level=3")
@@ -96,8 +97,8 @@ class DriverCreator:
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     # auto download to exports folder
-    exports_dir = os.path.join(os.getcwd(), 'exports')
-    options.add_experimental_option('prefs', {'download.default_directory': exports_dir})
+    if download_dir:
+      options.add_experimental_option('prefs', {'download.default_directory': download_dir})
 
     # make sure the window is big enough
     options.add_argument("--window-size=1600,1200")

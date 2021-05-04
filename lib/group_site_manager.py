@@ -653,7 +653,7 @@ class GroupSiteManager:
     # and save previous headless state and restore it aftewards.
     former_headless = self.driver_creator.args.headless
     self.driver_creator.args.headless = False
-    driver = self.driver_creator.new()
+    driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
     self.driver_creator.args.headless = former_headless
     self._load_page(driver, BASE_URL_FORMAT % group)
     driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
