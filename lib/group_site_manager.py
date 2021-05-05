@@ -263,7 +263,10 @@ class GroupSiteManager:
       rows = _wait_for_csv('yrcw')
       for row in rows:
         tracking = clean_csv_tracking(row['Tracking #'])
-        value = float(row['Value'].replace('$', '').replace(',', ''))
+        value_str = row['Value']
+        if not value_str:
+          continue
+        value = float(value_str.replace('$', '').replace(',', ''))
         old_value = tracking_info_map[(tracking,)][1] if (tracking,) in tracking_info_map else 0.0
         tracking_info_map[(tracking,)] = ('yrcw', old_value + value, '')
         po_cost_map[tracking] += value
