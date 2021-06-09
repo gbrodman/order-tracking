@@ -1,8 +1,11 @@
+import socket
+
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from typing import Any
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+socket.setdefaulttimeout(600)  # ten minutes
 
 
 def create_sheets() -> Any:
