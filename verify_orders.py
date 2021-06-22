@@ -2,11 +2,14 @@ import argparse
 import email
 from typing import List, Dict
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 import lib.email_auth as email_auth
 import datetime
 
 from functools import cmp_to_key
 
+from lib import util
 from lib.amazon_tracking_retriever import AmazonTrackingRetriever
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.config import open_config
@@ -48,7 +51,17 @@ class EmailToOrders:
 
   def get_orders(self, mail, email_id):
     if email_id not in self.email_to_orders:
-      _, data = mail.uid("FETCH", email_id, "(RFC822)")
+      for attempt in range(3):
+        try:
+          _, data = mail.uid("FETCH", email_id, "(RFC822)")
+          break
+        except:
+          tqdm.write(f"Got exception, attempting retry up to 3 times...\n{util.get_traceback_lines()}")
+          mail = email_auth.email_authentication()
+          mail.select('"[Gmail]/All Mail"')
+      else:
+        raise Exception("Exceeded retry limit")
+
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
       date = datetime.datetime.strptime(msg['Date'],
                                         '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d')
