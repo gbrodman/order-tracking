@@ -89,9 +89,18 @@ class CancelledItemsRetriever:
     for search_terms, canc_info in subject_searches.items():
       search_terms = [f'(SUBJECT "{phrase}")' for phrase in search_terms]
       status, response = mail.uid('SEARCH', None, *search_terms)
-      email_ids = response[0].decode('utf-8')
-      for email_id in email_ids.split():
+      email_ids = response[0].decode('utf-8').split()
+      for email_id in email_ids:
         result_ids[email_id] = canc_info
+
+    # Bit of a hack, but we only care about this search term if it comes from a particular address.
+    # Ignore it otherwise.
+    search_terms = [f'(SUBJECT "Your Amazon.com Order(")', '(FROM "no-reply@amazon.com")']
+    status, response = mail.uid('SEARCH', None, *search_terms)
+    email_ids = response[0].decode('utf-8').split()
+    for email_id in email_ids:
+      result_ids[email_id] = (CancFmt.IRRELEVANT, CancQty.NO)
+
     return result_ids
 
   @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
@@ -108,7 +117,6 @@ class CancelledItemsRetriever:
         return {}
       order = orders[0]
 
-      cancelled_items = []
       soup = BeautifulSoup(
           quopri.decodestring(raw_email), features="html.parser", from_encoding="iso-8859-1")
 
