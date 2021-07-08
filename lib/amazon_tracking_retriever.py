@@ -36,7 +36,7 @@ def get_standard_orders(driver: WebDriver) -> Set[str]:
 
 def get_standard_trackings(driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
   try:
-    element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+    element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID:')]")
     regex = r'Tracking ID: ([a-zA-Z0-9]+)'
     match = re.match(regex, element.text)
     if not match:

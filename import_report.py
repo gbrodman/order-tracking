@@ -8,7 +8,7 @@ import os
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from random import shuffle
-from typing import Any, List, Optional, Callable, Dict, Tuple
+from typing import List, Optional, Callable, Dict, Tuple
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -35,8 +35,8 @@ profile_base = config['profileBase']
 ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
 PERSONAL_REPORT_URL = 'https://www.amazon.com/gp/b2b/reports'
 REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
-MAX_WORKERS = 5
-DOWNLOAD_TIMEOUT_SECS = 240
+MAX_WORKERS = 10
+DOWNLOAD_TIMEOUT_SECS = 300
 
 
 def get_group(address: str) -> Tuple[Optional[str], bool]:
@@ -164,6 +164,14 @@ def do_with_spinner(driver, fn):
       expected_conditions.invisibility_of_element_located((By.CSS_SELECTOR, "span.a-spinner")))
 
 
+def do_with_wait(driver, wait, old_wait, fn):
+  try:
+    driver.implicitly_wait(wait)
+    return fn()
+  finally:
+    driver.implicitly_wait(old_wait)
+
+
 def create_driver(admin_profile: str, temp_dir: str) -> WebDriver:
   # Create temp dir to download this report into
   os.mkdir(temp_dir)
@@ -178,6 +186,9 @@ def download_personal_report(driver: WebDriver) -> None:
   type_select = Select(driver.find_element_by_id('report-type'))
   type_select.select_by_visible_text('Orders and shipments')
   driver.execute_script('setDatesToYearToDate()')
+  prime_promo_elems = do_with_wait(driver, 0.5, 10, lambda: driver.find_elements_by_css_selector('div.nav-prime-tt.nav-flyout'))
+  if prime_promo_elems:
+    driver.find_element_by_id('pda_close_link').click()
   driver.find_element_by_id('report-confirm').click()
 
 
