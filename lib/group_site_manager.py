@@ -469,9 +469,9 @@ class GroupSiteManager:
     for row in csv_rows:
       tracking_number = clean_csv_tracking(row['Tracking Number'])
       tracking_tuple = (tracking_number.strip(),)
-      price_total = row['Price Total']
+      price_total = row['Price Total'].replace('$', '').replace(',', '')
       price_total = float(price_total) if price_total else 0.0
-      commission_total = row['Commission Total']
+      commission_total = row['Commission Total'].replace('$', '').replace(',', '')
       commission_total = float(commission_total) if commission_total else 0.0
       previous_cost = tracking_infos[tracking_tuple][1] if tracking_tuple in tracking_infos else 0.0
       tracking_infos[tracking_tuple] = ('dtmd', price_total + commission_total + previous_cost,
@@ -632,7 +632,7 @@ class GroupSiteManager:
       textareas = driver.find_elements_by_tag_name("textarea")
       if not textareas:
         # omg sellerspeed wyd (show import wizard)
-        driver.find_element_by_css_selector('button.pf-menu-tool-item.ng-scope').click()
+        driver.find_elements_by_css_selector('button.pf-menu-tool-item.ng-scope')[-1].click()
         time.sleep(1)
         textareas = driver.find_elements_by_tag_name("textarea")
         if not textareas:

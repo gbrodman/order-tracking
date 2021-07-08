@@ -3,6 +3,7 @@ import argparse
 import csv
 import datetime
 import glob
+
 from typing import List, Optional, Callable, Dict, Tuple
 
 from lib.config import open_config
