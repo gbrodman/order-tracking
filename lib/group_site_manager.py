@@ -713,17 +713,21 @@ class GroupSiteManager:
       msg = email.message_from_string(email_str)
       date = datetime.datetime.strptime(
           msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else ''
-      email_str = email_tracking_retriever.clean_email_content(email_str)
-      soup = BeautifulSoup(email_str, features="html.parser")
+      try:
+        email_str = email_tracking_retriever.clean_email_content(email_str)
+        soup = BeautifulSoup(email_str, features="html.parser")
 
-      body = soup.find(id='email_body')
-      if not body:
-        continue
-      tables = body.find_all('table')
-      if not tables or len(tables) < 2:
-        continue
-      table = tables[1]
-      fill_busted_bfmr_costs(result, table, date)
-      fill_standard_bfmr_costs(result, table, date)
-      fill_2020_12_22_bfmr_costs(result, table, date)
+        body = soup.find(id='email_body')
+        if not body:
+          continue
+        tables = body.find_all('table')
+        if not tables or len(tables) < 2:
+          continue
+        table = tables[1]
+        fill_busted_bfmr_costs(result, table, date)
+        fill_standard_bfmr_costs(result, table, date)
+        fill_2020_12_22_bfmr_costs(result, table, date)
+      except:
+        tqdm.write(f"Error checking BFMR email with date {date}, ignoring...")
+
     return result
