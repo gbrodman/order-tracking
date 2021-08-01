@@ -42,7 +42,7 @@ RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
 MELUL_EXPORTS_FOLDER = os.path.join(os.getcwd(), 'exports')
 EXPORT_WAIT_TIMEOUT_SECONDS = 60
 
-DTMD_URL = "https://gibstrat.com"
+GIBSTRAT_URL = "https://gibstrat.com"
 OAKS_URL = "http://hso-tech.com"
 EMB_URL = "http://embdeals.com"
 
@@ -208,8 +208,8 @@ class GroupSiteManager:
       return self._get_yrcw_tracking_pos_prices()
     elif group == "oaks":
       return self._get_oaks_tracking_pos_prices()
-    elif group == "dtmd":
-      return self._get_dtmd_tracking_pos_prices()
+    elif group == "dtmd" or group == 'gibstrat':
+      return self._get_gibstrat_tracking_pos_prices(group)
     return dict(), dict()
 
   def _get_oaks_tracking_pos_prices(self) -> ReconResult:
@@ -412,8 +412,8 @@ class GroupSiteManager:
           self._upload_bfmr(numbers)
         elif group == 'oaks':
           self._upload_oaks(numbers)
-        elif group == 'dtmd':
-          self._upload_dtmd(numbers)
+        elif group == 'dtmd' or group == 'gibstrat':
+          self._upload_gibstrat(group, numbers)
         elif group == 'embdeals':
           self._upload_emb(numbers)
         else:
@@ -431,12 +431,12 @@ class GroupSiteManager:
     driver.get(url)
     time.sleep(3)
 
-  def _login_dtmd(self):
-    group_config = self.config['groups']['dtmd']
+  def _login_gibstrat(self, group: str):
+    group_config = self.config['groups'][group]
     username = group_config['username']
     password = group_config['password']
     driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
-    self._load_page(driver, DTMD_URL)
+    self._load_page(driver, GIBSTRAT_URL)
     # There are no ids, names, or class names that are useful at all so we have to use xpath / text
     driver.find_element_by_xpath('//button[text() = "SIGN UP OR LOGIN"]').click()
     # takes a sec to bring up the modal
@@ -450,21 +450,21 @@ class GroupSiteManager:
     time.sleep(3)
     return driver
 
-  def _get_dtmd_csv(self):
+  def _get_gibstrat_csv(self, group: str):
     _delete_existing_exports()
-    print("Loading DTMD via CSV export")
-    driver = self._login_dtmd()
+    print(f"Loading {group} via CSV export")
+    driver = self._login_gibstrat(group)
     try:
-      time.sleep(10)  # it takes a few seconds to load async
+      time.sleep(12)  # it takes a few seconds to load async
       csv_button = driver.find_element_by_xpath('//button[text() = "Export to CSV"]')
       csv_button.click()
       # Wait for the file to be downloaded
-      return _wait_for_csv('dtmd')
+      return _wait_for_csv(group)
     finally:
       driver.quit()
 
-  def _get_dtmd_tracking_pos_prices(self) -> ReconResult:
-    csv_rows = self._get_dtmd_csv()
+  def _get_gibstrat_tracking_pos_prices(self, group: str) -> ReconResult:
+    csv_rows = self._get_gibstrat_csv(group)
     tracking_infos: TrackingInfoDict = {}
     for row in csv_rows:
       tracking_number = clean_csv_tracking(row['Tracking Number'])
@@ -474,12 +474,12 @@ class GroupSiteManager:
       commission_total = row['Commission Total'].replace('$', '').replace(',', '')
       commission_total = float(commission_total) if commission_total else 0.0
       previous_cost = tracking_infos[tracking_tuple][1] if tracking_tuple in tracking_infos else 0.0
-      tracking_infos[tracking_tuple] = ('dtmd', price_total + commission_total + previous_cost,
+      tracking_infos[tracking_tuple] = (group, price_total + commission_total + previous_cost,
                                         'unknown')
     return tracking_infos, {}
 
-  def _upload_dtmd(self, numbers: List[str]):
-    driver = self._login_dtmd()
+  def _upload_gibstrat(self, group: str, numbers: List[str]):
+    driver = self._login_gibstrat(group)
     try:
       # There are no ids, names, or class names that are useful at all so we have to use xpath / text
       driver.find_element_by_xpath('//button[text() = "Submit Tracking"]').click()

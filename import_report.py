@@ -138,10 +138,14 @@ def get_required(prompt):
 
 def read_trackings_from_file(file, from_row_fn: Callable[[Dict[str, str]],
                                                          Tracking]) -> List[Tracking]:
-  with open(file, 'r') as f:
-    reader = csv.DictReader(f)
-    rows = [r for r in reader]
-    return [from_row_fn(row) for row in rows]
+  try:
+    with open(file, 'r') as f:
+      reader = csv.DictReader(f)
+      rows = [r for r in reader]
+      return [from_row_fn(row) for row in rows]
+  except:
+    print(f"Error in file {file}")
+    return []
 
 
 def main():
