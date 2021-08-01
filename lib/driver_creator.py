@@ -42,9 +42,9 @@ class DriverCreator:
                                  chromedriver_filename,
                                  user_data_dir=None) -> WebDriver:
     current_working_dir = os.getcwd()
-    base = current_working_dir + base_dir
-    download_location = base + "Chrome.zip"
-    if not os.path.exists(base + binary_location):
+    base = os.path.join(current_working_dir, base_dir)
+    download_location = os.path.join(base, "Chrome.zip")
+    if not os.path.exists(os.path.join(base, binary_location)):
       print(f"No local Chromium installation found; downloading {url}")
       urllib.request.urlretrieve(url, download_location)
       os.chmod(download_location, 0o755)
@@ -54,7 +54,7 @@ class DriverCreator:
       self.fix_perms(base)
       os.remove(download_location)
       print("Installation complete.")
-    options.binary_location = (base + binary_location)
+    options.binary_location = os.path.join(base, binary_location)
 
     # Uncomment this next line to experiment with no-sandboxing.
     # options.add_argument('--no-sandbox')  # Bypass OS security model
@@ -71,13 +71,13 @@ class DriverCreator:
 
   def _create_osx_driver(self, options, user_data_dir=None) -> WebDriver:
     url = "https://github.com/macchrome/chromium/releases/download/v78.0.3901.0-r692376-macOS/Chromium.78.0.3901.0.sync.app.zip"
-    return self._create_osx_windows_driver(options, url, "/chrome/osx/",
+    return self._create_osx_windows_driver(options, url, "chrome/osx/",
                                            "Chromium.app/Contents/MacOS/Chromium", "chromedriver",
                                            user_data_dir)
 
   def _create_windows_driver(self, options, user_data_dir=None) -> WebDriver:
     url = "https://github.com/RobRich999/Chromium_Clang/releases/download/v80.0.3982.0-r720336-win64/chrome.zip"
-    return self._create_osx_windows_driver(options, url, "/chrome/windows_v80/",
+    return self._create_osx_windows_driver(options, url, "chrome/windows_v80/",
                                            "chrome-win32/chrome.exe", "chromedriver.exe",
                                            user_data_dir)
 
