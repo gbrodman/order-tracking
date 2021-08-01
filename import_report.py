@@ -35,7 +35,7 @@ profile_base = config['profileBase']
 ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
 PERSONAL_REPORT_URL = 'https://www.amazon.com/gp/b2b/reports'
 REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
-MAX_WORKERS = 10
+MAX_WORKERS = 15
 DOWNLOAD_TIMEOUT_SECS = 300
 
 
@@ -186,7 +186,8 @@ def download_personal_report(driver: WebDriver) -> None:
   type_select = Select(driver.find_element_by_id('report-type'))
   type_select.select_by_visible_text('Orders and shipments')
   driver.execute_script('setDatesToYearToDate()')
-  prime_promo_elems = do_with_wait(driver, 0.5, 10, lambda: driver.find_elements_by_css_selector('div.nav-prime-tt.nav-flyout'))
+  prime_promo_elems = do_with_wait(
+      driver, 0.5, 10, lambda: driver.find_elements_by_css_selector('div.nav-prime-tt.nav-flyout'))
   if prime_promo_elems:
     driver.find_element_by_id('pda_close_link').click()
   driver.find_element_by_id('report-confirm').click()
@@ -271,10 +272,14 @@ def download_az_reports() -> List[str]:
 
 def read_trackings_from_file(file, from_row_fn: Callable[[Dict[str, str]],
                                                          Tracking]) -> List[Tracking]:
-  with open(file, 'r') as f:
-    reader = csv.DictReader(f)
-    rows = [r for r in reader]
-    return [from_row_fn(row) for row in rows]
+  try:
+    with open(file, 'r') as f:
+      reader = csv.DictReader(f)
+      rows = [r for r in reader]
+      return [from_row_fn(row) for row in rows]
+  except:
+    print(f"Error in file {file}")
+    return []
 
 
 def main():

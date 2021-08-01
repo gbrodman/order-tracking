@@ -56,7 +56,8 @@ class EmailToOrders:
           _, data = mail.uid("FETCH", email_id, "(RFC822)")
           break
         except:
-          tqdm.write(f"Got exception, attempting retry up to 3 times...\n{util.get_traceback_lines()}")
+          tqdm.write(
+              f"Got exception, attempting retry up to 3 times...\n{util.get_traceback_lines()}")
           mail = email_auth.email_authentication()
           mail.select('"[Gmail]/All Mail"')
       else:
