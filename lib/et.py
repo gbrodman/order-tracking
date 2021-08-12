@@ -40,18 +40,24 @@ class ByGroup:
 
 
 def total_from_row(header, row):
-  email = row[header.index('Email')]
-  total = float(row[header.index('Total')])
-  return Total(email, total)
+  try:
+    email = row[header.index('Email')]
+    total = float(row[header.index('Total')])
+    return Total(email, total)
+  except:
+    return None
 
 
 def by_group_from_row(header, row):
   if 'Group' not in header:
     return total_from_row(header, row)  # oops, bug from before
-  email = row[header.index('Email')]
-  group = row[header.index('Group')]
-  total = float(row[header.index('Total')])
-  return ByGroup(email, group, total)
+  try:
+    email = row[header.index('Email')]
+    group = row[header.index('Group')]
+    total = float(row[header.index('Total')])
+    return ByGroup(email, group, total)
+  except:
+    return None
 
 
 def should_include(cluster: Cluster):
@@ -92,7 +98,8 @@ def compute_by_group(email: str, all_clusters: List[Cluster]) -> List[ByGroup]:
 def by_group(config, all_clusters: List[Cluster]) -> None:
   email = config['email']['username']
   objects_to_sheet = ObjectsToSheet()
-  existing_by_groups = objects_to_sheet.download_from_sheet(by_group_from_row, SHEET_ID, BY_GROUP_TAB)
+  existing_by_groups = objects_to_sheet.download_from_sheet(by_group_from_row, SHEET_ID,
+                                                            BY_GROUP_TAB)
   existing_by_groups = [t for t in existing_by_groups if t.email != email]
   existing_by_groups.extend(compute_by_group(email, all_clusters))
   objects_to_sheet.upload_to_sheet(existing_by_groups, SHEET_ID, BY_GROUP_TAB)
