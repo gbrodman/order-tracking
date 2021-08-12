@@ -23,7 +23,8 @@ class ObjectsToSheet:
       header = result['values'][0]
       values = result['values'][1:]  # ignore the header
       self._extend_values_to_header(header, values)
-      return [from_row_fn(header, value) for value in values]
+      vals = [from_row_fn(header, value) for value in values]
+      return [val for val in vals if val]
     except googleapiclient.errors.HttpError:
       # Tab doesn't exist
       self._create_tab(base_sheet_id, tab_title)
