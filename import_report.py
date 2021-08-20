@@ -185,7 +185,7 @@ def download_personal_report(driver: WebDriver) -> None:
   driver.get(PERSONAL_REPORT_URL)
   type_select = Select(driver.find_element_by_id('report-type'))
   type_select.select_by_visible_text('Orders and shipments')
-  driver.execute_script('setDatesToYearToDate()')
+  driver.execute_script('setDatesToYearToLastThirtyDays()')
   prime_promo_elems = do_with_wait(
       driver, 0.5, 10, lambda: driver.find_elements_by_css_selector('div.nav-prime-tt.nav-flyout'))
   if prime_promo_elems:
@@ -202,7 +202,7 @@ def download_shipping_report(driver: WebDriver) -> None:
   # Set Time period to "Past 12 months"
   driver.find_element_by_id("date_range_selector__range").click()
   do_with_spinner(driver,
-                  lambda: driver.find_element_by_css_selector("a[value='PAST_12_MONTHS']").click())
+                  lambda: driver.find_element_by_css_selector("a[value='PAST_12_WEEKS']").click())
   # Click "Download CSV"
   driver.find_element_by_id("download-csv-file-button").click()
 
