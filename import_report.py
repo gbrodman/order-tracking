@@ -148,6 +148,14 @@ def read_trackings_from_file(file, from_row_fn: Callable[[Dict[str, str]],
     return []
 
 
+def do_with_wait(driver, wait, old_wait, fn):
+  try:
+    driver.implicitly_wait(wait)
+    return fn()
+  finally:
+    driver.implicitly_wait(old_wait)
+
+
 def main():
   parser = argparse.ArgumentParser(description='Importing Amazon reports from CSV or Drive')
   parser.add_argument("--personal", "-p", action="store_true", help="Use the personal CSV format")

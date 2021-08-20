@@ -9,6 +9,7 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from import_report import do_with_wait
 from lib.driver_creator import DriverCreator
 from lib.email_tracking_retriever import EmailTrackingRetriever
 
@@ -161,8 +162,13 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       if not match:
         return []
       tracking_number = match.group(1).upper()
-      shipping_status = driver.find_element_by_id("primaryStatus").get_attribute(
-          "textContent").strip(" \t\n\r")
+      primary_status_elems = do_with_wait(driver, 2, 10,
+                                          lambda: driver.find_elements_by_id('primaryStatus'))
+      if primary_status_elems:
+        shipping_status = primary_status_elems[0].get_attribute("textContent").strip(" \t\n\r")
+      else:
+        shipping_status = driver.find_element_by_css_selector(
+          'section.promise-card h1.pt-promise-main-slot').text
       return [(tracking_number, shipping_status)]
     except:
       # swallow this and continue on
