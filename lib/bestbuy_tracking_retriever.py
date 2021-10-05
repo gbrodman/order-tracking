@@ -10,8 +10,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
 
   tracking_regexes = [
       r'[^0-9A-Z](1Z[0-9A-Z]{16})[^0-9A-Z]',
-      r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]{10,20})<\/a>',
-      r'>Tracking #: ([0-9A-Z]{10,20})<', r'color:[^>]+>([0-9][0-9A-Z]{10,20})<\/a>'
+      r'Tracking #[<>br \/]*<a href="[^>]*>([A-Za-z0-9.]{10,27})<\/a>',
+      r'>Tracking #: ([0-9A-Z]{10,27})<', r'color:[^>]+>([0-9][0-9A-Z]{10,27})<\/a>'
   ]
   order_id_regex = r'(BBY(?:01|TX)-\d{12})'
 
