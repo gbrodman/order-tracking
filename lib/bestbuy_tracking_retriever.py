@@ -35,10 +35,11 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
         all_trackings.add(match.group(1))
     # The second part of the tuple here is the shipping status, which would need
     # to be retrieved from a shipping status web page (like it is for Amazon).
-    return [(t, None) for t in all_trackings]
+    return [(t, '') for t in all_trackings]
 
   def get_subject_searches(self):
-    return [["Your order #BBY01", "has shipped"], ["Your order #BBYTX", "has shipped"]]
+    return [["Your order #BBY01", "has shipped"], ["Your order #BBYTX", "has shipped"],
+            ["Your order will be shipped soon!"]]
 
   def get_merchant(self) -> str:
     return "Best Buy"
