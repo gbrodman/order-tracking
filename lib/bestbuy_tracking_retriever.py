@@ -1,5 +1,5 @@
 import re
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Set
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 
@@ -19,10 +19,8 @@ class BestBuyTrackingRetriever(EmailTrackingRetriever):
                                      from_email: str, to_email: str) -> AddressTrackingsAndOrders:
     return email_str, self.get_tracking_numbers_from_email(email_str, from_email, to_email), set()
 
-  def get_order_ids_from_email(self, raw_email):
-    result = set()
-    result.add(self._get_order_id(raw_email))
-    return result
+  def get_order_ids_from_email(self, raw_email) -> Set[str]:
+    return {self._get_order_id(raw_email)}
 
   def get_price_from_email(self, raw_email):
     return None  # not implementable

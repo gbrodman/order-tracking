@@ -109,9 +109,9 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       match = re.match(self.second_regex, str(raw_email))
     return match.group(1) if match else None
 
-  def get_order_ids_from_email(self, raw_email):
+  def get_order_ids_from_email(self, raw_email) -> Set[str]:
     matches = re.findall(self.order_ids_regex, raw_email)
-    return list(set(matches))
+    return set(matches)
 
   def get_price_from_email(self, raw_email):
     # Price isn't necessary, so if we can't find it don't raise an exception

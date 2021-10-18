@@ -86,7 +86,7 @@ class EmailTrackingRetriever(ABC):
 
     mail = get_all_mail_folder()
     # Emails that throw Exceptions and can't be parsed at all.
-    failed_email_ids = []
+    failed_emails: Dict[str, str] = {}
 
     try:
       profiles_to_email_infos = retrieve_email_infos(self.all_email_ids, mail)
@@ -115,17 +115,20 @@ class EmailTrackingRetriever(ABC):
           unit="profile",
           total=len(tasks),
           maxinterval=3):
-        new_trackings, new_failed_email_ids = task.result()
+        task_result: Tuple[List[Tracking], Dict[str, str]] = task.result()
+        new_trackings = task_result[0]
+        new_failed_emails = task_result[1]
         for tracking in new_trackings:
           trackings[tracking.tracking_number] = tracking
-        failed_email_ids.extend(new_failed_email_ids)
+        failed_emails.update(new_failed_emails)
 
-    if len(failed_email_ids) > 0:
-      print(f"Errored out while retrieving {len(failed_email_ids)} trackings "
-            f"with email IDs: {failed_email_ids}.")
+    if failed_emails:
+      print(f"Errored out while retrieving {len(failed_emails)} trackings. Possible info:")
+      for email_id, possible_info in failed_emails.items():
+        print(f"Email: {email_id}: {possible_info}")
       if not self.args.seen:
         print("Marking these emails as unread.")
-        self.mark_emails_as_unread(failed_email_ids)
+        self.mark_emails_as_unread(failed_emails.keys())
 
     return trackings
 
@@ -157,7 +160,7 @@ class EmailTrackingRetriever(ABC):
     pass
 
   @abstractmethod
-  def get_order_ids_from_email(self, raw_email) -> Any:
+  def get_order_ids_from_email(self, raw_email) -> Set[str]:
     pass
 
   @abstractmethod
@@ -180,10 +183,11 @@ class EmailTrackingRetriever(ABC):
   def get_delivery_date_from_email(self, email_str) -> Any:
     pass
 
-  def get_trackings_with_profile(self, base_driver: Optional[WebDriver], email_profile_name: str,
-                                 email_dict: Dict[str, str]) -> Tuple[List[Tracking], List[str]]:
+  def get_trackings_with_profile(
+      self, base_driver: Optional[WebDriver], email_profile_name: str,
+      email_dict: Dict[str, str]) -> Tuple[List[Tracking], Dict[str, str]]:
     result: List[Tracking] = []
-    failed_email_ids: List[str] = []
+    failed_emails: Dict[str, str] = {}
 
     # First, get the driver we're going to use. Create it if we're using profiles.
     # If we're not using profiles, use the same driver for all the emails.
@@ -197,29 +201,25 @@ class EmailTrackingRetriever(ABC):
         driver = base_driver
     except Exception as e:
       # If driver creation fails, it might be in use or something. Reset entirely.
-      tqdm.write(f"Unexpected error creating driver for profile {email_profile_name}: "
-                 f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
-      failed_email_ids.extend(email_dict.keys())
-      return result, failed_email_ids
+      msg = f"Unexpected error creating driver for profile {email_profile_name}"
+      tqdm.write(f"{msg}: {e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
+      for email_id in email_dict.keys():
+        failed_emails[email_id] = msg
+      return result, failed_emails
 
     try:
       for email_id, email_content in email_dict.items():
-        try:
-          for attempt in range(MAX_ATTEMPTS):
-            success, new_trackings = self.get_trackings_from_email(email_id, email_content, attempt,
-                                                                   driver)
-            if success:
-              result.extend(new_trackings)
-              break
-            elif attempt >= MAX_ATTEMPTS - 1:
-              tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; "
-                         f"we got: {new_trackings}")
-              self.mark_as_unread(email_id)
-        except Exception as e:
-          failed_email_ids.append(email_id)
-          tqdm.write(f"Unexpected error fetching tracking from email ID {email_id}: "
-                     f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
-      return result, failed_email_ids
+        for attempt in range(MAX_ATTEMPTS):
+          success, new_trackings, failure_info = self.get_trackings_from_email(
+              email_id, email_content, attempt, driver)
+          if success:
+            result.extend(new_trackings)
+            break
+          elif attempt >= MAX_ATTEMPTS - 1:
+            tqdm.write(f"Failed to find tracking number from email after {MAX_ATTEMPTS} retries; "
+                       f"we got: {new_trackings}")
+            failed_emails[email_id] = failure_info
+      return result, failed_emails
     except Exception as e:
       raise Exception("Fatal unexpected fatal error when parsing emails") from e
     finally:
@@ -227,61 +227,66 @@ class EmailTrackingRetriever(ABC):
         driver.quit()
 
   def get_trackings_from_email(self, email_id, email_content: str, attempt: int,
-                               driver: Optional[WebDriver]) -> Tuple[bool, List[Tracking]]:
-    """
-    Returns a Tuple of boolean success status and tracking information for a
-    given email id. If success is True then the tracking info is complete and
-    should be used, otherwise if False then the tracking info is incomplete
-    and is only suitable for use as error output.
-    """
-    msg = email.message_from_string(email_content)
-
-    email_str = clean_email_content(email_content)
-    to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
-    from_email = str(msg['From']).replace('<', '').replace(
-        '>', '') if msg['From'] else ''  # Also has display name.
-    date = datetime.datetime.strptime(
-        msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
-    price = self.get_price_from_email(email_str)
-    order_ids = self.get_order_ids_from_email(email_str)
-    address_info, tracking_nums, order_ids_from_driver = self.get_address_info_and_trackings(
-        email_str, driver, from_email, to_email)
-    if order_ids_from_driver:
-      order_ids = order_ids_from_driver
-    group, reconcile = self.get_buying_group(address_info)
-
-    if len(tracking_nums) == 0:
-      incomplete_tracking = Tracking(None, group, order_ids, price, to_email, date, 0.0)
-      tqdm.write(f"Could not find tracking number from email {email_id} (attempt {attempt + 1}).")
-      return False, [incomplete_tracking]
-
-    # TODO: Ideally, handle this per-tracking.
-    items = self.get_items_from_email(email_str)
-
+                               driver: Optional[WebDriver]) -> Tuple[bool, List[Tracking], str]:
+    order_ids = set()
     try:
-      for tracking_number, shipping_status in tracking_nums:
-        # Don't output common statuses in --seen mode, as this is just noise.
-        if not self.args.seen or ('Delivered' not in shipping_status and
-                                  'Arriving' not in shipping_status):
-          tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-                     f"Group: {group}, Status: {shipping_status}, Items: {items}")
-    except UnicodeEncodeError:
-      # TQDM doesn't have great handling for some of the ways the item texts can be encoded, skip it if it fails
-      for tracking_number, shipping_status in tracking_nums:
-        tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
-                   f"Group: {group}, Status: {shipping_status}")
+      """
+      Returns a Tuple of boolean success status, tracking information, and an error message for a
+      given email id. If success is True then the tracking info is complete and should be used, 
+      otherwise if False then the tracking info is incomplete and is only suitable for use as 
+      error output. The error message should be used when we, for whatever reason, cannot fill out
+       any tracking information but still want to provide order ID information to the user.
+      """
+      msg = email.message_from_string(email_content)
 
-    merchant = self.get_merchant()
-    delivery_date = self.get_delivery_date_from_email(email_str)
-    trackings = [
-        Tracking(tracking_number, group, order_ids, price, to_email, date, 0.0, items, merchant,
-                 reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
-    ]
-    if group is None:
-      tqdm.write(f"Could not find buying group from email with order ID(s) {order_ids} "
-                 f"(attempt {attempt + 1}).")
-      return False, trackings
-    return True, trackings
+      email_str = clean_email_content(email_content)
+      to_email = str(msg['To']).replace('<', '').replace('>', '') if msg['To'] else ''
+      from_email = str(msg['From']).replace('<', '').replace(
+          '>', '') if msg['From'] else ''  # Also has display name.
+      date = datetime.datetime.strptime(
+          msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%Y-%m-%d') if msg['Date'] else TODAY
+      price = self.get_price_from_email(email_str)
+      order_ids = self.get_order_ids_from_email(email_str)
+      address_info, tracking_nums, order_ids_from_driver = self.get_address_info_and_trackings(
+          email_str, driver, from_email, to_email)
+      if order_ids_from_driver:
+        order_ids = order_ids_from_driver
+      group, reconcile = self.get_buying_group(address_info)
+
+      if len(tracking_nums) == 0:
+        incomplete_tracking = Tracking(None, group, order_ids, price, to_email, date, 0.0)
+        tqdm.write(f"Could not find tracking number from email {email_id} (attempt {attempt + 1}).")
+        return False, [incomplete_tracking], str(order_ids)
+
+      # TODO: Ideally, handle this per-tracking.
+      items = self.get_items_from_email(email_str)
+
+      try:
+        for tracking_number, shipping_status in tracking_nums:
+          # Don't output common statuses in --seen mode, as this is just noise.
+          if not self.args.seen or ('Delivered' not in shipping_status and
+                                    'Arriving' not in shipping_status):
+            tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                       f"Group: {group}, Status: {shipping_status}, Items: {items}")
+      except UnicodeEncodeError:
+        # TQDM doesn't have great handling for some of the ways the item texts can be encoded, skip it if it fails
+        for tracking_number, shipping_status in tracking_nums:
+          tqdm.write(f"Tracking: {tracking_number}, Order(s): {order_ids}, "
+                     f"Group: {group}, Status: {shipping_status}")
+
+      merchant = self.get_merchant()
+      delivery_date = self.get_delivery_date_from_email(email_str)
+      trackings = [
+          Tracking(tracking_number, group, order_ids, price, to_email, date, 0.0, items, merchant,
+                   reconcile, delivery_date) for tracking_number, shipping_status in tracking_nums
+      ]
+      if group is None:
+        tqdm.write(f"Could not find buying group from email with order ID(s) {order_ids} "
+                   f"(attempt {attempt + 1}).")
+        return False, trackings, str(order_ids)
+      return True, trackings, ""
+    except:  # catch-all
+      return False, [], str(order_ids) if order_ids else ""
 
   def get_email_ids(self) -> Set[str]:
     date_to_search = self.get_date_to_search()
@@ -374,7 +379,7 @@ def retrieve_email_infos(all_email_ids: Set[str],
       failed_email_ids.append(email_id)
       tqdm.write(f"Unexpected error fetching content of email ID {email_id}: "
                  f"{e.__class__.__name__}: {str(e)}: {util.get_traceback_lines()}")
-  if len(failed_email_ids) > 0:
+  if failed_email_ids:
     print(f"Errored out getting content for these email IDs; skipping them: {failed_email_ids}")
   return result
 
