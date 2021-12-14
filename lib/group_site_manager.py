@@ -688,6 +688,8 @@ class GroupSiteManager:
       driver.find_elements_by_css_selector("button[type='submit']")[-1].click()
       time.sleep(1)
 
+    # get rid of any popup
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
     return driver
 
   def _login_yrcw(self, url: str) -> WebDriver:
