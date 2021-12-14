@@ -36,7 +36,7 @@ ANALYTICS_URL = 'https://amazon.com/b2b/aba/'
 PERSONAL_REPORT_URL = 'https://www.amazon.com/gp/b2b/reports'
 REPORTS_DIR = os.path.join(os.getcwd(), 'reports')
 MAX_WORKERS = 15
-DOWNLOAD_TIMEOUT_SECS = 300
+DOWNLOAD_TIMEOUT_SECS = 1800  # 30 minutes
 
 
 def get_group(address: str) -> Tuple[Optional[str], bool]:
@@ -174,7 +174,8 @@ def do_with_wait(driver, wait, old_wait, fn):
 
 def create_driver(admin_profile: str, temp_dir: str) -> WebDriver:
   # Create temp dir to download this report into
-  os.mkdir(temp_dir)
+  if not os.path.exists(temp_dir):
+    os.mkdir(temp_dir)
   return DriverCreator().new(
       user_data_dir=f"{os.path.expanduser(profile_base)}/{admin_profile}",
       download_dir=temp_dir,
@@ -237,29 +238,48 @@ def operate_on_profile(get_from_amazon_fn: Callable[[WebDriver], None], admin_pr
     driver.quit()
 
 
-def download_reports_generic(get_from_amazon_fn: Callable[[WebDriver], None]):
-  if not os.path.exists(REPORTS_DIR):
-    os.mkdir(REPORTS_DIR)
-  report_dir = os.path.join(REPORTS_DIR,
-                            datetime.datetime.now().strftime("shipping_%Y-%m-%dT%H_%M_%S"))
-  os.mkdir(report_dir)
+def attempt_downloads(
+    report_dir: str, profile_names: List[str],
+    get_from_amazon_fn: Callable[[WebDriver], None]) -> Tuple[List[str], List[str]]:
+  failed_profile_names = []
+  tasks = {}
+  report_paths = []
   with ThreadPoolExecutor(MAX_WORKERS) as executor:
-    tasks = {}
-    report_paths = []
-    for admin_profile in admin_profiles:
-      tasks[executor.submit(operate_on_profile, get_from_amazon_fn, admin_profile,
-                            report_dir)] = admin_profile
+    for profile_name in profile_names:
+      tasks[executor.submit(operate_on_profile, get_from_amazon_fn, profile_name,
+                            report_dir)] = profile_name
     for task in tqdm(
         concurrent.futures.as_completed(tasks),
         desc="Downloading reports",
         unit="profile",
         total=len(tasks),
         maxinterval=3):
+      profile_name = tasks[task]
       report_path = task.result()
       if report_path:
         report_paths.append(report_path)
-    # Potential TODO: Retry failed imports.
-    return report_paths
+      else:
+        failed_profile_names.append(profile_name)
+    return report_paths, failed_profile_names
+
+
+def download_reports_generic(get_from_amazon_fn: Callable[[WebDriver], None]) -> List[str]:
+  if not os.path.exists(REPORTS_DIR):
+    os.mkdir(REPORTS_DIR)
+  report_dir = os.path.join(REPORTS_DIR,
+                            datetime.datetime.now().strftime("shipping_%Y-%m-%dT%H_%M_%S"))
+  os.mkdir(report_dir)
+
+  report_paths, failed_profiles = attempt_downloads(report_dir, admin_profiles, get_from_amazon_fn)
+  if failed_profiles:
+    print(f"Failed profiles: {failed_profiles}")
+    print("Retrying once...")
+    retry_report_paths, retry_failed_profiles = attempt_downloads(report_dir, failed_profiles,
+                                                                  get_from_amazon_fn)
+    report_paths.extend(retry_report_paths)
+    if retry_failed_profiles:
+      print(f"Failed second attempt on profiles: {retry_failed_profiles}")
+  return report_paths
 
 
 def download_az_personal_reports() -> List[str]:
