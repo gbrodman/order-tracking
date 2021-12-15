@@ -30,8 +30,6 @@ LOGIN_EMAIL_FIELD = "fldEmail"
 LOGIN_PASSWORD_FIELD = "fldPassword"
 LOGIN_BUTTON_SELECTOR = "//button[contains(text(), 'Login')]"
 
-SUBMIT_BUTTON_SELECTOR = "//*[contains(text(), 'SUBMIT')]"
-
 RESULT_SELECTOR = "//*[contains(text(), 'record(s) effected')]"
 RESULT_REGEX = r"(\d+) record\(s\) effected"
 
@@ -605,8 +603,9 @@ class GroupSiteManager:
     time.sleep(2)
     textarea = driver.find_element_by_css_selector('div.modal-content textarea')
     textarea.send_keys("\n".join(numbers))
+    time.sleep(1)
     driver.find_element_by_css_selector(
-        'div.modal-content div.deal-detail button.btn-green').click()
+        'div.modal-content div.deal-detail button.bfmr-btn-primary').click()
     # TODO: This needs to wait for the success dialog to be displayed.
     time.sleep(3)
 
@@ -642,10 +641,11 @@ class GroupSiteManager:
       js_input = '\\n'.join(numbers)
       driver.execute_script(f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
       textareas[0].send_keys("\n")  # Trigger blur to enable Submit button.
-      driver.find_element_by_xpath(SUBMIT_BUTTON_SELECTOR).click()
+      driver.find_element_by_id('pf-form-trackings').find_element_by_css_selector(
+          'button[type="submit"]').click()
       # TODO: This needs to wait for the success dialog to be displayed and then print the number
       #       of new trackings from that to the command line.
-      time.sleep(5)
+      time.sleep(3)
     finally:
       driver.quit()
 
