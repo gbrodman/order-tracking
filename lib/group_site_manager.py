@@ -505,34 +505,22 @@ class GroupSiteManager:
 
     driver.find_element_by_name('email').send_keys(username)
     driver.find_element_by_name('password').send_keys(password)
-    driver.find_element_by_xpath("//span[text() = 'Login']").click()
+    driver.find_elements_by_css_selector('mat-card-actions button')[-1].click()
     time.sleep(3)
     return driver
 
   def _upload_emb(self, numbers) -> None:
     driver = self._login_emb()
     try:
-      time.sleep(1)
-      #Open menu and navigate to Tracking page
-      driver.find_element_by_xpath("//mat-icon[text() = 'menu']").click()
-      #EMB site is slow
-      time.sleep(1)
-      driver.find_element_by_xpath("//span[text() = 'Tracking']").click()
-      time.sleep(1)
-      #Have to re-open menu after page change
-      driver.find_element_by_xpath("//mat-icon[text() = 'menu']").click()
+      driver.find_element_by_xpath("//span[text() = 'Bulk Tracking']").click()
       time.sleep(1)
 
-      #add trackings
-      driver.find_element_by_xpath("//span[text() = ' Bulk Tracking']").click()
-      driver.find_element_by_name('numbers').send_keys('\n'.join(numbers))
-
-      #submit - EMB site is slow
+      driver.find_element_by_css_selector('app-tracking-bulk textarea').send_keys('\n'.join(numbers))
       driver.implicitly_wait(120)
-      driver.find_element_by_xpath("//span[text() = 'Add']").click()
 
-      #wait for trackings to be saved
-      driver.find_element_by_xpath("//span[text() = 'saved']")
+      driver.find_element_by_css_selector('app-tracking-bulk mat-card-actions button').click()
+
+      time.sleep(5)
     finally:
       driver.quit()
 
