@@ -208,7 +208,29 @@ class GroupSiteManager:
       return self._get_oaks_tracking_pos_prices()
     elif group == "dtmd" or group == 'gibstrat':
       return self._get_gibstrat_tracking_pos_prices(group)
+    elif group == 'embdeals':
+      return self._get_emb_tracking_pos_prices()
     return dict(), dict()
+
+  def _get_emb_tracking_pos_prices(self) -> ReconResult:
+    _delete_existing_exports()
+    tracking_infos: TrackingInfoDict = {}
+    print(f"Loading EMBDeals via CSV export")
+    driver = self._login_emb()
+    try:
+      driver.get(f'{EMB_URL}/received')
+      time.sleep(1)
+      driver.find_element_by_xpath("//span[text() = ' Export to Excel ']").click()
+      rows = _wait_for_csv('embdeals')
+      for row in rows:
+        tracking = clean_csv_tracking(row['tracking'])
+        verified = row['is_verified'] == 'True'
+        total = float(row['total']) if row['total'] and verified else 0
+        old_value = tracking_infos[(tracking,)][1] if (tracking,) in tracking_infos else 0.0
+        tracking_infos[(tracking,)] = ('embdeals', old_value + total, '')
+      return tracking_infos, {}
+    finally:
+      driver.quit()
 
   def _get_oaks_tracking_pos_prices(self) -> ReconResult:
     tracking_infos: Dict[Tuple[str], Tuple[str, float, str]] = {}
@@ -495,7 +517,7 @@ class GroupSiteManager:
     group_config = self.config['groups']['embdeals']
     username = group_config['username']
     password = group_config['password']
-    driver = self.driver_creator.new()
+    driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
 
     # the website is terrible, give it leeway
     driver.set_page_load_timeout(30)
@@ -515,7 +537,8 @@ class GroupSiteManager:
       driver.find_element_by_xpath("//span[text() = 'Bulk Tracking']").click()
       time.sleep(1)
 
-      driver.find_element_by_css_selector('app-tracking-bulk textarea').send_keys('\n'.join(numbers))
+      driver.find_element_by_css_selector('app-tracking-bulk textarea').send_keys(
+          '\n'.join(numbers))
       driver.implicitly_wait(120)
 
       driver.find_element_by_css_selector('app-tracking-bulk mat-card-actions button').click()
