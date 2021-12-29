@@ -1,5 +1,5 @@
 from functools import cmp_to_key
-from typing import List, Any, Set, Dict, Tuple
+from typing import List, Any, Set
 
 from lib.group_site_manager import TrackingInfoDict
 from lib.objects_to_sheet import ObjectsToSheet
