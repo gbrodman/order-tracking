@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
-from typing import Dict, Tuple, List
+from typing import List
 
 from lib import clusters, util
 from tqdm import tqdm
 from lib.cancelled_items_retriever import CancelledItemsRetriever
 from lib.clusters import Cluster
 from lib.config import open_config
-from lib.et import et
 from lib.order_info import OrderInfoRetriever
 from lib.group_site_manager import GroupSiteManager, TrackingInfoDict, PoCostDict, ReconResult
-from lib.driver_creator import DriverCreator
 from lib.portal_reimbursements import NonPortalReimbursements
 from lib.reconciliation_uploader import ReconciliationUploader
 from lib.tracking_output import TrackingOutput
@@ -200,7 +198,6 @@ def reconcile_new(config, args):
   fill_costs_new(clusters_by_tracking, trackings_to_info, po_to_cost, args)
 
   fill_cancellations(all_clusters, config)
-  et(config, all_clusters)
   sheet_id = config['reconciliation']['baseSpreadsheetId']
   if args.groups:
     print("Skipping unknown-tracking upload due to the --groups argument")
