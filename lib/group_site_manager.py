@@ -40,6 +40,7 @@ MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
 RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
 MELUL_EXPORTS_FOLDER = os.path.join(os.getcwd(), 'exports')
 EXPORT_WAIT_TIMEOUT_SECONDS = 60
+RECON_CSV_FOLDER = os.path.join(os.getcwd(), 'recon-reports')
 
 GIBSTRAT_URL = "https://gibstrat.com"
 OAKS_URL = "http://hso-tech.com"
@@ -146,6 +147,22 @@ def _wait_for_csv(group: str) -> List[Dict[str, str]]:
   return []
 
 
+def _recon_via_csvs(group: str) -> ReconResult:
+  print(f'Loading group {group} via local CSVs')
+  tracking_infos: TrackingInfoDict = {}
+  folder = os.path.join(RECON_CSV_FOLDER, group)
+  for filename in os.listdir(folder):
+    file_path = os.path.join(folder, filename)
+    with open(file_path, 'r') as f:
+      reader = csv.DictReader(f)
+      for row in reader:
+        tracking = clean_csv_tracking(row['Tracking Number'])
+        total = float(row['Total'].replace('$', '').replace(',', '').replace('-', ''))
+        old_value = tracking_infos[(tracking,)][1] if (tracking,) in tracking_infos else 0.0
+        tracking_infos[(tracking,)] = (group, old_value + total, '')
+  return tracking_infos, {}
+
+
 class GroupSiteManager:
 
   def __init__(self, config) -> None:
@@ -211,6 +228,8 @@ class GroupSiteManager:
       return self._get_gibstrat_tracking_pos_prices(group)
     elif group == 'embdeals':
       return self._get_emb_tracking_pos_prices()
+    elif os.path.exists(RECON_CSV_FOLDER) and group in os.listdir(RECON_CSV_FOLDER):
+      return _recon_via_csvs(group)
     return dict(), dict()
 
   def _get_emb_tracking_pos_prices(self) -> ReconResult:

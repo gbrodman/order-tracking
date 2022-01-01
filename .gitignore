@@ -22,3 +22,4 @@ chrome/*/chrome-win32
 .profiles/
 exports/
 reports/
+recon-reports/
