@@ -138,7 +138,7 @@ def _wait_for_csv(group: str) -> List[Dict[str, str]]:
       if list_dir_result:
         # now the file exists, we assume
         export_csv_file = f"{MELUL_EXPORTS_FOLDER}/{list_dir_result[0]}"
-        with open(export_csv_file, 'r') as f:
+        with open(export_csv_file, 'r', encoding='utf-8') as f:
           reader = csv.DictReader(f)
           return [r for r in reader]
       time.sleep(1)
