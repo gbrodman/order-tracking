@@ -51,16 +51,16 @@ def get_ship_date(ship_date_str: str) -> str:
 def from_amazon_row(row: Dict[str, str]) -> Optional[Tracking]:
   tracking = clean_csv_tracking(row['Carrier Tracking #'])
   orders = {row['Order ID'].upper()}
-  price_str = str(row['Shipment Subtotal']).replace(',', '').replace('$', '').replace('N/A', '0.0')
+  price_str = str(row.get('Shipment Subtotal', '0')).replace(',', '').replace('$', '').replace('N/A', '0.0')
   price = float(price_str) if price_str else 0.0
   to_email = row["Account User Email"]
-  ship_date = get_ship_date(str(row["Shipment Date"]))
+  ship_date = get_ship_date(row['Shipment Date']) if 'Shipment Date' in row else datetime.date.today().strftime('%Y-%m-%d')
   group, reconcile = get_group(row['Shipping Address'])
   if group is None:
     return None
   tracked_cost = 0.0
-  items = row["Title"] + " Qty:" + str(row["Item Quantity"])
-  merchant = row['Merchant'] if 'Merchant' in row else 'Amazon'
+  items = row.get("Title", '') + " Qty:" + str(row.get("Item Quantity", ''))
+  merchant = row.get('Merchant', 'Amazon')
   return Tracking(
       tracking,
       group,
