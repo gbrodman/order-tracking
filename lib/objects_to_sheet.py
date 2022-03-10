@@ -45,6 +45,14 @@ class ObjectsToSheet:
     self._write_header(objects, base_sheet_id, tab_title)
 
     values = [obj.to_row() for obj in objects]
+
+    # cut short anything super long
+    for row in values:
+      for i in range(len(row)):
+        cell = row[i]
+        if isinstance(cell, str):
+          row[i] = cell[:500]
+
     body = {"values": values}
     self.service.spreadsheets().values().append(
         spreadsheetId=base_sheet_id,
