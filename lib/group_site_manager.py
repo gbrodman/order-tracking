@@ -240,7 +240,7 @@ class GroupSiteManager:
     try:
       driver.get(f'{EMB_URL}/received')
       time.sleep(1)
-      driver.find_element_by_xpath("//span[text() = ' Export to Excel ']").click()
+      driver.find_element_by_css_selector('button[aria-label="Download CSV"]').click()
       rows = _wait_for_csv('embdeals')
       for row in rows:
         tracking = clean_csv_tracking(row['tracking'])
