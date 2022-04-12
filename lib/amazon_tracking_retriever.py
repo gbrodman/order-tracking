@@ -1,7 +1,7 @@
 import datetime
 import re
 import time
-from typing import Tuple, Optional, List, Set
+from typing import Tuple, Optional, List, Set, Dict
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 from bs4 import BeautifulSoup
@@ -9,7 +9,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
 from import_report import do_with_wait
-from lib.email_tracking_retriever import EmailTrackingRetriever, AddressTrackingsAndOrders
+from lib.email_tracking_retriever import EmailTrackingRetriever, AddressTrackingsAndOrders, get_email_content, \
+  get_all_mail_folder
+from lib.tracking import Tracking
 
 
 def _parse_date(text):
@@ -70,13 +72,56 @@ def get_address_info_from_order_details_page(driver: WebDriver) -> str:
   return display_address_divs[0].text.strip()
 
 
+def find_old_tracking_by_order(order_id: str, existing_trackings: List[Tracking],
+                               new_trackings: Dict[str, Tracking]) -> Optional[Tracking]:
+  for tracking in existing_trackings:
+    if order_id in tracking.order_ids:
+      return tracking
+  for tracking in new_trackings.values():
+    if order_id in tracking.order_ids:
+      return tracking
+  return None
+
+
 class AmazonTrackingRetriever(EmailTrackingRetriever):
 
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
   price_regex = r'.*Shipment [Tt]otal: ?(\$[\d,]+\.\d{2})'
-  order_ids_regex = r'#(\d{3}-\d{7}-\d{7})'
+  order_ids_regex = r'(\d{3}-\d{7}-\d{7})'
   li_regex = re.compile(r"\d+\.\s+")
+
+  def add_transferred_trackings(self, existing_trackings: List[Tracking],
+                                new_trackings: Dict[str, Tracking]) -> None:
+    print("Finding transferred trackings")
+    mail = get_all_mail_folder()
+    seen_filter = '(SEEN)' if self.args.seen else '(UNSEEN)'
+    status, search_response = mail.uid('SEARCH', None, seen_filter,
+                                       '(SUBJECT "We\'ve Transferred Your Amazon Package to UPS")')
+    email_ids = search_response[0].decode('utf-8').split()
+    if not email_ids:
+      return
+    failed_ids: List[str] = []
+    for email_id in tqdm(email_ids, desc="Processing transfers", unit="email"):
+      try:
+        content = get_email_content(email_id, mail)
+        order_id = re.findall(self.order_ids_regex, content)[0]
+        new_tracking_number = re.findall('1Z[A-Z0-9]{16}', content)[0]
+        old_tracking = find_old_tracking_by_order(order_id, existing_trackings, new_trackings)
+        if not old_tracking:
+          print(f"Couldn't find old tracking for order {order_id}, skipping")
+          failed_ids.append(email_id)
+        new_tracking = Tracking(new_tracking_number, old_tracking.group, {order_id},
+                                old_tracking.price, old_tracking.to_email, old_tracking.ship_date,
+                                old_tracking.tracked_cost, old_tracking.items,
+                                old_tracking.merchant, old_tracking.reconcile,
+                                old_tracking.delivery_date)
+        new_trackings[new_tracking_number] = new_tracking
+      except Exception as e:
+        print(f"Exception when getting transferred tracking: {e}")
+        failed_ids.append(email_id)
+    if self.args.seen:
+      self.mark_emails_as_unread(failed_ids)
 
   def get_address_info_and_trackings(self, email_str: str, driver: Optional[WebDriver],
                                      from_email: str, to_email: str) -> AddressTrackingsAndOrders:
