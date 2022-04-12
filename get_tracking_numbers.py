@@ -37,6 +37,9 @@ def main():
   email_config = config['email']
   email_sender = EmailSender(email_config)
 
+  tracking_output = TrackingOutput(config)
+  existing_trackings = tracking_output.get_existing_trackings()
+
   print("Retrieving Amazon tracking numbers from email ...")
   amazon_tracking_retriever = AmazonTrackingRetriever(config, args, driver_creator)
   try:
@@ -53,10 +56,10 @@ def main():
     send_error_email(email_sender, "Error retrieving Best Buy emails")
     raise
 
+  amazon_tracking_retriever.add_transferred_trackings(existing_trackings, trackings)
+
   try:
-    tracking_output = TrackingOutput(config)
-    existing_tracking_nos = set(
-        [t.tracking_number for t in tracking_output.get_existing_trackings()])
+    existing_tracking_nos = set([t.tracking_number for t in existing_trackings])
     new_tracking_nos = set(trackings.keys()).difference(existing_tracking_nos)
     print(f"Found {len(new_tracking_nos)} new tracking numbers "
           f"(out of {len(trackings)} total) from emails.")
