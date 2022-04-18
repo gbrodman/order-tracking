@@ -88,7 +88,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
   first_regex = r'.*href="(http[^"]*ship-?track[^"]*)"'
   second_regex = r'.*<a hr[^"]*=[^"]*"(http[^"]*progress-tracker[^"]*)"'
   price_regex = r'.*Shipment [Tt]otal: ?(\$[\d,]+\.\d{2})'
-  order_ids_regex = r'(\d{3}-\d{7}-\d{7})'
+  order_ids_regex = r'(11\d-\d{7}-\d{7})'
   li_regex = re.compile(r"\d+\.\s+")
 
   def add_transferred_trackings(self, existing_trackings: List[Tracking],
