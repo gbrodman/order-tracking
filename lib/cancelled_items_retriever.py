@@ -28,6 +28,28 @@ class CancQty(Enum):
   NO = 2
 
 
+def get_cancelled_items_from_email(raw_email, canc_info: Tuple[CancFmt, CancQty]) -> List[str]:
+  soup = BeautifulSoup(
+      quopri.decodestring(raw_email), features="html.parser", from_encoding="iso-8859-1")
+  if canc_info[0] == CancFmt.VOLUNTARY:
+    cancelled_header = soup.find("h3", text="Canceled Items")
+  elif canc_info[0] == CancFmt.INVOLUNTARY:
+    cancelled_header = soup.find("span", text="Canceled Items")
+  elif canc_info[0] == CancFmt.IRRELEVANT:
+    return []
+  else:
+    raise Exception(f"Can't handle cancellation format {canc_info}")
+  parent = cancelled_header.parent.parent.parent
+  cancelled_items = []
+  for li in parent.find_all('li'):
+    # Each li contains a single link whose link text is the item name.
+    canc_item = li.find('a').text.strip()
+    # If cancellation email format contains quantity info, then use the string from
+    # Amazon as-is, otherwise prepend with "??" to indicate indeterminate quantity.
+    cancelled_items.append(canc_item if canc_info[1] == CancQty.YES else f"?? {canc_item}")
+  return cancelled_items
+
+
 class CancelledItemsRetriever:
 
   def __init__(self, config):
@@ -114,31 +136,11 @@ class CancelledItemsRetriever:
       raise Exception(f"Error retrieving email UID {email_id}") from e
     try:
       raw_email = data[0][1]
-      orders = re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email))
+      orders = set(re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email)))
       if not orders:
         return {}
-      order = orders[0]
-
-      soup = BeautifulSoup(
-          quopri.decodestring(raw_email), features="html.parser", from_encoding="iso-8859-1")
-
-      if canc_info[0] == CancFmt.VOLUNTARY:
-        cancelled_header = soup.find("h3", text="Canceled Items")
-      elif canc_info[0] == CancFmt.INVOLUNTARY:
-        cancelled_header = soup.find("span", text="Canceled Items")
-      elif canc_info[0] == CancFmt.IRRELEVANT:
-        return {order: []}
-      else:
-        raise Exception(f"Can't handle cancellation format {canc_info[0]}")
-      parent = cancelled_header.parent.parent.parent
-      cancelled_items = []
-      for li in parent.find_all('li'):
-        # Each li contains a single link whose link text is the item name.
-        canc_item = li.find('a').text.strip()
-        # If cancellation email format contains quantity info, then use the string from
-        # Amazon as-is, otherwise prepend with "??" to indicate indeterminate quantity.
-        cancelled_items.append(canc_item if canc_info[1] == CancQty.YES else f"?? {canc_item}")
-      return {order: cancelled_items}
+      cancelled_items = get_cancelled_items_from_email(raw_email, canc_info)
+      return {order: cancelled_items for order in orders}
     except Exception as e:
       msg = email.message_from_string(str(data[0][1], 'utf-8'))
       print(
@@ -146,7 +148,7 @@ class CancelledItemsRetriever:
       )
       traceback.print_exc(file=sys.stdout)
       print("Continuing...")
-      return None
+      return {}
 
   @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=120))
   def load_mail(self):
