@@ -418,7 +418,7 @@ class GroupSiteManager:
       void = row['VOID'] == '1'
       verified = row['VERIFIED'] == '1'
       po = row['ID']
-      cost = float(row['TOTAL'])
+      cost = float(row['TOTAL']) if row['TOTAL'] else 0.0
       date_str = row['CREATED DATE']
       date = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d')
       trackings = clean_csv_tracking(row['TRACKING NUMBERS']).split(',')
