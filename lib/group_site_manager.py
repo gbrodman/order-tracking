@@ -634,8 +634,7 @@ class GroupSiteManager:
     textarea = driver.find_element_by_css_selector('div.modal-content textarea')
     textarea.send_keys("\n".join(numbers))
     time.sleep(1)
-    driver.find_element_by_css_selector(
-        'div.modal-content div.deal-detail button.bfmr-btn-primary').click()
+    driver.find_element(By.CSS_SELECTOR, "#bfmr_alert_112 .bfmr-btn-primary > .bfmr-btn-text").click()
     # TODO: This needs to wait for the success dialog to be displayed.
     time.sleep(3)
 
