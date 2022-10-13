@@ -200,7 +200,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
                                    driver: WebDriver) -> List[Tuple[str, Optional[str]]]:
     self.load_url(driver, amazon_url)
     try:
-      element = driver.find_element_by_xpath("//*[contains(text(), 'Tracking ID')]")
+      element = driver.find_element_by_xpath("//div[@class='pt-delivery-card-trackingId']")
       regex = r'Tracking ID: ([a-zA-Z0-9]+)'
       match = re.match(regex, element.text)
       if not match:
