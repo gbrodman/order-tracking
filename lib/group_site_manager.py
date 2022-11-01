@@ -601,7 +601,7 @@ class GroupSiteManager:
     self.driver_creator.args.headless = False
     driver = self._login_bfmr()
     try:
-      for batch in util.chunks(numbers, 100):
+      for batch in util.chunks(numbers, 200):
         self._upload_bfmr_batch(driver, batch)
     finally:
       driver.quit()
