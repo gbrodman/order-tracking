@@ -133,7 +133,12 @@ class CancelledItemsRetriever:
     try:
       result, data = mail.uid("FETCH", email_id, "(RFC822)")
     except Exception as e:
-      raise Exception(f"Error retrieving email UID {email_id}") from e
+      print(
+          f"Received exception with message '{str(e)}' when processing cancellation email with ID {email_id}"
+      )
+      traceback.print_exc(file=sys.stdout)
+      print("Continuing...")
+      return {}
     try:
       raw_email = data[0][1]
       orders = set(re.findall("(\d{3}-\d{7}-\d{7})", str(raw_email)))
