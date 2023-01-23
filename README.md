@@ -15,9 +15,9 @@ This script does the following:
 - Uploads those tracking numbers to the order tracking systems of groups like Pointsmaker, MYS, or USA.
 - Groups together orders or tracking numbers that are bunched together by Amazon or Best Buy for later reconciliation (e.g. two orders are grouped together if they ship in the same shipment). 
 - Emails you (the user) a list of tracking/order numbers that it found, for sanity checking.
-- Uploads the set of tracking objects to a Google Sheet
+- Uploads the set of tracking objects to a Google Sheet.
 
-If it cannot parse an email for some reason, it will mark the email as unread so that you can look at it manually later. This sometimes happens if Amazon is being slow -- in these cases, there is no harm in running the script again. 
+If it cannot parse an email for some reason, it will mark the email as unread so that you can look at it manually later. This sometimes happens if Amazon is being slow -- in these cases, there is no harm in running the script again.
 
 ### reconcile.py
 
@@ -31,14 +31,14 @@ This is the script for reconciliation. It does the following:
 
 ## Limitations
 
-- This will only work for one email account at a time
-- This will only work for GMail
-- Auto-uploading only works for USA and sites whose websites are of the same format as Pointsmaker or MYS
+- This will only work for one email account at a time.
+- This will only work for GMail.
+- Auto-uploading only works for USA, BuyForMeRetail, and sites whose websites are of the same format as Pointsmaker or MYS.
 - All addresses must contain a key that uniquely identifies which buying group the address belongs to. The default is a part of the group's address.
 
 ## Prerequisites
 
-- Python3 and pip3 (these should come together)
+- Python3 and pip3 (these should come together).
 
 ## Instructions
 
@@ -65,11 +65,12 @@ pip install -r requirements.txt
 ```
 
 ### In all operating systems:
-- Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues)
-- Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled
-- Copy config.yml.template to config.yml
-- Set up the configuration (see the "Configuration" section below for more info)
-- Run `python get_tracking_numbers.py` followed by `python reconcile.py`
+- Disconnect from any VPNs that might interfere (they might or might not cause you some network connectivity issues).
+- Enable IMAP in GMail--go to the Settings page, then the "Forwarding and POP/IMAP" tab, then make sure IMAP is enabled.
+- Enable "Show in IMAP" for the "All Mail" System Label--go to the Settings page, then the "Labels" tab, and make sure the "Show in IMAP" checkbox is ticked.
+- Copy config.yml.template to config.yml.
+- Set up the configuration (see the "Configuration" section below for more info).
+- Run `python get_tracking_numbers.py` followed by `python reconcile.py`.
 
 ## Configuration
 
@@ -79,17 +80,17 @@ Here are details of the fields on config.yml:
 - As of March 2020, App passwords are no longer supported by Google.  OAuth is needed to be used to log into Gmail.  See details below on how to set that up.
 - For each group in 'groups', include the full name of the group (for sites like MYS, this should be the URL minus the ".com" bit). Include a unique key per group (default is based on the address) that will appear only in shipping notifications to that group. The username and password should be to the group's online portal so that we can upload tracking numbers and scrape reconciliation data.
 - lookbackDays is how far back in your email account we'll search for unread Amazon shipping emails. Note: the shipment links expire after 45 days so we shouldn't go past that
-- The reconciliation baseSpreadsheetId should be the ID of an existing Google Sheet. See the section below on how to give correct permissions to that sheet. The ID can be retrieved form the URL, which is of the form "https://docs.google.com/spreadsheets/d/SHEET_ID"
-- The "driveFolderId" field should be the ID of a Google Drive folder into which we will store persistent data. This can be retrieved from the URL of the folder, which is of the form "https://drive.google.com/drive/folders/FOLDER_ID"
+- The reconciliation baseSpreadsheetId should be the ID of an existing Google Sheet. See the section below on how to give correct permissions to that sheet. The ID can be retrieved form the URL, which is of the form "https://docs.google.com/spreadsheets/d/SHEET_ID".
+- The "driveFolderId" field should be the ID of a Google Drive folder into which we will store persistent data. This can be retrieved from the URL of the folder, which is of the form "https://drive.google.com/drive/folders/FOLDER_ID".
 
 ### Sheets / Drive Configuration and Permissions
 
 We need to create and use an automated Google Cloud account to write to Drive and to Sheets. Here's how we do that:
 
-- First, create a Google Cloud project at https://console.cloud.google.com
-- Next, create the service account in Google Cloud and get the credentials for it, by following steps 1-5 on [this page](https://docs.bmc.com/docs/PATROL4GoogleCloudPlatform/10/creating-a-service-account-key-in-the-google-cloud-platform-project-799095477.html). Make sure to note the email address of the service account -- it should be very long, and it should include ".gserviceaccount.com" at the end.
+- First, create a Google Cloud project at https://console.cloud.google.com.
+- Next, create the service account in Google Cloud and get the credentials for it, by following steps 1-5 on [this page](https://docs.bmc.com/docs/PATROL4GoogleCloudPlatform/10/creating-a-service-account-key-in-the-google-cloud-platform-project-799095477.html). Make sure to note the email address of the service account -- it should be very long, and it should include ".gserviceaccount.com" at the end. Note that the "Role" does not need to be defined during setup as suggested in Step 4 of the linked guide.
 - When you download the credentials JSON file, rename it "creds.json" and put it in the same directory as these scripts.
-- In the Google Cloud console website, use the left navigation pane to go to "APIs and Services"
+- In the Google Cloud console website, use the left navigation pane to go to "APIs and Services".
 - Next, click "Enable APIs and Services". This will take you to the API library. You need to search for and enable the "Google Drive API" and "Google Sheets API". For each, search for it, click the term, and enable it.
 - Next, for the reconciliation Google Sheet and the Google Drive folder that we set up, make sure to share the sheet/folder with the service account that we created before. Just share them both with the email address that ends in ".gserviceaccount.com" (make sure the address has editing permissions on the sheet and folder).
 - For OAuth, create a key on https://support.google.com/cloud/answer/6158849?hl=en and store as client_secret.json in the same directory as these scripts.
@@ -99,8 +100,10 @@ That should be it -- the "creds.json" file will give the scripts the ability to 
 ## Arguments
 
 - `--headless` to run in a headless browser. This is useful if you don't care to see what the automation is doing.
-- `--firefox` to run using Firefox/Geckodriver rather than Chrome
+- `--firefox` to run using Firefox/Geckodriver rather than Chrome.
 - `--groups A B` will only run reconciliation over groups A and B. If omitted, will run over all groups.
+- `--seen` will re-process already read emails.
+- `--days N` to set the lookback period to N days instead of using the configured value within the config.yml file.
 
 ## Sheets Output
 
@@ -110,19 +113,19 @@ The reconciliation task has output that consists of two tabs in the Google Sheet
 
 This is the main spreadsheet. Because a single tracking number can consist of multiple orders and a single order can contain multiple tracking numbers, we group them into orders based on how the shipments were divided up. The columns are:
 
-- Orders: Order IDs contained in this group
-- Trackings: Tracking numbers contained in this group
-- Amount Billed: Total amount that you were charged for this group
-- Amount Reimbursed: Total amount that the buying groups' sites show for this group
+- Orders: Order IDs contained in this group.
+- Trackings: Tracking numbers contained in this group.
+- Amount Billed: Total amount that you were charged for this group.
+- Amount Reimbursed: Total amount that the buying groups' sites show for this group.
 - Last Ship Date: This is the date of the most recent shipment. If it was long ago and the order is under-reimbursed, you probably have a problem.
-- Last Delivery Date: Ditto, but for delivery
-- POs: List of purchase orders. Add to this if you need to manually mark a receipt as corresopnding to a particular row
-- Group: the buying group
-- To Email: the email to which the shipping/order emails were sent
+- Last Delivery Date: Ditto, but for delivery.
+- POs: List of purchase orders. Add to this if you need to manually mark a receipt as corresopnding to a particular row.
+- Group: the buying group.
+- To Email: the email to which the shipping/order emails were sent.
 - Manual Cost Adjustment: This is a way to adjust the expected reimbursed cost for an order. If you know that an item was under-reimbursed for a good reason, you can add that amount here. We expect that the amount billed is equal to the amount reimbursed plus this manual cost adjustment. This is saved if you change it.
-- Manual Override: Another manual field, check this if you're sure that the group looks correct -- it will ignore anything else and mark as resolved
+- Manual Override: Another manual field, check this if you're sure that the group looks correct -- it will ignore anything else and mark as resolved.
 - Total Diff: This is the total difference between amount billed and reimbursed (plus manual adjustments). Green means that the amounts were equal or the override was checked, yellow means you were over-reimbursed, and red means you were under-reimbursed.
-- Notes: Notes for your own personal use
+- Notes: Notes for your own personal use.
 
 ### Trackings
 
@@ -130,24 +133,15 @@ Each row on this sheet corresponds to a tracking number. It contains order(s) fo
 
 ## Amazon Report Import
 
-First, export an Amazon business shipments report as CSV (through the Business Analytics section of the site). Then,
-note the file name(s) (you can move around the files). Then, run `python import_report.py {GLOB}` where the {GLOB}
-should be replaced by the path to your file(s). To include a single file, you can run `python import_report path/to/myfile.csv`
-or to include (for instance) all CSV files in a folder, you can run `python import_report.py myfolder/*.csv`.
+First, export an Amazon business shipments report as CSV (through the Business Analytics section of the site). Then, note the file name(s) (you can move around the files). Then, run `python import_report.py {GLOB}` where the {GLOB} should be replaced by the path to your file(s). To include a single file, you can run `python import_report path/to/myfile.csv` or to include (for instance) all CSV files in a folder, you can run `python import_report.py myfolder/*.csv`.
 
-It will print out information about the trackings it is importing, and it will also print any rows for which it could 
-not find a valid group (note: the address is not formatted like "City, STATE" so for this section I recommend using the
-beginnings of addresses as your group keys, e.g. '123 Fake St' (without the quotes) in your group config).
+It will print out information about the trackings it is importing, and it will also print any rows for which it could not find a valid group (note: the address is not formatted like "City, STATE" so for this section I recommend using the beginnings of addresses as your group keys, e.g. '123 Fake St' (without the quotes) in your group config).
 
 ## Manual Order Import
 
-Sometimes, one may wish to manually add a tracking object to the datastore. To do so, run the `manual_input.py` script.
-If you run it without arguments, it will ask you for a series of inputs (it also allows you to delete existing tracking
-objects). Most arguments are optional, and it will try to fill out sane defaults, but the tracking number, order number,
-and group fields are required.
+Sometimes, one may wish to manually add a tracking object to the datastore. To do so, run the `manual_input.py` script. If you run it without arguments, it will ask you for a series of inputs (it also allows you to delete existing tracking objects). Most arguments are optional, and it will try to fill out sane defaults, but the tracking number, order number, and group fields are required.
 
-If you wish to run the input all in one step adding a new tracking object in the simplest form, simply run as one
-command: 
+If you wish to run the input all in one step adding a new tracking object in the simplest form, simply run as one command: 
 
 ```python manual_input.py -a -t TRACKING_NUMBER -g GROUP -o ORDER_NUMBER```
 
@@ -157,11 +151,7 @@ e.g.
 
 ## Non-Shipped Order Verification
 
-The vast majority of the time, Amazon send shipping emails. However sometimes they might not. If you run
-`python verify_orders.py` it will find all order confirmation emails (from the last 90 days by default) and attempt to
-match all orders with a corresponding tracking object or cancellation email. It will upload the results to a tab on
-the reconciliation sheet, Non-Shipped Orders. For recent orders this is expected (they haven't shipped yet) but for
-old orders, something may be wrong
+The vast majority of the time, Amazon send shipping emails. However sometimes they might not. If you run `python verify_orders.py` it will find all order confirmation emails (from the last 90 days by default) and attempt to match all orders with a corresponding tracking object or cancellation email. It will upload the results to a tab on the reconciliation sheet, Non-Shipped Orders. For recent orders this is expected (they haven't shipped yet) but for old orders, something may be wrong
 
 ## Donations
 
