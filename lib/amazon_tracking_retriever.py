@@ -103,7 +103,7 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
     return ''
 
   def get_subject_searches(self):
-    return [["Your AmazonSmile order", "has shipped"], ["Your Amazon.com order", "has shipped"],
+    return [["Your AmazonSmile order", "has shipped"], ["Your Amazon.com order", "has shipped"], ["Shipped", "this Amazon delivery"],
             ["Shipped: Now arriving early"]]
 
   def get_merchant(self) -> str:
