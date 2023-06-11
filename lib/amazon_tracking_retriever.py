@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import time
+import mintotp
 from typing import Dict, List, Optional, Tuple
 
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -250,10 +251,12 @@ class AmazonTrackingRetriever(EmailTrackingRetriever):
       driver.find_element_by_css_selector('input[type="submit"]').click()
       driver.find_element_by_css_selector('input[type="password"]').send_keys(config['amazon']['password'])
       driver.find_element_by_css_selector('input[type="submit"]').click()
-
       orders_containers = driver.find_elements_by_id('ordersContainer')
       if len(orders_containers) == 0:
-        input('Enter your OTP on the opened Chrome profile. Hit ENTER when done.')
+            driver.find_element_by_css_selector('input[type="tel"]').send_keys(mintotp.totp(config['amazon']['TOTP']))
+            driver.find_element_by_css_selector('input[type="submit"]').click()
+      else:
+         input('TOTP gen not possible. Enter TOTP manually and hit ENTER when done.')
     else:
       input('Please log in to an Amazon account on the opened Chrome profile. Hit ENTER when done.')
 
