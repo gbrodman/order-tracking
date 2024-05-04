@@ -610,7 +610,7 @@ class GroupSiteManager:
   def _login_bfmr(self) -> WebDriver:
     group_config = self.config['groups']['bfmr']
     driver = self.driver_creator.new()
-    self._load_page(driver, "https://buyformeretail.com/login")
+    self._load_page(driver, "https://bfmr.com/login")
     driver.find_element_by_id("email").send_keys(group_config['username'])
     driver.find_element_by_id("password").send_keys(group_config['password'])
     driver.find_element_by_css_selector('div.bfmr-auth-form-next button').click()
@@ -619,7 +619,7 @@ class GroupSiteManager:
     return driver
 
   def _upload_bfmr_batch(self, driver: WebDriver, numbers: List[str]) -> None:
-    self._load_page(driver, "https://buyformeretail.com/dashboard")
+    self._load_page(driver, "https://bfmr.com/dashboard")
     # close any modal that may be present
     ActionChains(driver).send_keys(Keys.ESCAPE).perform()
     time.sleep(1)
