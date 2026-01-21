@@ -19,6 +19,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
 from tqdm import tqdm
 
 import lib.email_auth as email_auth
@@ -33,10 +34,10 @@ LOGIN_BUTTON_SELECTOR = "//button[contains(text(), 'Login')]"
 RESULT_SELECTOR = "//*[contains(text(), 'record(s) effected')]"
 RESULT_REGEX = r"(\d+) record\(s\) effected"
 
-BASE_URL_FORMAT = "https://%s.com/p/login"
-MANAGEMENT_URL_FORMAT = "https://www.%s.com/p/it@orders-all/"
+BASE_URL_FORMAT = "https://%s.com//auth/login"
+MANAGEMENT_URL_FORMAT = "https://www.%s.com/tracking-numbers/"
 
-RECEIPTS_URL_FORMAT = "https://%s.com/p/it@receipts"
+RECEIPTS_URL_FORMAT = "https://%s.com/receiving"
 MELUL_EXPORTS_FOLDER = os.path.join(os.getcwd(), 'exports')
 EXPORT_WAIT_TIMEOUT_SECONDS = 60
 RECON_CSV_FOLDER = os.path.join(os.getcwd(), 'recon-reports')
@@ -611,9 +612,9 @@ class GroupSiteManager:
     group_config = self.config['groups']['bfmr']
     driver = self.driver_creator.new()
     self._load_page(driver, "https://buyformeretail.com/login")
-    driver.find_element_by_id("email").send_keys(group_config['username'])
-    driver.find_element_by_id("password").send_keys(group_config['password'])
-    driver.find_element_by_css_selector('div.bfmr-auth-form-next button').click()
+    driver.find_element(By.ID, "email").send_keys(group_config['username'])
+    driver.find_element(By.ID, "password").send_keys(group_config['password'])
+    driver.find_element(By.CSS_SELECTOR, 'div.bfmr-auth-form-next button').click()
     time.sleep(2)
 
     return driver
@@ -625,16 +626,16 @@ class GroupSiteManager:
     time.sleep(1)
     # hope there's a button to submit tracking numbers -- it doesn't matter which one
     try:
-      driver.find_element_by_css_selector('div.view-deal-section button').click()
+      driver.find_element(By.CSS_SELECTOR, 'div.view-deal-section button').click()
     except NoSuchElementException:
       raise Exception(
           "Could not find submit-trackings button. Make sure that you've subscribed to a deal and that the login credentials are correct"
       )
     time.sleep(2)
-    textarea = driver.find_element_by_css_selector('div.modal-content textarea')
+    textarea = driver.find_element(By.CSS_SELECTOR, 'div.modal-content textarea')
     textarea.send_keys("\n".join(numbers))
-    time.sleep(1)
-    driver.find_element_by_css_selector('div.modal-content button.bfmr-btn-primary').click()
+    time.sleep(2)
+    driver.find_element(By.XPATH, "//div[4]/div/div/div/div[3]/button").click()
     # TODO: This needs to wait for the success dialog to be displayed.
     time.sleep(3)
 
@@ -655,26 +656,19 @@ class GroupSiteManager:
   def _upload_melul(self, numbers, group, username, password) -> None:
     driver = self._login_melul(group, username, password)
     try:
-      self._load_page(driver, MANAGEMENT_URL_FORMAT % group)
-
-      textareas = driver.find_elements_by_tag_name("textarea")
-      if not textareas:
-        # omg sellerspeed wyd (show import wizard)
-        driver.find_elements_by_css_selector('button.pf-menu-tool-item.ng-scope')[-1].click()
-        time.sleep(1)
-        textareas = driver.find_elements_by_tag_name("textarea")
-        if not textareas:
-          raise Exception("Could not find order management for group %s" % group)
-
-      # driver.send_keys() is way too slow; this is instant.
-      js_input = '\\n'.join(numbers)
-      driver.execute_script(f"document.getElementsByTagName('textarea')[0].value = '{js_input}';")
-      textareas[0].send_keys("\n")  # Trigger blur to enable Submit button.
-      driver.find_element_by_id('pf-form-trackings').find_element_by_css_selector(
-          'button[type="submit"]').click()
-      # TODO: This needs to wait for the success dialog to be displayed and then print the number
-      #       of new trackings from that to the command line.
-      time.sleep(3)
+      # self._load_page(driver, MANAGEMENT_URL_FORMAT % group) - seems to get a weird redirect if the page is instantly navigated to.
+      driver.find_element(By.CSS_SELECTOR, ".MuiPaper-root:nth-child(1) .MuiBox-root:nth-child(10) .MuiTypography-root:nth-child(1)").click()
+      time.sleep(2)
+      driver.find_element(By.CSS_SELECTOR, ".MuiButton-contained").click()
+      time.sleep(2)
+      driver.find_element(By.NAME, "trackingNumber").send_keys(numbers)
+      driver.find_element(By.CSS_SELECTOR, ".MuiButton-contained").click()
+      time.sleep(2)
+      driver.find_element(By.CSS_SELECTOR, ".MuiAlert-message")
+    except NoSuchElementException:
+      raise Exception(
+          "Possible failure with tracking number upload."
+      )
     finally:
       driver.quit()
 
@@ -686,10 +680,10 @@ class GroupSiteManager:
     driver = self.driver_creator.new(download_dir=MELUL_EXPORTS_FOLDER)
     self.driver_creator.args.headless = former_headless
     self._load_page(driver, BASE_URL_FORMAT % group)
-    driver.find_element_by_name(LOGIN_EMAIL_FIELD).send_keys(username)
-    driver.find_element_by_name(LOGIN_PASSWORD_FIELD).send_keys(password)
-    driver.find_element_by_xpath(LOGIN_BUTTON_SELECTOR).click()
-    time.sleep(1)
+    driver.find_element(By.NAME, "email").send_keys(username)
+    driver.find_element(By.NAME, "password").send_keys(password)
+    driver.find_element(By.CSS_SELECTOR, ".MuiButton-contained").click()
+    time.sleep(2)
 
     # Sometimes, they use two-factor auth
     if "Authentication required" in driver.page_source:
